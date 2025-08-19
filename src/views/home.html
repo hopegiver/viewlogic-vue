@@ -1,0 +1,20 @@
+<div class="home-page">
+    <h1>Welcome Home</h1>
+    <div class="home-content">
+        <p>Vue SFC 호환 라우터에 오신 것을 환영합니다!</p>
+        <div class="home-message">
+            <p><strong>{{ message || 'Vue 스타일 컴포넌트로 동작중입니다!' }}</strong></p>
+        </div>
+        <div class="features">
+            <h3>주요 기능:</h3>
+            <ul>
+                <li v-for="feature in features" :key="feature">{{ feature }}</li>
+            </ul>
+        </div>
+        <div class="home-actions">
+            <button @click="navigateTo('about')">About 페이지</button>
+            <button @click="navigateTo('contact')">Contact 페이지</button>
+            <button @click="handleAction">테스트 액션</button>
+        </div>
+    </div>
+</div>

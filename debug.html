@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vue Router Debug</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .debug { background: #f0f0f0; padding: 10px; margin: 10px 0; }
+        .feature-card { border: 1px solid #ccc; padding: 10px; margin: 5px; }
+        .info-item { border: 1px solid #ccc; padding: 10px; margin: 5px; }
+    </style>
+</head>
+<body>
+    <h1>디버그 테스트</h1>
+    
+    <div id="app">로딩 중...</div>
+    
+    <div class="debug">
+        <h3>디버그 정보</h3>
+        <button onclick="testAbout()">About 테스트</button>
+        <button onclick="testContact()">Contact 테스트</button>
+        <div id="debug-info"></div>
+    </div>
+
+    <script src="js/router.js"></script>
+    <script>
+        // 개발 모드 설정
+        window.router = createVueRouter({
+            mode: 'development',
+            logging: {
+                enabled: true,
+                level: 'debug'
+            }
+        });
+
+        function testAbout() {
+            router.navigateTo('about');
+        }
+
+        function testContact() {
+            router.navigateTo('contact');
+        }
+
+        // 컴포넌트 정보 표시
+        setInterval(() => {
+            const debugDiv = document.getElementById('debug-info');
+            if (debugDiv) {
+                debugDiv.innerHTML = `
+                    <p>현재 라우트: ${router.getCurrentRoute()}</p>
+                    <p>현재 컴포넌트: ${router.currentComponent ? router.currentComponent.name : '없음'}</p>
+                `;
+            }
+        }, 1000);
+    </script>
+</body>
+</html>

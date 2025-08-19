@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vue Router Compatible</title>
+    <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+    <div id="app">
+        <div class="loading">로딩 중...</div>
+    </div>
+
+    <nav class="main-nav">
+        <ul>
+            <li><a href="#home">Home</a></li>
+            <li><a href="#about">About</a></li>
+            <li><a href="#contact">Contact</a></li>
+        </ul>
+    </nav>
+
+    <!-- Vue 3 Runtime + Compiler -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    
+    <script src="js/router.js"></script>
+    <script>
+        // 라우터 환경설정
+        const routerConfig = {
+            basePath: '/src',           // 소스 파일 기본 경로
+            mode: 'hash',               // 'hash' 또는 'history'
+            cacheMode: 'memory',        // 'memory' 또는 'lru'
+            cacheTTL: 300000,          // 캐시 TTL (5분)
+            maxCacheSize: 50           // LRU 캐시 최대 크기
+        };
+        
+        // 환경설정과 함께 라우터 생성
+        window.router = new VueCompatibleRouter(routerConfig);
+    </script>
+</body>
+</html>
