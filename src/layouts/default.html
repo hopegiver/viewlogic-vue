@@ -1,0 +1,29 @@
+<nav class="main-nav">
+    <ul>
+        <li><a href="#home" :class="{ active: currentRoute === 'home' }">Home</a></li>
+        <li><a href="#about" :class="{ active: currentRoute === 'about' }">About</a></li>
+        <li><a href="#contact" :class="{ active: currentRoute === 'contact' }">Contact</a></li>
+    </ul>
+</nav>
+
+<header v-if="showHeader" class="page-header">
+    <div class="container">
+        <h1>{{ headerTitle || pageTitle }}</h1>
+        <p v-if="headerSubtitle" class="subtitle">{{ headerSubtitle }}</p>
+    </div>
+</header>
+
+<main class="main-content">
+    <div class="container">
+        <!-- 페이지 콘텐츠가 여기에 삽입됩니다 -->
+        <slot name="content">
+            <!-- 기본 콘텐츠 슬롯 -->
+        </slot>
+    </div>
+</main>
+
+<footer class="page-footer">
+    <div class="container">
+        <p>&copy; 2024 ViewLogic App. All rights reserved.</p>
+    </div>
+</footer>

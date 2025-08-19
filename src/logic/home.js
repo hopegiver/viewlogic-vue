@@ -1,5 +1,10 @@
 export default {
     name: 'Home',
+    layout: 'default',  // 사용할 레이아웃 지정
+    pageTitle: 'Home - ViewLogic',
+    showHeader: true,
+    headerTitle: 'ViewLogic App',
+    headerSubtitle: 'Vue 3 Compatible Router System',
     data() {
         return {
             message: 'Vue 3 컴포넌트로 동작중입니다!',
@@ -8,7 +13,8 @@ export default {
                 '동적 Vue SFC 조합',
                 '뷰/로직/스타일 완전 분리',
                 'Vue 3 Composition API 지원',
-                'Vue 스타일 데이터 바인딩'
+                'Vue 스타일 데이터 바인딩',
+                '레이아웃 시스템 지원'
             ]
         }
     },

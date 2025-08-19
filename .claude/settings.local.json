@@ -3,7 +3,8 @@
     "allow": [
       "Bash(git clone:*)",
       "Bash(cp:*)",
-      "Bash(git init:*)"
+      "Bash(git init:*)",
+      "Bash(node:*)"
     ],
     "deny": [],
     "ask": []

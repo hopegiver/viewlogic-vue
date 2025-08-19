@@ -14,6 +14,7 @@ body {
 #app {
     min-height: calc(100vh - 60px);
     padding: 20px;
+    position: relative;
 }
 
 .loading {
@@ -21,6 +22,42 @@ body {
     padding: 50px;
     font-size: 1.2rem;
     color: #666;
+    opacity: 1;
+    transition: opacity 0.3s ease-out;
+}
+
+.loading.fade-out {
+    opacity: 0;
+}
+
+#app {
+    transition: opacity 0.3s ease-in;
+}
+
+#app.loading-state {
+    opacity: 0.7;
+}
+
+#app.loaded-state {
+    opacity: 1;
+}
+
+/* 페이지 전환 효과를 위한 스타일 */
+.page-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    min-height: 100%;
+    background: #f4f4f4;
+}
+
+.page-container.page-entered {
+    opacity: 1;
+}
+
+.page-container.page-exiting {
+    display: none;
 }
 
 .main-nav {
@@ -53,7 +90,8 @@ body {
     transition: background 0.3s;
 }
 
-.main-nav a:hover {
+.main-nav a:hover,
+.main-nav a.active {
     background: #555;
 }
 
@@ -95,6 +133,84 @@ body {
     text-decoration: underline;
 }
 
+.page-header {
+    background: linear-gradient(135deg, #007bff, #0056b3);
+    color: white;
+    padding: 80px 0 60px;
+    text-align: center;
+    margin-top: 0;
+}
+
+.page-header h1 {
+    font-size: 2.5rem;
+    margin-bottom: 10px;
+}
+
+.page-header .subtitle {
+    font-size: 1.2rem;
+    opacity: 0.9;
+}
+
+.main-content {
+    padding: 40px 0;
+    background: white;
+    min-height: 400px;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+.page-footer {
+    background: #333;
+    color: white;
+    text-align: center;
+    padding: 20px 0;
+}
+
+/* 버튼 스타일 */
+.btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+    margin: 5px;
+    transition: all 0.3s;
+}
+
+.btn-primary {
+    background: #007bff;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #0056b3;
+}
+
+.btn-secondary {
+    background: #6c757d;
+    color: white;
+}
+
+.btn-secondary:hover {
+    background: #545b62;
+}
+
+.btn-outline {
+    background: transparent;
+    color: #007bff;
+    border: 2px solid #007bff;
+}
+
+.btn-outline:hover {
+    background: #007bff;
+    color: white;
+}
+
 body {
     padding-top: 60px;
 }
@@ -103,6 +219,14 @@ body {
     .main-nav ul {
         flex-direction: column;
         gap: 10px;
+    }
+    
+    .page-header h1 {
+        font-size: 2rem;
+    }
+    
+    .container {
+        padding: 0 15px;
     }
     
     body {

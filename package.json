@@ -1,0 +1,43 @@
+{
+  "name": "viewlogic-vue",
+  "version": "1.0.0",
+  "description": "A modular Vue 3 web application with custom router system",
+  "main": "index.html",
+  "type": "module",
+  "scripts": {
+    "dev": "python -m http.server 8000",
+    "build": "node build.cjs build",
+    "build:minify": "node build.cjs build --minify",
+    "build:clean": "node build.cjs clean",
+    "build:info": "node build.cjs info",
+    "serve": "python -m http.server 8000",
+    "start": "python -m http.server 8000"
+  },
+  "keywords": [
+    "vue3",
+    "router",
+    "modular",
+    "frontend",
+    "spa",
+    "layouts",
+    "builder"
+  ],
+  "author": "hopegiver",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:hopegiver/viewlogic-vue.git"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "files": [
+    "src/",
+    "routes/",
+    "js/",
+    "css/",
+    "index.html",
+    "production.html",
+    "build.cjs"
+  ]
+}

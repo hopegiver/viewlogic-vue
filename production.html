@@ -3,20 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vue Router Compatible</title>
+    <title>Vue Router Compatible - Production</title>
     <link rel="stylesheet" href="css/main.css">
 </head>
 <body>
-    <div id="app"></div>
+    <div id="app">
+        <div class="loading">로딩 중...</div>
+    </div>
 
     <!-- Vue 3 Runtime + Compiler -->
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     
     <script src="js/router.js"></script>
     <script>
-        // 개발 환경설정
+        // 프로덕션 환경설정
         const routerConfig = {
-            basePath: '/src',               // 소스 파일 기본 경로 (development 모드에서 사용)
+            basePath: '/src',               // 소스 파일 기본 경로 (development 모드에서만 사용)
             routesPath: '/routes',          // 빌드된 파일 경로 (production 모드에서 사용)
             mode: 'hash',                   // 'hash' 또는 'history'
             cacheMode: 'memory',            // 'memory' 또는 'lru'
@@ -24,16 +26,16 @@
             maxCacheSize: 50,              // LRU 캐시 최대 크기
             useLayout: true,               // 레이아웃 사용 활성화
             defaultLayout: 'default',      // 기본 레이아웃
-            environment: 'development',    // 개발 모드로 설정
-            preloadRoutes: ['home', 'about', 'contact'], // 프리로드할 라우트들 (home은 첫 페이지이므로 제외)
-            preloadDelay: 1500,            // 프리로드 시작 지연 시간 (1.5초)
-            preloadInterval: 300           // 프리로드 간격 (0.3초)
+            environment: 'production',     // 프로덕션 모드로 설정
+            preloadRoutes: ['about', 'contact'], // 프리로드할 라우트들
+            preloadDelay: 800,             // 프리로드 시작 지연 시간 (0.8초 - 프로덕션은 더 빠름)
+            preloadInterval: 200           // 프리로드 간격 (0.2초 - 프로덕션은 더 빠름)
         };
         
         // 환경설정과 함께 라우터 생성
         window.router = new VueCompatibleRouter(routerConfig);
         
-        console.log('🛠️ Development mode activated - using src files');
+        console.log('🎯 Production mode activated - using compiled routes');
     </script>
 </body>
 </html>
