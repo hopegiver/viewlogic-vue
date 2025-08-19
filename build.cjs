@@ -14,7 +14,7 @@ class ViewLogicBuilder {
         this.config = {
             srcPath: options.srcPath || './src',
             routesPath: options.routesPath || './routes',
-            minify: options.minify || false,
+            minify: options.minify || true,
             sourceMap: options.sourceMap || false,
             watch: options.watch || false,
             verbose: options.verbose || false,
@@ -346,17 +346,17 @@ class ViewLogicBuilder {
             if (key === 'template') continue; // 템플릿은 별도 처리
             
             if (typeof value === 'function') {
-                lines.push(`  ${key}: ${value.toString()},`);
+                lines.push(`    ${value.toString()},`);
             } else if (key === 'methods' && typeof value === 'object' && value !== null) {
-                lines.push(`  methods: {`);
+                lines.push(`    methods: {`);
                 for (const [methodKey, methodValue] of Object.entries(value)) {
                     if (typeof methodValue === 'function') {
-                        lines.push(`    ${methodKey}: ${methodValue.toString()},`);
+                        lines.push(`    ${methodValue.toString()},`);
                     }
                 }
-                lines.push('  },');
+                lines.push('    },');
             } else {
-                lines.push(`  ${key}: ${JSON.stringify(value)},`);
+                lines.push(`    ${key}: ${JSON.stringify(value)},`);
             }
         }
         
@@ -376,9 +376,7 @@ class ViewLogicBuilder {
     mergeLayoutWithTemplate(layout, template) {
         // 다양한 slot 패턴 지원
         const slotPatterns = [
-            { pattern: /<slot name="content">.*?<\/slot>/s, replacement: template },
-            { pattern: /<slot>.*?<\/slot>/s, replacement: template },
-            { pattern: /(\{\{\s*slot\s*\}\})/g, replacement: template },
+            { pattern: /{{ content }}/s, replacement: template },
             { pattern: /(<div class="main-content">).*?(<\/div>\s*<\/main>)/s, replacement: `$1${template}$2` }
         ];
         

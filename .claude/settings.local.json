@@ -4,7 +4,9 @@
       "Bash(git clone:*)",
       "Bash(cp:*)",
       "Bash(git init:*)",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Bash(mkdir:*)",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": []

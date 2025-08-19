@@ -5,21 +5,144 @@
     </div>
     
     <div class="home-content">
-        <div class="home-message">
+        <Card 
+            title="ViewLogic Router" 
+            subtitle="Vue 3 호환 라우터 시스템"
+            :hoverable="true"
+            shadow="medium"
+        >
             <p><strong>{{ message || 'Vue 스타일 컴포넌트로 동작중입니다!' }}</strong></p>
-        </div>
+            
+            <template #footer>
+                <div class="card-tags">
+                    <span class="card-tag tag-primary">Vue 3</span>
+                    <span class="card-tag tag-success">Router</span>
+                </div>
+            </template>
+        </Card>
         
-        <div class="features">
-            <h3>주요 기능:</h3>
+        <Card 
+            title="주요 기능" 
+            :hoverable="true"
+            shadow="small"
+            style="margin-top: 1rem;"
+        >
             <ul>
                 <li v-for="feature in features" :key="feature">{{ feature }}</li>
             </ul>
-        </div>
+        </Card>
         
-        <div class="home-actions">
-            <button @click="navigateTo('about')" class="btn btn-primary">About 페이지</button>
-            <button @click="navigateTo('contact')" class="btn btn-secondary">Contact 페이지</button>
-            <button @click="handleAction" class="btn btn-outline">테스트 액션</button>
+        <div class="home-actions" style="margin-top: 2rem; display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center;">
+            <Button 
+                variant="primary" 
+                size="medium"
+                @click="navigateTo('about')"
+                icon="📖"
+            >
+                About 페이지
+            </Button>
+            
+            <Button 
+                variant="secondary" 
+                size="medium"
+                @click="navigateTo('contact')"
+                icon="📞"
+            >
+                Contact 페이지
+            </Button>
+            
+            <Button 
+                variant="outline" 
+                size="medium"
+                :loading="actionLoading"
+                @click="handleAction"
+                icon="🚀"
+            >
+                테스트 액션
+            </Button>
+
+            <Button 
+                variant="success" 
+                size="medium"
+                @click="showToast"
+                icon="💬"
+            >
+                알림 테스트
+            </Button>
+
+            <Button 
+                variant="warning" 
+                size="medium"
+                @click="showModal = true"
+                icon="🔧"
+            >
+                모달 테스트
+            </Button>
         </div>
+
+        <!-- 탭 컴포넌트 데모 -->
+        <div style="margin-top: 3rem;">
+            <Tabs 
+                v-model="activeTab" 
+                :tabs="tabsData" 
+                variant="underline"
+                @tab-change="onTabChange"
+            >
+                <template #demo1>
+                    <div style="padding: 1rem;">
+                        <h4>컴포넌트 데모</h4>
+                        <p>이것은 탭 컴포넌트의 첫 번째 패널입니다.</p>
+                        
+                        <Input 
+                            v-model="demoInput"
+                            label="데모 입력"
+                            placeholder="여기에 입력해보세요"
+                            help-text="컴포넌트 시스템이 정상적으로 작동하고 있습니다"
+                            clearable
+                        />
+                    </div>
+                </template>
+                
+                <template #demo2>
+                    <div style="padding: 1rem;">
+                        <h4>기능 목록</h4>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin-top: 1rem;">
+                            <Card 
+                                v-for="feature in componentFeatures" 
+                                :key="feature.name"
+                                :title="feature.name"
+                                :content="feature.description"
+                                :tags="[feature.status]"
+                                hoverable
+                                clickable
+                                shadow="small"
+                            />
+                        </div>
+                    </div>
+                </template>
+            </Tabs>
+        </div>
+
+        <!-- 모달 컴포넌트 -->
+        <Modal 
+            v-model="showModal"
+            title="컴포넌트 시스템 테스트"
+            size="medium"
+            @confirm="handleModalConfirm"
+            @cancel="handleModalCancel"
+        >
+            <p>이것은 모달 컴포넌트 테스트입니다.</p>
+            <p>ViewLogic의 컴포넌트 시스템이 정상적으로 작동하고 있습니다!</p>
+            
+            <Input 
+                v-model="modalInput"
+                label="모달 내 입력"
+                placeholder="모달에서도 컴포넌트가 작동합니다"
+                style="margin-top: 1rem;"
+            />
+        </Modal>
+
+        <!-- Toast 컴포넌트 -->
+        <Toast ref="toast" position="top-right" />
     </div>
 </div>

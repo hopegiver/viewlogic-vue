@@ -13,7 +13,15 @@ class VueCompatibleRouter {
             routesPath: options.routesPath || '/routes', // 프로덕션 모드에서 사용할 경로
             preloadRoutes: options.preloadRoutes || [], // 프리로드할 라우트들
             preloadDelay: options.preloadDelay || 1000, // 프리로드 시작 지연 시간 (밀리초)
-            preloadInterval: options.preloadInterval || 500 // 프리로드 간격 (밀리초)
+            preloadInterval: options.preloadInterval || 500, // 프리로드 간격 (밀리초)
+            showLoadingProgress: options.showLoadingProgress !== false, // 로딩 프로그레스 바 표시
+            loadingMinDuration: options.loadingMinDuration || 300, // 최소 로딩 시간 (UX 개선)
+            enableErrorReporting: options.enableErrorReporting !== false, // 에러 리포팅 활성화
+            // 컴포넌트 시스템 설정
+            useComponents: options.useComponents !== false, // 컴포넌트 시스템 사용 여부
+            componentsPath: options.componentsPath || '/src/components', // 컴포넌트 경로
+            globalComponents: options.globalComponents || ['Button', 'Modal', 'Card', 'Toast', 'Input', 'Tabs'], // 전역 컴포넌트 목록
+            preloadComponents: options.preloadComponents !== false // 컴포넌트 사전 로드 여부
         };
         
         this.currentHash = '';
@@ -25,9 +33,15 @@ class VueCompatibleRouter {
         this.preloadedRoutes = new Set(); // 프리로드된 라우트 추적
         this.preloadQueue = []; // 프리로드 대기열
         this.transitionInProgress = false; // 전환 중 플래그
+        this.loadingStartTime = null; // 로딩 시작 시간
+        this.progressBar = null; // 프로그레스 바 엘리먼트
+        this.loadingOverlay = null; // 로딩 오버레이 엘리먼트
+        this.componentLoader = null; // 컴포넌트 로더 인스턴스
         
         this.init();
-        
+        this.initializeLoadingComponents();
+        this.initializeComponentSystem();
+
         // 초기 라우트 로드 후 프리로딩 시작 (설정된 지연 시간 후)
         setTimeout(() => this.startPreloading(), this.config.preloadDelay);
     }
@@ -63,6 +77,230 @@ class VueCompatibleRouter {
         }
     }
 
+    initializeLoadingComponents() {
+        // 프로그레스 바 생성
+        if (this.config.showLoadingProgress) {
+            this.createProgressBar();
+        }
+    }
+
+    createProgressBar() {
+        const progressContainer = document.createElement('div');
+        progressContainer.className = 'loading-progress';
+        progressContainer.style.display = 'none';
+        
+        const progressBar = document.createElement('div');
+        progressBar.className = 'loading-progress-bar';
+        
+        progressContainer.appendChild(progressBar);
+        document.body.appendChild(progressContainer);
+        
+        this.progressBar = {
+            container: progressContainer,
+            bar: progressBar
+        };
+    }
+
+    showLoading() {
+        this.loadingStartTime = Date.now();
+        
+        if (this.config.showLoadingProgress && this.progressBar) {
+            this.progressBar.container.style.display = 'block';
+            this.progressBar.bar.style.width = '0%';
+            
+            // 프로그레스 애니메이션
+            this.animateProgress();
+        }
+    }
+
+    animateProgress() {
+        let progress = 0;
+        const interval = setInterval(() => {
+            progress += Math.random() * 15;
+            if (progress > 90) progress = 90;
+            
+            if (this.progressBar && this.progressBar.bar) {
+                this.progressBar.bar.style.width = progress + '%';
+            }
+            
+            if (!this.transitionInProgress) {
+                clearInterval(interval);
+                if (this.progressBar && this.progressBar.bar) {
+                    this.progressBar.bar.style.width = '100%';
+                }
+            }
+        }, 100);
+    }
+
+    async hideLoading() {
+        const loadingDuration = Date.now() - this.loadingStartTime;
+        const minDuration = this.config.loadingMinDuration;
+        
+        // 최소 로딩 시간 보장
+        if (loadingDuration < minDuration) {
+            await new Promise(resolve => setTimeout(resolve, minDuration - loadingDuration));
+        }
+        
+        if (this.progressBar) {
+            this.progressBar.bar.style.width = '100%';
+            
+            setTimeout(() => {
+                if (this.progressBar) {
+                    this.progressBar.container.style.display = 'none';
+                    this.progressBar.bar.style.width = '0%';
+                }
+            }, 200);
+        }
+        
+        if (this.loadingOverlay) {
+            this.loadingOverlay.style.opacity = '0';
+            setTimeout(() => {
+                if (this.loadingOverlay && this.loadingOverlay.parentNode) {
+                    this.loadingOverlay.remove();
+                    this.loadingOverlay = null;
+                }
+            }, 300);
+        }
+    }
+
+    showFullPageLoading(message = '로딩 중...') {
+        this.hideLoading(); // 기존 로딩 숨기기
+        
+        const overlay = document.createElement('div');
+        overlay.className = 'page-loading-overlay';
+        overlay.innerHTML = `
+            <div class="loading-container">
+                <div class="loading-spinner">
+                    <div class="spinner-ring"></div>
+                    <div class="spinner-ring"></div>
+                    <div class="spinner-ring"></div>
+                    <div class="spinner-ring"></div>
+                </div>
+                <p class="loading-text">${message}</p>
+            </div>
+        `;
+        
+        document.body.appendChild(overlay);
+        this.loadingOverlay = overlay;
+        
+        // 스타일이 로드되지 않은 경우를 위한 인라인 스타일
+        this.addLoadingStyles();
+    }
+
+    async initializeComponentSystem() {
+        if (!this.config.useComponents) {
+            return;
+        }
+
+        try {
+            // ComponentLoader 동적 로드
+            const { getComponentLoader } = await import(this.config.componentsPath + '/ComponentLoader.js');
+            
+            this.componentLoader = getComponentLoader({
+                basePath: this.config.componentsPath,
+                globalComponents: this.config.globalComponents,
+                cache: true
+            });
+
+            console.log('🧩 Component system initialized');
+            
+            // 컴포넌트 사전 로드
+            if (this.config.preloadComponents && this.config.globalComponents.length > 0) {
+                setTimeout(() => this.preloadGlobalComponents(), 500);
+            }
+
+        } catch (error) {
+            console.warn('⚠️ Component system initialization failed:', error);
+            this.config.useComponents = false;
+        }
+    }
+
+    async preloadGlobalComponents() {
+        if (!this.componentLoader) return;
+
+        try {
+            console.log('🚀 Preloading global components...');
+            const result = await this.componentLoader.preloadComponents(this.config.globalComponents);
+            
+            if (result.successful.length > 0) {
+                console.log(`✅ Preloaded components: ${result.successful.join(', ')}`);
+            }
+            
+            if (result.failed.length > 0) {
+                console.warn(`⚠️ Failed to preload components:`, result.failed.map(f => f.name).join(', '));
+            }
+        } catch (error) {
+            console.warn('Component preloading failed:', error);
+        }
+    }
+
+    async registerComponentsForVueApp(vueApp) {
+        if (!this.config.useComponents || !this.componentLoader || !vueApp) {
+            return { successful: [], failed: [] };
+        }
+
+        try {
+            console.log('📝 Registering global components with Vue app...');
+            const result = await this.componentLoader.registerGlobalComponents(vueApp);
+            
+            // 컴포넌트 스타일 로드
+            await this.loadComponentStyles();
+            
+            return result;
+        } catch (error) {
+            console.warn('Component registration failed:', error);
+            return { successful: [], failed: [] };
+        }
+    }
+
+    async loadComponentStyles() {
+        // 컴포넌트 CSS가 이미 로드되었는지 확인
+        if (document.getElementById('components-styles')) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`${this.config.componentsPath}/components.css`);
+            if (response.ok) {
+                const css = await response.text();
+                const style = document.createElement('style');
+                style.id = 'components-styles';
+                style.textContent = css;
+                document.head.appendChild(style);
+                console.log('🎨 Component styles loaded');
+            }
+        } catch (error) {
+            console.warn('Failed to load component styles:', error);
+        }
+    }
+
+    addLoadingStyles() {
+        if (!document.getElementById('router-loading-styles')) {
+            const style = document.createElement('style');
+            style.id = 'router-loading-styles';
+            style.textContent = `
+                .page-loading-overlay {
+                    position: fixed;
+                    top: 0; left: 0; right: 0; bottom: 0;
+                    background: rgba(255, 255, 255, 0.9);
+                    z-index: 9999;
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                }
+                .loading-progress {
+                    position: fixed; top: 0; left: 0; width: 100%;
+                    height: 3px; background: #f0f0f0; z-index: 10000;
+                }
+                .loading-progress-bar {
+                    height: 100%; background: linear-gradient(90deg, #007bff, #0056b3);
+                    width: 0%; transition: width 0.3s ease;
+                }
+            `;
+            document.head.appendChild(style);
+        }
+    }
+
     handleRouteChange() {
         let route;
         if (this.config.mode === 'hash') {
@@ -85,9 +323,12 @@ class VueCompatibleRouter {
 
         try {
             this.transitionInProgress = true;
-            const appElement = document.getElementById('app');
+            this.showLoading();
             
-            if (!appElement) return;
+            const appElement = document.getElementById('app');
+            if (!appElement) {
+                throw new Error('App element not found');
+            }
 
             // Vue 컴포넌트 생성 (백그라운드에서)
             const component = await this.createVueComponent(routeName);
@@ -95,11 +336,201 @@ class VueCompatibleRouter {
             // 새로운 페이지를 오버레이로 렌더링
             await this.renderComponentWithTransition(component, routeName);
             
+            // 로딩 완료
+            await this.hideLoading();
+            
         } catch (error) {
-            console.log(error);
+            console.error('라우트 로딩 오류:', error);
+            
+            await this.hideLoading();
             this.transitionInProgress = false;
-            this.showError(routeName);
+            
+            // 에러 타입에 따른 처리
+            await this.handleRouteError(routeName, error);
         }
+    }
+
+    async handleRouteError(routeName, error) {
+        let errorCode = 500;
+        let errorMessage = '페이지를 로드할 수 없습니다.';
+        
+        console.log('에러 상세:', error.message, error.name);
+        
+        // 에러 타입 분석 (더 정확한 404 감지)
+        if (error.message.includes('not found') || 
+            error.message.includes('404') ||
+            error.message.includes('Failed to resolve') ||
+            error.message.includes('Failed to fetch') ||
+            (error.name === 'TypeError' && error.message.includes('resolve'))) {
+            errorCode = 404;
+            errorMessage = `'${routeName}' 페이지를 찾을 수 없습니다.`;
+        } else if (error.message.includes('network') && !error.message.includes('not found')) {
+            errorCode = 503;
+            errorMessage = '네트워크 연결을 확인해 주세요.';
+        } else if (error.message.includes('permission') || error.message.includes('403')) {
+            errorCode = 403;
+            errorMessage = '페이지에 접근할 권한이 없습니다.';
+        }
+        
+        console.log(`에러 코드 결정: ${errorCode} (라우트: ${routeName})`);
+        
+        // 에러 리포팅
+        if (this.config.enableErrorReporting) {
+            this.reportError(routeName, error, errorCode);
+        }
+        
+        try {
+            // 404 페이지 전용 처리
+            if (errorCode === 404) {
+                await this.load404Page();
+            } else {
+                // 일반 에러 페이지
+                await this.loadErrorPage(errorCode, errorMessage);
+            }
+        } catch (fallbackError) {
+            console.error('에러 페이지 로딩 실패:', fallbackError);
+            this.showFallbackError(routeName, errorCode, errorMessage);
+        }
+    }
+
+    async load404Page() {
+        try {
+            this.transitionInProgress = true;
+            const component = await this.createVueComponent('404');
+            await this.renderComponentWithTransition(component, '404');
+        } catch (error) {
+            throw new Error('404 페이지 로딩 실패: ' + error.message);
+        }
+    }
+
+    async loadErrorPage(errorCode, errorMessage) {
+        try {
+            this.transitionInProgress = true;
+            
+            // 에러 컴포넌트 생성
+            const errorComponent = await this.createErrorComponent(errorCode, errorMessage);
+            await this.renderComponentWithTransition(errorComponent, 'error');
+        } catch (error) {
+            throw new Error('에러 페이지 로딩 실패: ' + error.message);
+        }
+    }
+
+    async createErrorComponent(errorCode, errorMessage) {
+        try {
+            // 에러 컴포넌트를 동적으로 로드
+            const component = await this.createVueComponent('error');
+            
+            // 에러 정보를 props로 전달
+            const errorComponent = {
+                ...component,
+                data() {
+                    const originalData = component.data ? component.data() : {};
+                    return {
+                        ...originalData,
+                        errorCode,
+                        errorMessage,
+                        showRetry: true,
+                        showGoHome: true
+                    };
+                }
+            };
+            
+            return errorComponent;
+        } catch (error) {
+            // 에러 컴포넌트도 로드할 수 없는 경우 인라인 에러 컴포넌트 생성
+            return this.createInlineErrorComponent(errorCode, errorMessage);
+        }
+    }
+
+    createInlineErrorComponent(errorCode, errorMessage) {
+        return {
+            template: `
+                <div class="error-container" style="text-align: center; padding: 2rem;">
+                    <h1 style="font-size: 4rem; color: #dc3545; margin: 0;">{{ errorCode }}</h1>
+                    <h2 style="color: #333; margin: 1rem 0;">{{ errorTitle }}</h2>
+                    <p style="color: #666; margin: 1rem 0;">{{ errorMessage }}</p>
+                    <div style="margin-top: 2rem;">
+                        <button @click="goHome" style="background: #007bff; color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; margin: 0.5rem; cursor: pointer;">
+                            홈으로 가기
+                        </button>
+                        <button @click="retry" style="background: #6c757d; color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; margin: 0.5rem; cursor: pointer;">
+                            다시 시도
+                        </button>
+                    </div>
+                </div>
+            `,
+            data() {
+                return {
+                    errorCode,
+                    errorMessage
+                };
+            },
+            computed: {
+                errorTitle() {
+                    const titles = {
+                        404: '페이지를 찾을 수 없습니다',
+                        500: '서버 오류',
+                        503: '서비스를 사용할 수 없습니다',
+                        403: '접근 거부됨'
+                    };
+                    return titles[this.errorCode] || '오류가 발생했습니다';
+                }
+            },
+            methods: {
+                goHome() {
+                    if (window.router) {
+                        window.router.navigateTo('home');
+                    }
+                },
+                retry() {
+                    window.location.reload();
+                }
+            }
+        };
+    }
+
+    showFallbackError(routeName, errorCode, errorMessage) {
+        const appElement = document.getElementById('app');
+        if (appElement) {
+            appElement.innerHTML = `
+                <div style="padding: 20px; text-align: center; font-family: Arial, sans-serif;">
+                    <h1 style="color: #dc3545; font-size: 4rem; margin: 0;">${errorCode}</h1>
+                    <h2 style="color: #333; margin: 1rem 0;">페이지를 로드할 수 없습니다</h2>
+                    <p style="color: #666; margin: 1rem 0;">${errorMessage}</p>
+                    <div style="margin-top: 2rem;">
+                        <button onclick="router.navigateTo('home')" 
+                                style="background: #007bff; color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 8px; margin: 0.5rem; cursor: pointer; font-size: 1rem;">
+                            홈으로 가기
+                        </button>
+                        <button onclick="window.location.reload()" 
+                                style="background: #6c757d; color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 8px; margin: 0.5rem; cursor: pointer; font-size: 1rem;">
+                            다시 시도
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+    }
+
+    reportError(routeName, error, errorCode) {
+        const errorReport = {
+            route: routeName,
+            errorCode,
+            errorMessage: error.message,
+            stack: error.stack,
+            url: window.location.href,
+            userAgent: navigator.userAgent,
+            timestamp: new Date().toISOString(),
+            routerConfig: {
+                environment: this.config.environment,
+                mode: this.config.mode
+            }
+        };
+        
+        console.error('라우터 에러 리포트:', errorReport);
+        
+        // 추후 에러 추적 서비스로 전송할 수 있음
+        // 예: analytics.track('router_error', errorReport);
     }
 
     async createVueComponent(routeName) {
@@ -238,18 +669,35 @@ class VueCompatibleRouter {
         if (cached) return cached;
         
         let script;
-        if (this.config.environment === 'production') {
-            // 프로덕션 모드: routes 폴더에서 빌드된 JS 로드 (절대 경로)
-            const importPath = `${this.config.routesPath}/${routeName}.js`;
-            console.log(`📦 Loading production route: ${importPath}`);
-            const module = await import(importPath);
-            script = module.default;
-        } else {
-            // 개발 모드: src 폴더에서 로드 (절대 경로)
-            const importPath = `${this.config.basePath}/logic/${routeName}.js`;
-            console.log(`🛠️ Loading development route: ${importPath}`);
-            const module = await import(importPath);
-            script = module.default;
+        try {
+            if (this.config.environment === 'production') {
+                // 프로덕션 모드: routes 폴더에서 빌드된 JS 로드 (절대 경로)
+                const importPath = `${this.config.routesPath}/${routeName}.js`;
+                console.log(`📦 Loading production route: ${importPath}`);
+                const module = await import(importPath);
+                script = module.default;
+            } else {
+                // 개발 모드: src 폴더에서 로드 (절대 경로)
+                const importPath = `${this.config.basePath}/logic/${routeName}.js`;
+                console.log(`🛠️ Loading development route: ${importPath}`);
+                const module = await import(importPath);
+                script = module.default;
+            }
+            
+            if (!script) {
+                throw new Error(`Route '${routeName}' not found - no default export`);
+            }
+            
+        } catch (error) {
+            // import 에러를 404로 분류
+            if (error.message.includes('Failed to resolve') || 
+                error.message.includes('Failed to fetch') ||
+                error.message.includes('not found') ||
+                error.name === 'TypeError') {
+                throw new Error(`Route '${routeName}' not found - 404`);
+            }
+            // 다른 에러는 그대로 전파
+            throw error;
         }
         
         this.setCache(cacheKey, script);
@@ -300,6 +748,9 @@ class VueCompatibleRouter {
                 getCurrentRoute: () => this.getCurrentRoute(),
                 currentRoute: this.currentHash
             };
+
+            // 글로벌 컴포넌트 등록
+            await this.registerComponentsForVueApp(this.currentVueApp);
             
             this.currentVueApp.mount('#app');
             this.transitionInProgress = false;
@@ -343,6 +794,9 @@ class VueCompatibleRouter {
             getCurrentRoute: () => this.getCurrentRoute(),
             currentRoute: this.currentHash
         };
+
+        // 글로벌 컴포넌트 등록
+        await this.registerComponentsForVueApp(newVueApp);
         
         newVueApp.mount(`#${newPageContainer.id}`);
 
@@ -402,18 +856,6 @@ class VueCompatibleRouter {
         }
     }
 
-    showError(routeName) {
-        const appElement = document.getElementById('app');
-        if (appElement) {
-            appElement.innerHTML = `
-                <div style="padding: 20px; text-align: center;">
-                    <h1>페이지를 찾을 수 없습니다</h1>
-                    <p>${routeName} 페이지가 존재하지 않습니다.</p>
-                    <button onclick="router.navigateTo('home')">홈으로 돌아가기</button>
-                </div>
-            `;
-        }
-    }
 
     navigateTo(routeName) {
         if (this.config.mode === 'hash') {
@@ -572,5 +1014,4 @@ class VueCompatibleRouter {
         }
     }
 }
-
 // 전역 라우터는 index.html에서 환경설정과 함께 생성됨
