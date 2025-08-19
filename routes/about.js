@@ -1,145 +1,23 @@
-// 빌드된 라우트: about
-// 빌드 시간: 2025-08-19T06:37:11.189Z
+/**
+ * ViewLogic 빌드된 라우트: about
+ * 빌드 시간: 2025-08-19T08:32:09.562Z
+ * 빌드 버전: 1.0.0
+ */
 
 // 스타일 자동 적용
-const style = `.about-page {
-    padding: 20px;
-    max-width: 1200px;
-    margin: 0 auto;
-    background: white;
-    border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-}
+const STYLE_ID = 'route-style-about';
+const STYLE_CONTENT = `.about-page {\n    padding: 20px;\n    max-width: 1200px;\n    margin: 0 auto;\n    background: white;\n    border-radius: 8px;\n    box-shadow: 0 2px 10px rgba(0,0,0,0.1);\n}\n\n.about-page h1 {\n    color: #333;\n    margin-bottom: 20px;\n    font-size: 2.5rem;\n    text-align: center;\n}\n\n.about-content {\n    padding: 20px;\n}\n\n.intro-section {\n    text-align: center;\n    margin-bottom: 40px;\n}\n\n.intro-section h2 {\n    color: #2c3e50;\n    margin-bottom: 15px;\n    font-size: 1.8rem;\n}\n\n.intro-section p {\n    font-size: 1.2rem;\n    color: #666;\n    line-height: 1.6;\n}\n\n.features-section {\n    margin-bottom: 40px;\n}\n\n.features-section h2 {\n    color: #2c3e50;\n    margin-bottom: 30px;\n    text-align: center;\n    font-size: 1.8rem;\n}\n\n.feature-grid {\n    display: grid;\n    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));\n    gap: 20px;\n    margin-top: 20px;\n}\n\n.feature-card {\n    background: #f8f9fa;\n    padding: 25px;\n    border-radius: 12px;\n    text-align: center;\n    transition: all 0.3s ease;\n    opacity: 1;\n    transform: translateY(0);\n}\n\n.feature-card:hover {\n    background: #e9ecef;\n    transform: translateY(-5px);\n    box-shadow: 0 5px 15px rgba(0,0,0,0.1);\n}\n\n.feature-card h3 {\n    font-size: 1.5rem;\n    margin-bottom: 15px;\n    color: #495057;\n}\n\n.feature-card p {\n    color: #6c757d;\n    line-height: 1.5;\n}\n\n.about-actions {\n    text-align: center;\n    margin-top: 40px;\n}\n\n.about-actions button {\n    background: #007bff;\n    color: white;\n    border: none;\n    padding: 12px 24px;\n    border-radius: 6px;\n    cursor: pointer;\n    margin: 0 10px;\n    font-size: 1rem;\n    transition: all 0.3s ease;\n}\n\n.about-actions button:hover {\n    background: #0056b3;\n    transform: translateY(-2px);\n}\n\n@media (max-width: 768px) {\n    .about-page {\n        padding: 15px;\n        margin: 10px;\n    }\n    \n    .about-page h1 {\n        font-size: 2rem;\n    }\n    \n    .feature-grid {\n        grid-template-columns: 1fr;\n        gap: 15px;\n    }\n    \n    .about-actions button {\n        display: block;\n        width: 100%;\n        margin: 10px 0;\n    }\n}`;
 
-.about-page h1 {
-    color: #333;
-    margin-bottom: 20px;
-    font-size: 2.5rem;
-    text-align: center;
-}
-
-.about-content {
-    padding: 20px;
-}
-
-.intro-section {
-    text-align: center;
-    margin-bottom: 40px;
-}
-
-.intro-section h2 {
-    color: #2c3e50;
-    margin-bottom: 15px;
-    font-size: 1.8rem;
-}
-
-.intro-section p {
-    font-size: 1.2rem;
-    color: #666;
-    line-height: 1.6;
-}
-
-.features-section {
-    margin-bottom: 40px;
-}
-
-.features-section h2 {
-    color: #2c3e50;
-    margin-bottom: 30px;
-    text-align: center;
-    font-size: 1.8rem;
-}
-
-.feature-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 20px;
-    margin-top: 20px;
-}
-
-.feature-card {
-    background: #f8f9fa;
-    padding: 25px;
-    border-radius: 12px;
-    text-align: center;
-    transition: all 0.3s ease;
-    opacity: 1;
-    transform: translateY(0);
-}
-
-.feature-card:hover {
-    background: #e9ecef;
-    transform: translateY(-5px);
-    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-}
-
-.feature-card h3 {
-    font-size: 1.5rem;
-    margin-bottom: 15px;
-    color: #495057;
-}
-
-.feature-card p {
-    color: #6c757d;
-    line-height: 1.5;
-}
-
-.about-actions {
-    text-align: center;
-    margin-top: 40px;
-}
-
-.about-actions button {
-    background: #007bff;
-    color: white;
-    border: none;
-    padding: 12px 24px;
-    border-radius: 6px;
-    cursor: pointer;
-    margin: 0 10px;
-    font-size: 1rem;
-    transition: all 0.3s ease;
-}
-
-.about-actions button:hover {
-    background: #0056b3;
-    transform: translateY(-2px);
-}
-
-@media (max-width: 768px) {
-    .about-page {
-        padding: 15px;
-        margin: 10px;
-    }
-    
-    .about-page h1 {
-        font-size: 2rem;
-    }
-    
-    .feature-grid {
-        grid-template-columns: 1fr;
-        gap: 15px;
-    }
-    
-    .about-actions button {
-        display: block;
-        width: 100%;
-        margin: 10px 0;
-    }
-}`;
-if (typeof document !== 'undefined') {
-    const styleId = 'route-style-about';
-    if (!document.getElementById(styleId)) {
-        const styleElement = document.createElement('style');
-        styleElement.id = styleId;
-        styleElement.textContent = style;
-        document.head.appendChild(styleElement);
-    }
+if (typeof document !== 'undefined' && !document.getElementById(STYLE_ID)) {
+    const styleElement = document.createElement('style');
+    styleElement.id = STYLE_ID;
+    styleElement.textContent = STYLE_CONTENT;
+    document.head.appendChild(styleElement);
 }
 
 const component = {
-  "name": "About",
-  "data": data() {
+  name: "About",
+  data() {
         return {
             features: [
                 {
@@ -165,60 +43,12 @@ const component = {
             ]
         }
     },
-  "_routeName": "about",
-  "_isBuilt": true,
-  "_buildTime": "2025-08-19T06:37:11.189Z"
+  _routeName: "about",
+  _isBuilt: true,
+  _buildTime: "2025-08-19T08:32:09.562Z",
+  _buildVersion: "1.0.0",
 };
 
-component.template = `<nav class="main-nav">
-    <ul>
-        <li><a href="#home" :class="{ active: currentRoute === 'home' }">Home</a></li>
-        <li><a href="#about" :class="{ active: currentRoute === 'about' }">About</a></li>
-        <li><a href="#contact" :class="{ active: currentRoute === 'contact' }">Contact</a></li>
-    </ul>
-</nav>
-
-<header v-if="showHeader" class="page-header">
-    <div class="container">
-        <h1>{{ headerTitle || pageTitle }}</h1>
-        <p v-if="headerSubtitle" class="subtitle">{{ headerSubtitle }}</p>
-    </div>
-</header>
-
-<main class="main-content">
-    <div class="container">
-        <!-- 페이지 콘텐츠가 여기에 삽입됩니다 -->
-        <div class="about-page">
-    <h1>About</h1>
-    <div class="about-content">
-        <div class="intro-section">
-            <h2>프로젝트 소개</h2>
-            <p>이 프로젝트는 React와 Vue 모두 호환 가능한 해시 기반 라우터입니다.</p>
-        </div>
-        
-        <div class="features-section">
-            <h2>핵심 기능</h2>
-            <div class="feature-grid">
-                <div class="feature-card" v-for="feature in features" :key="feature.title">
-                    <h3>{{ feature.icon }} {{ feature.title }}</h3>
-                    <p>{{ feature.description }}</p>
-                </div>
-            </div>
-        </div>
-        
-        <div class="about-actions">
-            <button @click="navigateTo('home')">Home</button>
-            <button @click="navigateTo('contact')">Contact</button>
-        </div>
-    </div>
-</div>
-    </div>
-</main>
-
-<footer class="page-footer">
-    <div class="container">
-        <p>&copy; 2024 ViewLogic App. All rights reserved.</p>
-    </div>
-</footer>`;
+component.template = `<nav class="main-nav">\n    <ul>\n        <li><a href="#home" :class="{ active: currentRoute === 'home' }">Home</a></li>\n        <li><a href="#about" :class="{ active: currentRoute === 'about' }">About</a></li>\n        <li><a href="#contact" :class="{ active: currentRoute === 'contact' }">Contact</a></li>\n    </ul>\n</nav>\n\n<header v-if="showHeader" class="page-header">\n    <div class="container">\n        <h1>{{ headerTitle || pageTitle }}</h1>\n        <p v-if="headerSubtitle" class="subtitle">{{ headerSubtitle }}</p>\n    </div>\n</header>\n\n<main class="main-content">\n    <div class="container">\n        <!-- 페이지 콘텐츠가 여기에 삽입됩니다 -->\n        <div class="about-page">\n    <h1>About</h1>\n    <div class="about-content">\n        <div class="intro-section">\n            <h2>프로젝트 소개</h2>\n            <p>이 프로젝트는 React와 Vue 모두 호환 가능한 해시 기반 라우터입니다.</p>\n        </div>\n        \n        <div class="features-section">\n            <h2>핵심 기능</h2>\n            <div class="feature-grid">\n                <div class="feature-card" v-for="feature in features" :key="feature.title">\n                    <h3>{{ feature.icon }} {{ feature.title }}</h3>\n                    <p>{{ feature.description }}</p>\n                </div>\n            </div>\n        </div>\n        \n        <div class="about-actions">\n            <button @click="navigateTo('home')">Home</button>\n            <button @click="navigateTo('contact')">Contact</button>\n        </div>\n    </div>\n</div>\n    </div>\n</main>\n\n<footer class="page-footer">\n    <div class="container">\n        <p>&copy; 2024 ViewLogic App. All rights reserved.</p>\n    </div>\n</footer>`;
 
 export default component;

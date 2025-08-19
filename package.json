@@ -7,9 +7,12 @@
   "scripts": {
     "dev": "python -m http.server 8000",
     "build": "node build.cjs build",
-    "build:minify": "node build.cjs build --minify",
+    "build:prod": "node build.cjs build --minify --optimize",
+    "build:dev": "node build.cjs build --verbose",
+    "build:watch": "node build.cjs build --watch --verbose",
     "build:clean": "node build.cjs clean",
     "build:info": "node build.cjs info",
+    "build:full": "node build.cjs build --minify --source-map --optimize --verbose",
     "serve": "python -m http.server 8000",
     "start": "python -m http.server 8000"
   },

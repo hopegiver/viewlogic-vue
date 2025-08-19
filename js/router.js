@@ -82,7 +82,7 @@ class VueCompatibleRouter {
         if (this.transitionInProgress) {
             return;
         }
-        
+        console.log("a")
         try {
             this.transitionInProgress = true;
             const appElement = document.getElementById('app');
@@ -96,6 +96,7 @@ class VueCompatibleRouter {
             await this.renderComponentWithTransition(component, routeName);
             
         } catch (error) {
+            console.log(error);
             this.transitionInProgress = false;
             this.showError(routeName);
         }

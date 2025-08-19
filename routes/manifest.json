@@ -1,0 +1,30 @@
+{
+  "buildTime": "2025-08-19T08:32:09.575Z",
+  "buildVersion": "1.0.0",
+  "routes": [
+    {
+      "name": "about",
+      "file": "about.js",
+      "size": 5496,
+      "modified": "2025-08-19T08:32:09.571Z"
+    },
+    {
+      "name": "contact",
+      "file": "contact.js",
+      "size": 8191,
+      "modified": "2025-08-19T08:32:09.572Z"
+    },
+    {
+      "name": "home",
+      "file": "home.js",
+      "size": 5242,
+      "modified": "2025-08-19T08:32:09.574Z"
+    }
+  ],
+  "stats": {
+    "totalRoutes": 3,
+    "successRoutes": 3,
+    "failedRoutes": 0,
+    "buildDuration": -1755592329535
+  }
+}
