@@ -11,7 +11,7 @@ class VueCompatibleRouter {
             defaultLayout: options.defaultLayout || 'default', // 기본 레이아웃
             environment: options.environment || 'development', // 'development' 또는 'production'
             routesPath: options.routesPath || '/routes', // 프로덕션 모드에서 사용할 경로
-            preloadRoutes: options.preloadRoutes || ['home', 'about', 'contact'], // 프리로드할 라우트들
+            preloadRoutes: options.preloadRoutes || [], // 프리로드할 라우트들
             preloadDelay: options.preloadDelay || 1000, // 프리로드 시작 지연 시간 (밀리초)
             preloadInterval: options.preloadInterval || 500 // 프리로드 간격 (밀리초)
         };
@@ -82,7 +82,7 @@ class VueCompatibleRouter {
         if (this.transitionInProgress) {
             return;
         }
-        console.log("a")
+
         try {
             this.transitionInProgress = true;
             const appElement = document.getElementById('app');
@@ -137,7 +137,7 @@ class VueCompatibleRouter {
             
             const component = {
                 ...script,
-                template: layout ? this.mergeLayoutWithTemplate(layout, template) : template,
+                template: layout ? this.mergeLayoutWithTemplate(routeName, layout, template) : template,
                 methods: {
                     ...script.methods,
                     navigateTo: (route) => this.navigateTo(route),
@@ -167,10 +167,7 @@ class VueCompatibleRouter {
     async loadLayout(layoutName) {
         const cacheKey = `layout_${layoutName}`;
         const cached = this.getFromCache(cacheKey);
-        if (cached) {
-            console.log(`✓ Layout '${layoutName}' loaded from cache`);
-            return cached;
-        }
+        if (cached) return cached;
         
         try {
             console.log(`🔄 Loading layout: ${this.config.basePath}/layouts/${layoutName}.html`);
@@ -187,24 +184,21 @@ class VueCompatibleRouter {
         }
     }
 
-    mergeLayoutWithTemplate(layout, template) {
+    mergeLayoutWithTemplate(routeName, layout, template) {
+
+        const cacheKey = `merge_${routeName}`;
+        const cached = this.getFromCache(cacheKey);
+        if (cached) return cached;
+
         console.log('🔄 Merging layout with template...');
-        console.log('Layout preview:', layout.substring(0, 200) + '...');
-        console.log('Template preview:', template.substring(0, 200) + '...');
         
         let result;
         // 레이아웃에서 <slot name="content"> 부분을 템플릿으로 교체
-        if (layout.includes('<slot name="content">')) {
-            console.log('✓ Using <slot name="content"> replacement');
+        if (layout.includes('{{ content }}')) {
             result = layout.replace(
-                /<slot name="content">.*?<\/slot>/s,
+                /{{ content }}/s,
                 template
             );
-        }
-        // 기본 <slot> 태그로 교체
-        else if (layout.includes('<slot>')) {
-            console.log('✓ Using <slot> replacement');
-            result = layout.replace(/<slot>.*?<\/slot>/s, template);
         }
         // slot이 없으면 main-content 클래스 내용 교체
         else if (layout.includes('class="main-content"')) {
@@ -221,6 +215,7 @@ class VueCompatibleRouter {
         }
         
         console.log('✓ Layout merge completed');
+        this.setCache(cacheKey, result);
         return result;
     }
 

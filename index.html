@@ -26,14 +26,12 @@
             defaultLayout: 'default',      // 기본 레이아웃
             environment: 'development',    // 개발 모드로 설정
             //preloadRoutes: ['home', 'about', 'contact'], // 프리로드할 라우트들 (home은 첫 페이지이므로 제외)
-            preloadDelay: 1500,            // 프리로드 시작 지연 시간 (1.5초)
-            preloadInterval: 300           // 프리로드 간격 (0.3초)
+            //preloadDelay: 1500,            // 프리로드 시작 지연 시간 (1.5초)
+            //preloadInterval: 300           // 프리로드 간격 (0.3초)
         };
         
         // 환경설정과 함께 라우터 생성
         window.router = new VueCompatibleRouter(routerConfig);
-        
-        console.log('🛠️ Development mode activated - using src files');
     </script>
 </body>
 </html>
