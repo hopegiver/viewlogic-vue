@@ -17,9 +17,7 @@ class VueCompatibleRouter {
             showLoadingProgress: options.showLoadingProgress !== false, // 로딩 프로그레스 바 표시
             loadingMinDuration: options.loadingMinDuration || 300, // 최소 로딩 시간 (UX 개선)
             enableErrorReporting: options.enableErrorReporting !== false, // 에러 리포팅 활성화
-            // 컴포넌트 시스템 설정
             useComponents: options.useComponents !== false, // 컴포넌트 시스템 사용 여부
-            componentsPath: options.componentsPath || '/src/components', // 컴포넌트 경로
             globalComponents: options.globalComponents || ['Button', 'Modal', 'Card', 'Toast', 'Input', 'Tabs'], // 전역 컴포넌트 목록
             preloadComponents: options.preloadComponents !== false // 컴포넌트 사전 로드 여부
         };
@@ -194,10 +192,10 @@ class VueCompatibleRouter {
 
         try {
             // ComponentLoader 동적 로드
-            const { getComponentLoader } = await import(this.config.componentsPath + '/ComponentLoader.js');
+            const { getComponentLoader } = await import(this.config.basePath + '/components/ComponentLoader.js');
             
             this.componentLoader = getComponentLoader({
-                basePath: this.config.componentsPath,
+                basePath: this.config.basePath + '/components',
                 globalComponents: this.config.globalComponents,
                 cache: true
             });
@@ -260,7 +258,7 @@ class VueCompatibleRouter {
         }
 
         try {
-            const response = await fetch(`${this.config.componentsPath}/components.css`);
+            const response = await fetch(`${this.config.basePath}/components/components.css`);
             if (response.ok) {
                 const css = await response.text();
                 const style = document.createElement('style');

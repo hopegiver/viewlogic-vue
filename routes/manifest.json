@@ -1,48 +1,48 @@
 {
-  "buildTime": "2025-08-19T10:30:48.734Z",
+  "buildTime": "2025-08-19T11:09:14.601Z",
   "buildVersion": "1.0.0",
   "routes": [
     {
       "name": "404",
       "file": "404.js",
       "size": 10023,
-      "modified": "2025-08-19T10:30:48.719Z"
+      "modified": "2025-08-19T11:09:14.576Z"
     },
     {
       "name": "about",
       "file": "about.js",
       "size": 4835,
-      "modified": "2025-08-19T10:30:48.719Z"
+      "modified": "2025-08-19T11:09:14.577Z"
     },
     {
       "name": "contact",
       "file": "contact.js",
       "size": 7116,
-      "modified": "2025-08-19T10:30:48.719Z"
+      "modified": "2025-08-19T11:09:14.577Z"
     },
     {
       "name": "error",
       "file": "error.js",
       "size": 7212,
-      "modified": "2025-08-19T10:30:48.719Z"
+      "modified": "2025-08-19T11:09:14.580Z"
     },
     {
       "name": "home",
       "file": "home.js",
       "size": 10950,
-      "modified": "2025-08-19T10:30:48.731Z"
+      "modified": "2025-08-19T11:09:14.597Z"
     },
     {
       "name": "loading",
       "file": "loading.js",
       "size": 4348,
-      "modified": "2025-08-19T10:30:48.731Z"
+      "modified": "2025-08-19T11:09:14.597Z"
     }
   ],
   "stats": {
     "totalRoutes": 6,
     "successRoutes": 6,
     "failedRoutes": 0,
-    "buildDuration": -1755599448680
+    "buildDuration": -1755601754529
   }
 }
