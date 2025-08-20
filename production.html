@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Vue Router Compatible - Production</title>
-    <link rel="stylesheet" href="css/base.prod.css">
+    <link rel="stylesheet" href="css/base.css">
 </head>
 <body>
     <div id="app">
@@ -13,8 +13,7 @@
 
     <!-- Vue 3 Runtime + Compiler (Production) -->
     <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
-    <script src="js/i18n.prod.js"></script>
-    <script src="js/router.prod.js"></script>
+    <script src="js/router.js"></script>
     <script>
         // 프로덕션 환경설정
         const routerConfig = {
@@ -29,7 +28,10 @@
             environment: 'production',     // 프로덕션 모드로 설정
             //preloadRoutes: ['about', 'contact'], // 프리로드할 라우트들
             //preloadDelay: 800,             // 프리로드 시작 지연 시간 (0.8초 - 프로덕션은 더 빠름)
-            //preloadInterval: 200           // 프리로드 간격 (0.2초 - 프로덕션은 더 빠름)
+            //preloadInterval: 200,          // 프리로드 간격 (0.2초 - 프로덕션은 더 빠름)
+            // 다국어 설정
+            useI18n: true,                          // 다국어 시스템 사용 여부
+            i18nDefaultLanguage: 'ko'               // 기본 언어 (폴백 언어로도 사용)
         };
         
         // 환경설정과 함께 라우터 생성

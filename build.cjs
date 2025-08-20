@@ -965,9 +965,9 @@ class ViewLogicBuilder {
         
         if (await this.exists(routerPath)) {
             const content = await fs.readFile(routerPath, 'utf8');
-            const minifiedContent = this.minifyJavaScript(content);
-            await fs.writeFile(outputPath, minifiedContent, 'utf8');
-            this.log('📦 router.prod.js 생성 완료', 'verbose');
+            // 압축하지 않고 원본 내용 그대로 복사
+            await fs.writeFile(outputPath, content, 'utf8');
+            this.log('📦 router.prod.js 생성 완료 (압축 없음)', 'verbose');
         } else {
             this.log('⚠️ router.js 파일을 찾을 수 없습니다', 'warn');
         }
@@ -979,9 +979,9 @@ class ViewLogicBuilder {
         
         if (await this.exists(cssPath)) {
             const content = await fs.readFile(cssPath, 'utf8');
-            const minifiedContent = this.minifyCSS(content);
-            await fs.writeFile(outputPath, minifiedContent, 'utf8');
-            this.log('📦 base.prod.css 생성 완료', 'verbose');
+            // 압축하지 않고 원본 내용 그대로 복사
+            await fs.writeFile(outputPath, content, 'utf8');
+            this.log('📦 base.prod.css 생성 완료 (압축 없음)', 'verbose');
         } else {
             this.log('⚠️ base.css 파일을 찾을 수 없습니다', 'warn');
         }
@@ -993,28 +993,68 @@ class ViewLogicBuilder {
         
         if (await this.exists(i18nPath)) {
             const content = await fs.readFile(i18nPath, 'utf8');
-            const minifiedContent = this.minifyJavaScript(content);
-            await fs.writeFile(outputPath, minifiedContent, 'utf8');
-            this.log('📦 i18n.prod.js 생성 완료', 'verbose');
+            // 압축하지 않고 원본 내용 그대로 복사
+            await fs.writeFile(outputPath, content, 'utf8');
+            this.log('📦 i18n.prod.js 생성 완료 (압축 없음)', 'verbose');
         }
     }
 
     minifyJavaScript(code) {
-        return code
-            .replace(/\/\*[\s\S]*?\*\//g, '') // 블록 주석 제거
-            .replace(/\/\/.*$/gm, '')         // 라인 주석 제거
-            .replace(/^\s+/gm, '')            // 행 시작 공백 제거
-            .replace(/\s*\n+\s*/g, '\n')      // 연속된 빈 줄 정리
-            .replace(/\s*{\s*/g, '{')         // 중괄호 정리
-            .replace(/\s*}\s*/g, '}')
-            .replace(/\s*;\s*/g, ';')         // 세미콜론 정리
-            .replace(/\s*,\s*/g, ',')         // 콤마 정리
-            .replace(/\s*\(\s*/g, '(')        // 괄호 정리
-            .replace(/\s*\)\s*/g, ')')
-            .replace(/\s*=\s*/g, '=')         // 등호 정리
-            .replace(/\s*:\s*/g, ':')         // 콜론 정리
-            .replace(/\s+/g, ' ')             // 여러 공백을 하나로
-            .trim();
+        // 문자열과 템플릿 리터럴 보호
+        const stringStore = [];
+        let tempCode = code;
+        
+        // 템플릿 리터럴 보호 (백틱 문자열)
+        tempCode = tempCode.replace(/`([^`\\]|\\.|\\`)*`/gs, (match) => {
+            const index = stringStore.length;
+            stringStore.push(match);
+            return `__STRING_${index}__`;
+        });
+        
+        // 일반 문자열 보호
+        tempCode = tempCode.replace(/'([^'\\]|\\.)*'/g, (match) => {
+            const index = stringStore.length;
+            stringStore.push(match);
+            return `__STRING_${index}__`;
+        });
+        
+        tempCode = tempCode.replace(/"([^"\\]|\\.)*"/g, (match) => {
+            const index = stringStore.length;
+            stringStore.push(match);
+            return `__STRING_${index}__`;
+        });
+        
+        // 정규식 보호
+        tempCode = tempCode.replace(/\/(?![*\/])([^\/\n\\]|\\.)+\/[gimuy]*/g, (match) => {
+            const index = stringStore.length;
+            stringStore.push(match);
+            return `__STRING_${index}__`;
+        });
+        
+        // 주석 제거
+        tempCode = tempCode.replace(/\/\*[\s\S]*?\*\//g, ''); // 블록 주석
+        tempCode = tempCode.replace(/\/\/.*$/gm, '');         // 라인 주석
+        
+        // 안전한 공백 정리
+        tempCode = tempCode.replace(/^\s+/gm, '');            // 행 시작 공백
+        tempCode = tempCode.replace(/\s*\n\s*/g, '\n');       // 줄바꿈 정리
+        tempCode = tempCode.replace(/\n+/g, '\n');            // 연속 줄바꿈
+        
+        // 연산자 주변 공백 제거 (안전하게)
+        tempCode = tempCode.replace(/\s*([{}();,])\s*/g, '$1');
+        tempCode = tempCode.replace(/\s*:\s*/g, ':');
+        tempCode = tempCode.replace(/\s*\?\s*/g, '?');
+        
+        // 여러 공백을 하나로
+        tempCode = tempCode.replace(/\s+/g, ' ');
+        tempCode = tempCode.replace(/\n\s*/g, '\n');
+        
+        // 문자열 복원
+        for (let i = stringStore.length - 1; i >= 0; i--) {
+            tempCode = tempCode.replace(`__STRING_${i}__`, stringStore[i]);
+        }
+        
+        return tempCode.trim();
     }
 
     minifyCSS(code) {

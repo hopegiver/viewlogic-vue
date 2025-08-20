@@ -16,7 +16,8 @@
       "Bash(rm:*)",
       "Bash(npm run build:*)",
       "Bash(git commit:*)",
-      "Bash(echo:*)"
+      "Bash(echo:*)",
+      "Bash(del \"js\\i18n.prod.js\")"
     ],
     "deny": [],
     "ask": [],
