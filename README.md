@@ -1,8 +1,46 @@
-# ViewLogic Vue Web Application
+# ViewLogic
 
-A comprehensive Vue 3 web application featuring an advanced router system, reusable component library, and robust error handling with loading state management.
+**Vue 3 Compatible Router System with Zero-Build Development**
 
-## ✨ Features
+ViewLogic is a lightweight Vue 3-compatible router system that allows you to develop without any build process - an innovative frontend framework for rapid development.
+
+## 🚀 Key Advantages
+
+### ⚡ Zero-Build Development
+- **No build required in development**: Start developing immediately without complex build tools like Webpack or Vite
+- **Instant execution**: See changes instantly with just a browser refresh after saving files
+- **Fast development cycle**: Real-time development without waiting for build times
+
+### 🎯 Dynamic Routing System
+- **File-based routing**: File structure in `routes/` folder becomes routing paths automatically
+- **Nested routing support**: Automatic handling of nested paths like `/#/folder/page`
+- **Dynamic imports**: Load only necessary pages at runtime for improved initial loading speed
+- **Component caching**: Once loaded components are cached in memory for instant re-visits
+
+### 🔐 Powerful Authentication System
+- **JWT token support**: Automatic token management and validation
+- **Cookie-based authentication**: Support for various cookie storage options
+- **Route protection**: Access control based on specific routes or prefixes
+- **Automatic redirects**: Automatic login page redirection for unauthenticated users
+
+### 🌐 Complete Internationalization (i18n) Support
+- **Automatic language detection**: Automatically applies browser language settings
+- **Dynamic language loading**: Dynamically loads only required language files
+- **URL parameter support**: Language switching via `?lang=ko` format
+- **Component-level support**: Use `$t()` function in all components
+
+### 🎨 Rich UI Components
+15+ ready-to-use Vue 3 compatible components:
+- Button, Card, Modal, Toast, Tabs
+- Input, Select, Checkbox, Radio, DatePicker
+- Table, Pagination, Badge, Alert, Tooltip, etc.
+
+### 📊 Automatic Data Fetching
+- **dataURL property**: Automatic data loading by just specifying `dataURL` in components
+- **Query parameter support**: Automatic URL query string forwarding
+- **Render-time execution**: Automatic data fetching on component mount
+
+## ✨ 추가 기능
 
 ### 🎯 Core System
 - **Vue 3 Integration**: Modern Vue 3 runtime with full composition API support
@@ -30,105 +68,324 @@ A comprehensive Vue 3 web application featuring an advanced router system, reusa
 - **Error Reporting**: Built-in error tracking and reporting system
 - **Fallback Systems**: Multiple layers of error recovery
 
-## 📁 Project Structure
+## 🏗️ Project Structure
 
 ```
 viewlogic/
-├── index.html              # Main entry point (development)
-├── production.html         # Production entry point
-├── build.cjs              # Advanced build system
-├── package.json           # Project configuration
-├── css/
-│   └── main.css           # Enhanced global styles with component support
+├── routes/           # Page components (automatic routing)
+│   ├── home.js      # /#/ route
+│   ├── about.js     # /#/about route
+│   └── user/
+│       └── profile.js # /#/user/profile route
+├── src/
+│   ├── components/   # Reusable UI components
+│   │   ├── Button.js        # Button component
+│   │   ├── Modal.js         # Modal dialog
+│   │   ├── Card.js          # Card component
+│   │   ├── Toast.js         # Toast notification
+│   │   ├── Input.js         # Input field
+│   │   ├── Tabs.js          # Tab navigation
+│   │   ├── Select.js        # Select box
+│   │   ├── Table.js         # Table component
+│   │   ├── Pagination.js    # Pagination
+│   │   ├── DatePicker.js    # Date picker
+│   │   ├── FileUpload.js    # File upload
+│   │   ├── Accordion.js     # Accordion
+│   │   ├── Alert.js         # Alert message
+│   │   ├── Badge.js         # Badge
+│   │   ├── Breadcrumb.js    # Breadcrumb
+│   │   ├── LanguageSwitcher.js # Language switcher
+│   │   └── Tooltip.js       # Tooltip
+│   ├── logic/       # Component logic files
+│   │   ├── home.js        # Home page logic
+│   │   ├── about.js       # About page logic
+│   │   ├── contact.js     # Contact page logic
+│   │   ├── error.js       # Error page logic
+│   │   └── 404.js         # 404 page logic
+│   └── views/       # HTML template files
+│       ├── home.html      # Home page template
+│       ├── about.html     # About page template
+│       ├── contact.html   # Contact page template
+│       ├── error.html     # Error page template
+│       └── 404.html       # 404 page template
+├── i18n/            # Internationalization files
+│   ├── ko.js        # Korean
+│   └── en.js        # English
 ├── js/
-│   └── router.js          # Advanced Vue-compatible router with error handling
-├── src/                   # Source files (development)
-│   ├── components/        # 🆕 Reusable UI component library
-│   │   ├── Button.js      # Button component with variants and loading states
-│   │   ├── Modal.js       # Modal dialog component
-│   │   ├── Card.js        # Card component with headers and footers  
-│   │   ├── Toast.js       # Notification toast component
-│   │   ├── Input.js       # Input field component with validation
-│   │   ├── Tabs.js        # Tab navigation component
-│   │   ├── ComponentLoader.js  # Dynamic component loading system
-│   │   └── components.css # Component-specific styles
-│   ├── views/             # HTML templates
-│   │   ├── home.html      # Enhanced with component demonstrations
-│   │   ├── about.html
-│   │   ├── contact.html
-│   │   ├── 404.html       # 🆕 User-friendly 404 error page
-│   │   ├── error.html     # 🆕 Generic error page
-│   │   └── loading.html   # 🆕 Loading component template
-│   ├── logic/             # JavaScript component logic
-│   │   ├── home.js        # Enhanced with component interactions
-│   │   ├── about.js
-│   │   ├── contact.js
-│   │   ├── 404.js         # 🆕 404 page logic with search functionality
-│   │   ├── error.js       # 🆕 Error handling logic
-│   │   └── loading.js     # 🆕 Loading component logic
-│   ├── styles/            # Component-specific CSS
-│   │   ├── home.css
-│   │   ├── about.css
-│   │   ├── contact.css
-│   │   ├── 404.css        # 🆕 404 page styling with animations
-│   │   ├── error.css      # 🆕 Error page styling
-│   │   └── loading.css    # 🆕 Loading animations and spinners
-│   └── layouts/           # Layout templates
-│       └── default.html   # Enhanced default layout
-└── routes/                # 🆕 Production-built components
-    ├── home.js            # Built and optimized route files
-    ├── about.js
-    ├── contact.js
-    ├── 404.js
-    ├── error.js
-    ├── loading.js
-    └── manifest.json      # Build manifest with metadata
+│   ├── router.js    # Core router system
+│   └── i18n.js      # Internationalization system
+├── css/             # Stylesheets
+│   ├── base.css     # Base styles
+│   └── language-switcher.css # Language switcher styles
+├── index.html       # Main entry point
+├── build.cjs        # Build system (optional)
+└── tests/           # Test files
+    └── setup.js     # Jest test setup
 ```
 
-## 🚀 Getting Started
+## 🚀 Quick Start
+
+### 1. Start Development Server
+```bash
+# Using Python
+python -m http.server 8000
+
+# Using Node.js
+npx http-server
+
+# Live Server (VSCode Extension) recommended
+```
+
+### 2. Create Basic Page
+```javascript
+// routes/hello.js
+export default {
+    name: 'Hello',
+    template: `<h1>{{ message }}</h1>`,
+    data() {
+        return {
+            message: 'Hello ViewLogic!'
+        }
+    }
+}
+```
+
+### 3. Check in Browser
+Visit `http://localhost:8000/#/hello` to see your page
+
+## 📖 Usage
+
+### Component Creation
+```javascript
+// routes/example.js
+export default {
+    name: 'Example',
+    // Automatic data loading
+    dataURL: '/api/data',
+    
+    // Authentication required pages set in router options
+    data() {
+        return {
+            message: 'Developing with ViewLogic'
+        }
+    },
+    
+    methods: {
+        // Authentication methods automatically provided
+        handleLogin() {
+            this.$setToken('your-jwt-token');
+            this.$loginSuccess();
+        },
+        
+        handleLogout() {
+            this.$logout();
+        }
+    }
+}
+```
+
+### Router Configuration
+```javascript
+// Initialize router in index.html
+const router = new ViewLogicRouter({
+    // i18n settings
+    useI18n: true,
+    i18nDefaultLanguage: 'ko',
+    
+    // Authentication settings
+    auth: {
+        enabled: true,
+        protectedRoutes: ['profile', 'settings'],
+        protectedPrefixes: ['admin/', 'user/'],
+        cookieName: 'authToken'
+    }
+});
+```
+
+### Internationalization Support
+```javascript
+// i18n/ko.js
+export default {
+    common: {
+        hello: '안녕하세요',
+        welcome: '환영합니다'
+    },
+    home: {
+        title: 'Welcome to ViewLogic'
+    }
+};
+
+// Usage in components
+template: `<h1>{{ $t('home.title') }}</h1>`
+```
+
+## 🌟 Feature Comparison
+
+| Feature | ViewLogic | Traditional Frameworks |
+|---------|-----------|----------------------|
+| **Build Time** | ⚡ 0 seconds (Zero-Build) | 🐌 Tens of seconds ~ minutes |
+| **Development Start** | 📁 Just open files | 🔧 Complex setup required |
+| **Routing** | 📂 File-based automatic routing | ⚙️ Manual route configuration |
+| **Components** | 🎨 15+ built-in components | 📦 Separate library installation |
+| **Authentication** | 🔐 Built-in auth system | 🔌 Third-party plugins |
+| **i18n** | 🌐 Automatic multilingual support | 📚 Complex configuration needed |
+| **Data Fetching** | 🔄 dataURL automatic loading | 💻 Manual API calls |
+
+## 📱 Responsive Design
+
+All ViewLogic components support responsive design by default:
+
+- Mobile-first design
+- Flexbox-based layouts  
+- Touch-friendly interfaces
+- Support for various screen sizes
 
 ### Prerequisites
 
-- **Node.js 14+** (for build system)
 - **Modern web browser** with ES6 module support
 - **Local web server** (Python, Node.js, or any HTTP server)
+- **Node.js 14+** (optional for build system)
 
-### Quick Start
+## 🤝 Perfect Team Collaboration
 
-1. **Clone the repository:**
-```bash
-git clone https://github.com/hopegiver/viewlogic-vue.git
-cd viewlogic-vue
+### 👥 Developer-Publisher-Designer Workflow
+ViewLogic provides the **ultimate collaboration system** for modern development teams:
+
+#### **For Developers** 🧑‍💻
+- **Zero-build development**: Start coding immediately without build setup
+- **Component-based architecture**: Reusable logic and clean separation
+- **Built-in authentication & i18n**: Focus on business logic, not boilerplate
+- **Automatic data fetching**: Simple `dataURL` property handles all API calls
+
+#### **For Publishers** 🎨
+- **Template-logic separation**: Pure HTML templates in `src/views/` folder
+- **No build knowledge required**: Work directly with HTML files
+- **Live preview**: See changes instantly without complex tooling
+- **Component integration**: Use UI components like regular HTML elements
+
+#### **For Designers** 🖌️
+- **CSS-only styling**: Style components without touching JavaScript
+- **Component library**: 15+ pre-built components to customize
+- **Responsive by default**: Mobile-first design system
+- **No technical barriers**: Design directly in the browser
+
+#### **Collaboration Benefits**
+- **Parallel development**: Teams can work simultaneously without conflicts
+- **Instant integration**: Changes from any team member are immediately visible
+- **Version control friendly**: Clean file structure, easy to track changes
+- **No build pipeline dependency**: No waiting for builds to see design changes
+
+## 🛠️ Advanced Features
+
+### Authentication System Setup
+```javascript
+// Custom authentication function
+const checkAuth = async () => {
+    const token = localStorage.getItem('token');
+    return token && await validateToken(token);
+};
+
+const router = new ViewLogicRouter({
+    auth: {
+        enabled: true,
+        checkAuthFunction: checkAuth,
+        loginRoute: 'login',
+        protectedPrefixes: ['admin/']
+    }
+});
 ```
 
-2. **Install dependencies (optional for build system):**
-```bash
-npm install
+### Component Usage Examples
+```html
+<!-- Various button styles -->
+<Button variant="primary" :loading="isLoading" @click="handleClick">
+    Click Me
+</Button>
+
+<!-- Modal dialog -->
+<Modal v-model="showModal" title="Confirm" @confirm="handleConfirm">
+    Are you sure you want to delete?
+</Modal>
+
+<!-- Data card -->
+<Card title="User Info" :hoverable="true" shadow="medium">
+    <p>{{ userInfo }}</p>
+    <template #footer>
+        <span class="card-tag">Active</span>
+    </template>
+</Card>
+
+<!-- Toast notifications -->
+<Toast ref="toast" position="top-right" />
+
+<!-- Input field -->
+<Input 
+    v-model="email" 
+    label="Email" 
+    type="email" 
+    :required="true"
+    error-message="Please enter a valid email"
+/>
+
+<!-- Tab navigation -->
+<Tabs v-model="activeTab" :tabs="tabsData">
+    <template #tab1>First tab content</template>
+    <template #tab2>Second tab content</template>
+</Tabs>
 ```
 
-3. **Development mode:**
-```bash
-# Start development server
-npm run dev
-# or
-python -m http.server 8000
+### Adding New Pages
+```javascript
+// routes/newpage.js - Minimal setup for complete page
+export default {
+    dataURL: "/api/products"  // This alone creates a complete page!
+}
+
+// Or more detailed configuration
+export default {
+    name: 'NewPage',
+    template: `
+        <div>
+            <h1>{{ title }}</h1>
+            <Button @click="handleAction">Action</Button>
+        </div>
+    `,
+    data() {
+        return {
+            title: 'New Page'
+        }
+    },
+    methods: {
+        handleAction() {
+            this.$setToken('token');
+            this.$navigateTo('home');
+        }
+    }
+}
 ```
 
-4. **Production build:**
-```bash
-# Build optimized production files
-npm run build
-
-# Build with all optimizations
-npm run build:prod
-
-# Serve production build
-npm run serve
+### Layout System
+```javascript
+export default {
+    name: 'MyPage',
+    layout: 'admin',  // Uses layouts/admin.js
+    data() {
+        return {
+            content: 'Admin page content'
+        }
+    }
+}
 ```
 
-5. **Open your browser:**
-   - Development: `http://localhost:8000` (uses `index.html`)
-   - Production: `http://localhost:8000/production.html`
+## 🧪 Testing
+
+```bash
+# Unit testing with Jest
+npm test
+
+# Test coverage
+npm run test:coverage
+```
 
 ### 🛠️ Development Scripts
 
@@ -139,136 +396,6 @@ npm run build:dev       # Development build with verbose logging
 npm run build:watch     # Watch mode for development
 npm run build:clean     # Clean build artifacts
 npm run build:info      # Show build information
-```
-
-## 🔧 How It Works
-
-### Advanced Router System
-
-The enhanced router (`js/router.js`) provides:
-- **Smart Navigation**: Hash-based routing with smooth transitions
-- **Dynamic Loading**: Intelligent component loading with caching
-- **Error Recovery**: Comprehensive error handling and 404 detection
-- **Loading States**: Progress indicators and loading management
-- **Component Integration**: Automatic component registration and lifecycle management
-- **Performance**: LRU caching, route preloading, and optimization
-
-### Component Architecture
-
-Each route follows a modular structure:
-- **View**: HTML template (`src/views/{route}.html`)
-- **Logic**: Vue component definition (`src/logic/{route}.js`)
-- **Style**: Component-specific CSS (`src/styles/{route}.css`)
-- **Build**: Optimized production file (`routes/{route}.js`)
-
-### 🧩 Using Components
-
-#### Available Components:
-```html
-<!-- Button with variants and loading states -->
-<Button variant="primary" :loading="isLoading" @click="handleClick">
-    Click Me
-</Button>
-
-<!-- Modal dialog -->
-<Modal v-model="showModal" title="Modal Title" @confirm="handleConfirm">
-    Modal content here
-</Modal>
-
-<!-- Card with header and footer -->
-<Card title="Card Title" :hoverable="true" shadow="medium">
-    <p>Card content</p>
-    <template #footer>
-        <span class="card-tag">Tag</span>
-    </template>
-</Card>
-
-<!-- Toast notifications -->
-<Toast ref="toast" position="top-right" />
-
-<!-- Input with validation -->
-<Input 
-    v-model="inputValue" 
-    label="Email" 
-    type="email" 
-    :required="true"
-    error-message="Invalid email"
-/>
-
-<!-- Tabs with dynamic content -->
-<Tabs v-model="activeTab" :tabs="tabsData">
-    <template #tab1>Tab 1 Content</template>
-    <template #tab2>Tab 2 Content</template>
-</Tabs>
-```
-
-### 🆕 Adding New Routes
-
-1. **Create the route files:**
-```bash
-# Create all necessary files
-touch src/views/newpage.html
-touch src/logic/newpage.js  
-touch src/styles/newpage.css
-```
-
-2. **HTML Template with Components:**
-```html
-<!-- src/views/newpage.html -->
-<div class="newpage">
-    <Card title="{{ title }}" hoverable>
-        <p>{{ message }}</p>
-        
-        <template #footer>
-            <Button @click="handleAction" variant="primary">
-                Action Button
-            </Button>
-        </template>
-    </Card>
-    
-    <Toast ref="toast" />
-</div>
-```
-
-3. **Vue Component Logic:**
-```javascript
-// src/logic/newpage.js
-export default {
-    name: 'NewPage',
-    layout: 'default',
-    pageTitle: 'New Page - ViewLogic',
-    showHeader: true,
-    data() {
-        return {
-            title: 'New Page',
-            message: 'Welcome to the new page!'
-        }
-    },
-    methods: {
-        handleAction() {
-            this.$refs.toast.success('Action completed!');
-        }
-    }
-}
-```
-
-4. **Component Styles:**
-```css
-/* src/styles/newpage.css */
-.newpage {
-    padding: 2rem;
-    max-width: 800px;
-    margin: 0 auto;
-}
-```
-
-5. **Build and Test:**
-```bash
-# Build the new route
-npm run build
-
-# Test in development
-npm run dev
 ```
 
 ## 🔧 Development
@@ -356,18 +483,22 @@ We welcome contributions! Please follow these guidelines:
 
 ## 📄 License
 
-This project is open source and available under the [MIT License](LICENSE).
+MIT License
+
+## 🤝 Contributing
+
+1. Fork the Project
+2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the Branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+## 📞 Support
+
+- 🐛 Bug Reports: [Issues](https://github.com/hopegiver/viewlogic-vue/issues)
+- 💡 Feature Requests: [Discussions](https://github.com/hopegiver/viewlogic-vue/discussions)
+- 📧 Email: support@viewlogic.dev
 
 ---
 
-## 🌟 What's New
-
-### Recent Updates (v1.0.0)
-- ✅ **Complete Component System**: 6 production-ready UI components
-- ✅ **Advanced Error Handling**: Smart error detection and user-friendly pages
-- ✅ **Loading State Management**: Progress indicators and skeleton UI
-- ✅ **Production Build System**: Optimized builds with caching and minification
-- ✅ **Enhanced Router**: Preloading, error recovery, and smooth transitions
-- ✅ **Developer Experience**: Better debugging, logging, and development tools
-
-ViewLogic is now a comprehensive, production-ready Vue 3 application framework! 🚀
+**Experience faster and simpler Vue development with ViewLogic!** 🚀
