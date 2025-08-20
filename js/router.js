@@ -1,4 +1,4 @@
-class VueCompatibleRouter {
+class ViewLogicRouter {
     constructor(options = {}) {
         // 기본 환경설정
         this.config = {
