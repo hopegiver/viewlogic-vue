@@ -736,13 +736,63 @@ class ViewLogicBuilder {
                             lines.push(`        ${watchKey}: ${funcStr},`);
                         }
                     } else if (typeof watchValue === 'object' && watchValue !== null) {
-                        lines.push(`        ${watchKey}: ${JSON.stringify(watchValue)},`);
+                        // watch 객체 내의 handler, deep, immediate 등 처리
+                        lines.push(`        ${watchKey}: {`);
+                        for (const [propKey, propValue] of Object.entries(watchValue)) {
+                            if (propKey === 'handler' && typeof propValue === 'function') {
+                                const handlerStr = propValue.toString();
+                                // handler 함수는 이름이 중복되지 않도록 처리
+                                if (handlerStr.startsWith('handler(')) {
+                                    lines.push(`            ${handlerStr},`);
+                                } else {
+                                    lines.push(`            handler: ${handlerStr},`);
+                                }
+                            } else {
+                                lines.push(`            ${propKey}: ${JSON.stringify(propValue)},`);
+                            }
+                        }
+                        lines.push(`        },`);
                     }
                 }
                 lines.push('    },');
             } else if (typeof value === 'object' && value !== null) {
-                // 일반 객체는 JSON.stringify 사용
-                lines.push(`    ${key}: ${JSON.stringify(value)},`);
+                // props 객체는 특별 처리 (함수 기본값 지원)
+                if (key === 'props') {
+                    lines.push(`    props: {`);
+                    for (const [propKey, propValue] of Object.entries(value)) {
+                        if (typeof propValue === 'object' && propValue !== null) {
+                            lines.push(`        ${propKey}: {`);
+                            for (const [propAttr, propAttrValue] of Object.entries(propValue)) {
+                                if (propAttr === 'default' && typeof propAttrValue === 'function') {
+                                    // 함수 기본값은 toString()으로 직렬화
+                                    lines.push(`            ${propAttr}: ${propAttrValue.toString()},`);
+                                } else if (propAttr === 'type') {
+                                    // type 속성은 특별 처리 (생성자 함수)
+                                    if (Array.isArray(propAttrValue)) {
+                                        const typeNames = propAttrValue.map(t => t.name || 'Object').join(', ');
+                                        lines.push(`            ${propAttr}: [${propAttrValue.map(t => t.name || 'Object').join(', ')}],`);
+                                    } else if (typeof propAttrValue === 'function') {
+                                        lines.push(`            ${propAttr}: ${propAttrValue.name},`);
+                                    } else {
+                                        lines.push(`            ${propAttr}: ${JSON.stringify(propAttrValue)},`);
+                                    }
+                                } else if (propAttr === 'validator' && typeof propAttrValue === 'function') {
+                                    // validator 함수도 직렬화
+                                    lines.push(`            ${propAttr}: ${propAttrValue.toString()},`);
+                                } else {
+                                    lines.push(`            ${propAttr}: ${JSON.stringify(propAttrValue)},`);
+                                }
+                            }
+                            lines.push(`        },`);
+                        } else {
+                            lines.push(`        ${propKey}: ${JSON.stringify(propValue)},`);
+                        }
+                    }
+                    lines.push('    },');
+                } else {
+                    // 일반 객체는 JSON.stringify 사용
+                    lines.push(`    ${key}: ${JSON.stringify(value)},`);
+                }
             } else {
                 // 원시 타입
                 lines.push(`    ${key}: ${JSON.stringify(value)},`);

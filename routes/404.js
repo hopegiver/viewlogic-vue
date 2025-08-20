@@ -1,6 +1,6 @@
 /**
  * ViewLogic 경량 라우트: 404
- * 빌드 시간: 2025-08-20T01:49:19.981Z
+ * 빌드 시간: 2025-08-20T02:13:26.526Z
  * 빌드 버전: 1.0.0
  * 컴포넌트: 통합 components.js 사용
  */
@@ -81,7 +81,7 @@ const component = {
     },
     _routeName: "404",
     _isBuilt: true,
-    _buildTime: "2025-08-20T01:49:19.981Z",
+    _buildTime: "2025-08-20T02:13:26.526Z",
     _buildVersion: "1.0.0",
 };
 

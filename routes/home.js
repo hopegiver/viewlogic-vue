@@ -1,6 +1,6 @@
 /**
  * ViewLogic 경량 라우트: home
- * 빌드 시간: 2025-08-20T01:49:20.018Z
+ * 빌드 시간: 2025-08-20T02:13:26.545Z
  * 빌드 버전: 1.0.0
  * 컴포넌트: 통합 components.js 사용
  */
@@ -148,7 +148,7 @@ const component = {
     },
     _routeName: "home",
     _isBuilt: true,
-    _buildTime: "2025-08-20T01:49:20.018Z",
+    _buildTime: "2025-08-20T02:13:26.545Z",
     _buildVersion: "1.0.0",
 };
 

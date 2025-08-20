@@ -226,13 +226,19 @@ class VueCompatibleRouter {
             const componentsPath = `${this.config.routesPath}/components.js`;
             console.log(`📦 Loading unified components from: ${componentsPath}`);
             
+            // 브라우저에서 상대 경로 import를 위해 현재 origin 추가
+            const fullPath = window.location.origin + componentsPath;
+            console.log(`📦 Full path: ${fullPath}`);
+            
             const componentsModule = await import(componentsPath);
+            console.log('📦 Components module loaded:', componentsModule);
             
             // 컴포넌트 등록 함수가 있는지 확인
             if (typeof componentsModule.registerComponents === 'function') {
                 // 글로벌 Vue 앱이 없으면 임시로 저장
                 this.unifiedComponentsModule = componentsModule;
                 console.log('📦 Unified components loaded and ready for registration');
+                console.log('📦 Available components:', Object.keys(componentsModule.components || {}));
                 return true;
             } else {
                 throw new Error('registerComponents function not found in components module');
@@ -240,6 +246,7 @@ class VueCompatibleRouter {
             
         } catch (error) {
             console.error('❌ Failed to load unified components:', error);
+            console.error('❌ Error details:', error.stack);
             this.config.useComponents = false;
             throw error;
         }
@@ -247,24 +254,35 @@ class VueCompatibleRouter {
 
     registerComponentsToVueApp(vueApp) {
         if (!this.config.useComponents || !vueApp) {
+            console.log('⚠️ Components not enabled or Vue app not provided');
             return;
         }
+
+        console.log('🔧 Registering components to Vue app...');
+        console.log('🔧 Environment:', this.config.environment);
+        console.log('🔧 Unified components module available:', !!this.unifiedComponentsModule);
 
         try {
             // 프로덕션 모드에서 통합 컴포넌트 등록
             if (this.config.environment === 'production' && this.unifiedComponentsModule) {
+                console.log('🔧 Calling registerComponents function...');
                 this.unifiedComponentsModule.registerComponents(vueApp);
+                console.log('✅ Components registered successfully');
                 return true;
             }
 
             // 개발 모드에서 ComponentLoader 사용
             if (this.componentLoader) {
+                console.log('🔧 Using ComponentLoader for development mode...');
                 this.componentLoader.registerGlobalComponents(vueApp);
                 return true;
             }
 
+            console.warn('⚠️ No component registration method available');
+
         } catch (error) {
             console.error('❌ Failed to register components to Vue app:', error);
+            console.error('❌ Error details:', error.stack);
             return false;
         }
 

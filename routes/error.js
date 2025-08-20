@@ -1,6 +1,6 @@
 /**
  * ViewLogic 경량 라우트: error
- * 빌드 시간: 2025-08-20T01:49:19.999Z
+ * 빌드 시간: 2025-08-20T02:13:26.530Z
  * 빌드 버전: 1.0.0
  * 컴포넌트: 통합 components.js 사용
  */
@@ -92,7 +92,7 @@ const component = {
     },
     _routeName: "error",
     _isBuilt: true,
-    _buildTime: "2025-08-20T01:49:19.999Z",
+    _buildTime: "2025-08-20T02:13:26.530Z",
     _buildVersion: "1.0.0",
 };
 
