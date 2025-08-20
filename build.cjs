@@ -245,19 +245,15 @@ class ViewLogicBuilder {
     async loadRouteSources(routeName) {
         const sources = {};
         
-        // 병렬 로딩으로 성능 향상
-        const [template, logic, style, layout, allComponents] = await Promise.all([
+        // 병렬 로딩으로 성능 향상 (컴포넌트는 제외)
+        const [template, logic, style, layout] = await Promise.all([
             this.loadTemplate(routeName).catch(() => null),
             this.loadLogic(routeName),
             this.loadStyle(routeName).catch(() => ''),
-            this.loadLayoutForRoute(routeName).catch(() => null),
-            this.loadComponents().catch(() => [])
+            this.loadLayoutForRoute(routeName).catch(() => null)
         ]);
         
-        // 템플릿에서 실제 사용된 컴포넌트만 필터링
-        const usedComponents = this.filterUsedComponents(template, allComponents);
-        
-        return { template, logic, style, layout, components: usedComponents };
+        return { template, logic, style, layout };
     }
 
     filterUsedComponents(template, allComponents) {
@@ -392,16 +388,15 @@ class ViewLogicBuilder {
     }
 
     async combineAndOptimizeRoute(routeName, sources) {
-        const { template, logic, style, layout, components } = sources;
+        const { template, logic, style, layout } = sources;
         
-        // 컴포넌트 데이터 생성
+        // 컴포넌트 데이터 생성 (컴포넌트 제외)
         const componentData = {
             ...logic,
             _routeName: routeName,
             _isBuilt: true,
             _buildTime: new Date().toISOString(),
-            _buildVersion: this.getBuildVersion(),
-            _components: components ? components.map(c => c.name) : []
+            _buildVersion: this.getBuildVersion()
         };
 
         // 레이아웃과 템플릿 병합
@@ -410,10 +405,118 @@ class ViewLogicBuilder {
             finalTemplate = this.mergeLayoutWithTemplate(layout, template);
         }
 
-        // 코드 생성 (컴포넌트 포함)
-        const output = this.generateOptimizedCode(routeName, componentData, finalTemplate, style, components);
+        // 코드 생성 (컴포넌트 없이 가벼운 라우트)
+        const output = this.generateLightweightRouteCode(routeName, componentData, finalTemplate, style);
         
         return this.config.minify ? this.minifyCode(output) : output;
+    }
+
+    generateLightweightRouteCode(routeName, componentData, template, style) {
+        const lines = [];
+        
+        // 헤더 코멘트
+        lines.push(`/**`);
+        lines.push(` * ViewLogic 경량 라우트: ${routeName}`);
+        lines.push(` * 빌드 시간: ${componentData._buildTime}`);
+        lines.push(` * 빌드 버전: ${componentData._buildVersion}`);
+        lines.push(` * 컴포넌트: 통합 components.js 사용`);
+        lines.push(` */`);
+        lines.push('');
+        
+        // 스타일 자동 적용 (최적화된 방식)
+        if (style && style.trim()) {
+            lines.push('// 스타일 자동 적용');
+            lines.push(`const STYLE_ID = 'route-style-${routeName}';`);
+            lines.push(`const STYLE_CONTENT = \`${this.escapeTemplate(style)}\`;`);
+            lines.push('');
+            lines.push('if (typeof document !== "undefined" && !document.getElementById(STYLE_ID)) {');
+            lines.push('    const styleElement = document.createElement("style");');
+            lines.push('    styleElement.id = STYLE_ID;');
+            lines.push('    styleElement.textContent = STYLE_CONTENT;');
+            lines.push('    document.head.appendChild(styleElement);');
+            lines.push('}');
+            lines.push('');
+        }
+
+        // Vue 컴포넌트 정의 (가벼운 버전)
+        lines.push('const component = {');
+        
+        for (const [key, value] of Object.entries(componentData)) {
+            if (key === 'template') continue; // 템플릿은 별도 처리
+            
+            if (typeof value === 'function') {
+                const funcStr = value.toString();
+                // 함수 이름이 중복되지 않도록 처리
+                if (funcStr.startsWith(`${key}(`)) {
+                    lines.push(`    ${funcStr},`);
+                } else {
+                    lines.push(`    ${key}: ${funcStr},`);
+                }
+            } else if (key === 'methods' && typeof value === 'object' && value !== null) {
+                lines.push(`    methods: {`);
+                for (const [methodKey, methodValue] of Object.entries(value)) {
+                    if (typeof methodValue === 'function') {
+                        const funcStr = methodValue.toString();
+                        // 함수 이름이 중복되지 않도록 처리하고, async 함수 처리
+                        if (funcStr.startsWith(`${methodKey}(`)) {
+                            // 함수 이름이 이미 있는 경우 (예: handleAction() { ... })
+                            lines.push(`        ${funcStr},`);
+                        } else if (funcStr.startsWith(`async ${methodKey}(`)) {
+                            // async 함수인 경우 (예: async handleAction() { ... })
+                            lines.push(`        ${funcStr},`);
+                        } else {
+                            // 일반적인 경우 (예: function() { ... } 또는 () => { ... })
+                            lines.push(`        ${methodKey}: ${funcStr},`);
+                        }
+                    }
+                }
+                lines.push('    },');
+            } else if (key === 'computed' && typeof value === 'object' && value !== null) {
+                lines.push(`    computed: {`);
+                for (const [computedKey, computedValue] of Object.entries(value)) {
+                    if (typeof computedValue === 'function') {
+                        const funcStr = computedValue.toString();
+                        // 함수 이름이 중복되지 않도록 처리
+                        if (funcStr.startsWith(`${computedKey}(`)) {
+                            lines.push(`        ${funcStr},`);
+                        } else {
+                            lines.push(`        ${computedKey}: ${funcStr},`);
+                        }
+                    }
+                }
+                lines.push('    },');
+            } else if (key === 'watch' && typeof value === 'object' && value !== null) {
+                lines.push(`    watch: {`);
+                for (const [watchKey, watchValue] of Object.entries(value)) {
+                    if (typeof watchValue === 'function') {
+                        const funcStr = watchValue.toString();
+                        // 함수 이름이 중복되지 않도록 처리
+                        if (funcStr.startsWith(`${watchKey}(`)) {
+                            lines.push(`        ${funcStr},`);
+                        } else {
+                            lines.push(`        ${watchKey}: ${funcStr},`);
+                        }
+                    } else if (typeof watchValue === 'object' && watchValue !== null) {
+                        lines.push(`        ${watchKey}: ${JSON.stringify(watchValue)},`);
+                    }
+                }
+                lines.push('    },');
+            } else {
+                lines.push(`    ${key}: ${JSON.stringify(value)},`);
+            }
+        }
+        
+        lines.push('};');
+        lines.push('');
+        
+        // 템플릿 설정
+        lines.push(`component.template = \`${this.escapeTemplate(template)}\`;`);
+        lines.push('');
+        
+        // Export
+        lines.push('export default component;');
+        
+        return lines.join('\n');
     }
 
     generateOptimizedCode(routeName, componentData, template, style, components = []) {
@@ -472,12 +575,59 @@ class ViewLogicBuilder {
             if (key === 'template') continue; // 템플릿은 별도 처리
             
             if (typeof value === 'function') {
-                lines.push(`    ${value.toString()},`);
+                const funcStr = value.toString();
+                // 함수 이름이 중복되지 않도록 처리
+                if (funcStr.startsWith(`${key}(`)) {
+                    lines.push(`    ${funcStr},`);
+                } else {
+                    lines.push(`    ${key}: ${funcStr},`);
+                }
             } else if (key === 'methods' && typeof value === 'object' && value !== null) {
                 lines.push(`    methods: {`);
                 for (const [methodKey, methodValue] of Object.entries(value)) {
                     if (typeof methodValue === 'function') {
-                        lines.push(`    ${methodValue.toString()},`);
+                        const funcStr = methodValue.toString();
+                        // 함수 이름이 중복되지 않도록 처리하고, async 함수 처리
+                        if (funcStr.startsWith(`${methodKey}(`)) {
+                            // 함수 이름이 이미 있는 경우 (예: handleAction() { ... })
+                            lines.push(`        ${funcStr},`);
+                        } else if (funcStr.startsWith(`async ${methodKey}(`)) {
+                            // async 함수인 경우 (예: async handleAction() { ... })
+                            lines.push(`        ${funcStr},`);
+                        } else {
+                            // 일반적인 경우 (예: function() { ... } 또는 () => { ... })
+                            lines.push(`        ${methodKey}: ${funcStr},`);
+                        }
+                    }
+                }
+                lines.push('    },');
+            } else if (key === 'computed' && typeof value === 'object' && value !== null) {
+                lines.push(`    computed: {`);
+                for (const [computedKey, computedValue] of Object.entries(value)) {
+                    if (typeof computedValue === 'function') {
+                        const funcStr = computedValue.toString();
+                        // 함수 이름이 중복되지 않도록 처리
+                        if (funcStr.startsWith(`${computedKey}(`)) {
+                            lines.push(`        ${funcStr},`);
+                        } else {
+                            lines.push(`        ${computedKey}: ${funcStr},`);
+                        }
+                    }
+                }
+                lines.push('    },');
+            } else if (key === 'watch' && typeof value === 'object' && value !== null) {
+                lines.push(`    watch: {`);
+                for (const [watchKey, watchValue] of Object.entries(value)) {
+                    if (typeof watchValue === 'function') {
+                        const funcStr = watchValue.toString();
+                        // 함수 이름이 중복되지 않도록 처리
+                        if (funcStr.startsWith(`${watchKey}(`)) {
+                            lines.push(`        ${funcStr},`);
+                        } else {
+                            lines.push(`        ${watchKey}: ${funcStr},`);
+                        }
+                    } else if (typeof watchValue === 'object' && watchValue !== null) {
+                        lines.push(`        ${watchKey}: ${JSON.stringify(watchValue)},`);
                     }
                 }
                 lines.push('    },');
@@ -644,6 +794,9 @@ class ViewLogicBuilder {
     }
 
     async postBuild() {
+        // 통합 컴포넌트 파일 생성
+        await this.generateUnifiedComponents();
+        
         if (this.config.generateManifest) {
             await this.generateManifest();
         }
@@ -651,6 +804,85 @@ class ViewLogicBuilder {
         if (this.config.optimizeAssets) {
             await this.optimizeAssets();
         }
+    }
+
+    async generateUnifiedComponents() {
+        this.log('🔧 통합 컴포넌트 파일 생성 중...', 'info');
+        
+        try {
+            const allComponents = await this.loadComponents();
+            
+            if (allComponents.length === 0) {
+                this.log('📦 컴포넌트가 없어 components.js를 생성하지 않습니다.', 'verbose');
+                return;
+            }
+            
+            const componentsCode = this.generateUnifiedComponentsCode(allComponents);
+            const componentsPath = path.resolve(this.config.routesPath, 'components.js');
+            
+            await fs.writeFile(componentsPath, componentsCode, 'utf8');
+            
+            this.log(`✅ 통합 컴포넌트 파일 생성 완료: ${allComponents.length}개 컴포넌트`, 'info');
+            
+        } catch (error) {
+            this.log(`❌ 통합 컴포넌트 파일 생성 실패: ${error.message}`, 'error');
+            throw error;
+        }
+    }
+
+    generateUnifiedComponentsCode(components) {
+        const lines = [];
+        
+        // 헤더 코멘트
+        lines.push('/**');
+        lines.push(' * ViewLogic 통합 컴포넌트 시스템');
+        lines.push(` * 빌드 시간: ${new Date().toISOString()}`);
+        lines.push(` * 빌드 버전: ${this.getBuildVersion()}`);
+        lines.push(` * 포함된 컴포넌트: ${components.map(c => c.name).join(', ')}`);
+        lines.push(' */');
+        lines.push('');
+        
+        // 개별 컴포넌트 정의
+        components.forEach(comp => {
+            lines.push(`// Component: ${comp.name}`);
+            lines.push(`const ${comp.name}Component = ${this.serializeVueComponent(comp.component)};`);
+            lines.push('');
+        });
+        
+        // 컴포넌트 등록 함수
+        lines.push('// 글로벌 컴포넌트 등록 함수');
+        lines.push('export function registerComponents(vueApp) {');
+        lines.push('    if (!vueApp || typeof vueApp.component !== "function") {');
+        lines.push('        console.warn("Invalid Vue app instance provided to registerComponents");');
+        lines.push('        return;');
+        lines.push('    }');
+        lines.push('');
+        components.forEach(comp => {
+            lines.push(`    vueApp.component('${comp.name}', ${comp.name}Component);`);
+        });
+        lines.push('');
+        lines.push('    console.log("📦 ViewLogic 컴포넌트 시스템 등록 완료:", [');
+        lines.push(`        ${components.map(c => `"${c.name}"`).join(', ')}`);
+        lines.push('    ]);');
+        lines.push('}');
+        lines.push('');
+        
+        // 컴포넌트 맵 export
+        lines.push('// 컴포넌트 맵');
+        lines.push('export const components = {');
+        components.forEach(comp => {
+            lines.push(`    ${comp.name}: ${comp.name}Component,`);
+        });
+        lines.push('};');
+        lines.push('');
+        
+        // 기본 export
+        lines.push('export default {');
+        lines.push('    registerComponents,');
+        lines.push('    components');
+        lines.push('};');
+        
+        return lines.join('\n');
     }
 
     async generateManifest() {

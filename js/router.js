@@ -190,13 +190,14 @@ class VueCompatibleRouter {
             return;
         }
 
-        // 프로덕션 모드에서는 컴포넌트가 라우트에 인라인으로 포함되어 있음
-        if (this.config.environment === 'production') {
-            console.log('🧩 Production mode: Components are inlined in routes');
-            return;
-        }
-
         try {
+            // 프로덕션 모드에서는 통합 components.js 로드
+            if (this.config.environment === 'production') {
+                console.log('🧩 Production mode: Loading unified components system');
+                await this.loadUnifiedComponents();
+                return;
+            }
+
             // 개발 모드에서만 ComponentLoader 동적 로드
             const { getComponentLoader } = await import(this.config.basePath + '/components/ComponentLoader.js');
             
@@ -217,6 +218,57 @@ class VueCompatibleRouter {
             console.warn('⚠️ Component system initialization failed:', error);
             this.config.useComponents = false;
         }
+    }
+
+    async loadUnifiedComponents() {
+        try {
+            // 통합 components.js 파일 로드
+            const componentsPath = `${this.config.routesPath}/components.js`;
+            console.log(`📦 Loading unified components from: ${componentsPath}`);
+            
+            const componentsModule = await import(componentsPath);
+            
+            // 컴포넌트 등록 함수가 있는지 확인
+            if (typeof componentsModule.registerComponents === 'function') {
+                // 글로벌 Vue 앱이 없으면 임시로 저장
+                this.unifiedComponentsModule = componentsModule;
+                console.log('📦 Unified components loaded and ready for registration');
+                return true;
+            } else {
+                throw new Error('registerComponents function not found in components module');
+            }
+            
+        } catch (error) {
+            console.error('❌ Failed to load unified components:', error);
+            this.config.useComponents = false;
+            throw error;
+        }
+    }
+
+    registerComponentsToVueApp(vueApp) {
+        if (!this.config.useComponents || !vueApp) {
+            return;
+        }
+
+        try {
+            // 프로덕션 모드에서 통합 컴포넌트 등록
+            if (this.config.environment === 'production' && this.unifiedComponentsModule) {
+                this.unifiedComponentsModule.registerComponents(vueApp);
+                return true;
+            }
+
+            // 개발 모드에서 ComponentLoader 사용
+            if (this.componentLoader) {
+                this.componentLoader.registerGlobalComponents(vueApp);
+                return true;
+            }
+
+        } catch (error) {
+            console.error('❌ Failed to register components to Vue app:', error);
+            return false;
+        }
+
+        return false;
     }
 
     async preloadGlobalComponents() {
@@ -755,6 +807,9 @@ class VueCompatibleRouter {
             const { createApp } = Vue;
             this.currentVueApp = createApp(vueComponent);
             
+            // 컴포넌트 등록 (통합 컴포넌트 시스템 또는 개발 모드)
+            this.registerComponentsToVueApp(this.currentVueApp);
+            
             // Vue 3 전역 속성 설정
             this.currentVueApp.config.globalProperties.$router = {
                 navigateTo: (route) => this.navigateTo(route),
@@ -803,6 +858,9 @@ class VueCompatibleRouter {
         // 새로운 Vue 앱을 새 컨테이너에 마운트
         const { createApp } = Vue;
         const newVueApp = createApp(vueComponent);
+        
+        // 컴포넌트 등록 (통합 컴포넌트 시스템 또는 개발 모드)
+        this.registerComponentsToVueApp(newVueApp);
         
         // Vue 3 전역 속성 설정
         newVueApp.config.globalProperties.$router = {

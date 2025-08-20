@@ -1,53 +1,16 @@
 /**
- * ViewLogic 빌드된 라우트: about
- * 빌드 시간: 2025-08-20T01:33:38.517Z
+ * ViewLogic 경량 라우트: about
+ * 빌드 시간: 2025-08-20T01:49:19.991Z
  * 빌드 버전: 1.0.0
- * 포함된 컴포넌트: Button
+ * 컴포넌트: 통합 components.js 사용
  */
-
-// 인라인 컴포넌트들
-// Component: Button
-const ButtonComponent = {
-    name: "Button",
-    template: "\n        <button \n            :class=\"buttonClasses\" \n            :disabled=\"disabled || loading\"\n            @click=\"handleClick\"\n            :type=\"type\"\n        >\n            <span v-if=\"loading\" class=\"btn-spinner\"></span>\n            <span v-if=\"icon && !loading\" :class=\"'btn-icon ' + icon\"></span>\n            <span class=\"btn-text\" v-if=\"!loading || showTextWhileLoading\">\n                <slot>{{ text }}</slot>\n            </span>\n            <span v-if=\"loading && loadingText\" class=\"btn-loading-text\">{{ loadingText }}</span>\n        </button>\n    ",
-    props: {"variant":{"default":"primary"},"size":{"default":"medium"},"disabled":{"default":false},"loading":{"default":false},"loadingText":{"default":""},"showTextWhileLoading":{"default":false},"text":{"default":""},"icon":{"default":""},"type":{"default":"button"},"block":{"default":false},"rounded":{"default":false}},
-    computed: {
-        buttonClasses() {
-            return [
-                'btn',
-                `btn-${this.variant}`,
-                `btn-${this.size}`,
-                {
-                    'btn-loading': this.loading,
-                    'btn-disabled': this.disabled,
-                    'btn-block': this.block,
-                    'btn-rounded': this.rounded,
-                    'btn-with-icon': this.icon
-                }
-            ];
-        },
-    },
-    methods: {
-        handleClick(event) {
-            if (!this.disabled && !this.loading) {
-                this.$emit('click', event);
-            }
-        },
-    },
-};
-
-// 컴포넌트 자동 등록 함수
-const registerInlineComponents = (vueApp) => {
-    if (!vueApp || typeof vueApp.component !== "function") return;
-    vueApp.component('Button', ButtonComponent);
-};
 
 // 스타일 자동 적용
 const STYLE_ID = 'route-style-about';
 const STYLE_CONTENT = `.about-page {\n    padding: 20px;\n    max-width: 1200px;\n    margin: 0 auto;\n    background: white;\n    border-radius: 8px;\n    box-shadow: 0 2px 10px rgba(0,0,0,0.1);\n}\n\n.about-page h1 {\n    color: #333;\n    margin-bottom: 20px;\n    font-size: 2.5rem;\n    text-align: center;\n}\n\n.about-content {\n    padding: 20px;\n}\n\n.intro-section {\n    text-align: center;\n    margin-bottom: 40px;\n}\n\n.intro-section h2 {\n    color: #2c3e50;\n    margin-bottom: 15px;\n    font-size: 1.8rem;\n}\n\n.intro-section p {\n    font-size: 1.2rem;\n    color: #666;\n    line-height: 1.6;\n}\n\n.features-section {\n    margin-bottom: 40px;\n}\n\n.features-section h2 {\n    color: #2c3e50;\n    margin-bottom: 30px;\n    text-align: center;\n    font-size: 1.8rem;\n}\n\n.feature-grid {\n    display: grid;\n    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));\n    gap: 20px;\n    margin-top: 20px;\n}\n\n.feature-card {\n    background: #f8f9fa;\n    padding: 25px;\n    border-radius: 12px;\n    text-align: center;\n    transition: all 0.3s ease;\n    opacity: 1;\n    transform: translateY(0);\n}\n\n.feature-card:hover {\n    background: #e9ecef;\n    transform: translateY(-5px);\n    box-shadow: 0 5px 15px rgba(0,0,0,0.1);\n}\n\n.feature-card h3 {\n    font-size: 1.5rem;\n    margin-bottom: 15px;\n    color: #495057;\n}\n\n.feature-card p {\n    color: #6c757d;\n    line-height: 1.5;\n}\n\n.about-actions {\n    text-align: center;\n    margin-top: 40px;\n}\n\n.about-actions button {\n    background: #007bff;\n    color: white;\n    border: none;\n    padding: 12px 24px;\n    border-radius: 6px;\n    cursor: pointer;\n    margin: 0 10px;\n    font-size: 1rem;\n    transition: all 0.3s ease;\n}\n\n.about-actions button:hover {\n    background: #0056b3;\n    transform: translateY(-2px);\n}\n\n@media (max-width: 768px) {\n    .about-page {\n        padding: 15px;\n        margin: 10px;\n    }\n    \n    .about-page h1 {\n        font-size: 2rem;\n    }\n    \n    .feature-grid {\n        grid-template-columns: 1fr;\n        gap: 15px;\n    }\n    \n    .about-actions button {\n        display: block;\n        width: 100%;\n        margin: 10px 0;\n    }\n}`;
 
-if (typeof document !== 'undefined' && !document.getElementById(STYLE_ID)) {
-    const styleElement = document.createElement('style');
+if (typeof document !== "undefined" && !document.getElementById(STYLE_ID)) {
+    const styleElement = document.createElement("style");
     styleElement.id = STYLE_ID;
     styleElement.textContent = STYLE_CONTENT;
     document.head.appendChild(styleElement);
@@ -83,14 +46,10 @@ const component = {
     },
     _routeName: "about",
     _isBuilt: true,
-    _buildTime: "2025-08-20T01:33:38.517Z",
+    _buildTime: "2025-08-20T01:49:19.991Z",
     _buildVersion: "1.0.0",
-    _components: ["Button"],
 };
 
 component.template = `<nav class="main-nav">\n    <ul>\n        <li><a @click="navigateTo('home')" :class="{ active: currentRoute === 'home' }">Home</a></li>\n        <li><a @click="navigateTo('about')" :class="{ active: currentRoute === 'about' }">About</a></li>\n        <li><a @click="navigateTo('contact')" :class="{ active: currentRoute === 'contact' }">Contact</a></li>\n    </ul>\n</nav>\n\n<header v-if="showHeader" class="page-header">\n    <div class="container">\n        <h1>{{ headerTitle || pageTitle }}</h1>\n        <p v-if="headerSubtitle" class="subtitle">{{ headerSubtitle }}</p>\n    </div>\n</header>\n\n<main class="main-content">\n    <div class="container">\n        <!-- 페이지 콘텐츠가 여기에 삽입됩니다 -->\n        <div class="about-page">\n    <h1>About</h1>\n    <div class="about-content">\n        <div class="intro-section">\n            <h2>프로젝트 소개</h2>\n            <p>이 프로젝트는 React와 Vue 모두 호환 가능한 해시 기반 라우터입니다.</p>\n        </div>\n        \n        <div class="features-section">\n            <h2>핵심 기능</h2>\n            <div class="feature-grid">\n                <div class="feature-card" v-for="feature in features" :key="feature.title">\n                    <h3>{{ feature.icon }} {{ feature.title }}</h3>\n                    <p>{{ feature.description }}</p>\n                </div>\n            </div>\n        </div>\n        \n        <div class="about-actions">\n            <button @click="navigateTo('home')">Home</button>\n            <button @click="navigateTo('contact')">Contact</button>\n        </div>\n    </div>\n</div>\n    </div>\n</main>\n\n<footer class="page-footer">\n    <div class="container">\n        <p>&copy; 2025 ViewLogic App. All rights reserved.</p>\n    </div>\n</footer>`;
-
-// 빌드된 컴포넌트 등록 메서드 추가
-component.registerInlineComponents = registerInlineComponents;
 
 export default component;
