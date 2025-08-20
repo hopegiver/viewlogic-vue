@@ -847,6 +847,9 @@ class ViewLogicBuilder {
         // 통합 컴포넌트 파일 생성
         await this.generateUnifiedComponents();
         
+        // Core 파일들 압축
+        await this.buildCoreAssets();
+        
         if (this.config.generateManifest) {
             await this.generateManifest();
         }
@@ -933,6 +936,105 @@ class ViewLogicBuilder {
         lines.push('};');
         
         return lines.join('\n');
+    }
+
+    async buildCoreAssets() {
+        this.log('🔧 Core 파일들 압축 중...', 'info');
+        
+        try {
+            // router.js 압축
+            await this.buildRouterJs();
+            
+            // base.css 압축
+            await this.buildBaseCss();
+            
+            // i18n.js 압축 (존재하는 경우)
+            await this.buildI18nJs();
+            
+            this.log('✅ Core 파일들 압축 완료', 'info');
+            
+        } catch (error) {
+            this.log(`❌ Core 파일 압축 실패: ${error.message}`, 'error');
+            this.stats.warnings.push(`Core assets build failed: ${error.message}`);
+        }
+    }
+
+    async buildRouterJs() {
+        const routerPath = path.resolve('./js/router.js');
+        const outputPath = path.resolve('./js/router.prod.js');
+        
+        if (await this.exists(routerPath)) {
+            const content = await fs.readFile(routerPath, 'utf8');
+            const minifiedContent = this.minifyJavaScript(content);
+            await fs.writeFile(outputPath, minifiedContent, 'utf8');
+            this.log('📦 router.prod.js 생성 완료', 'verbose');
+        } else {
+            this.log('⚠️ router.js 파일을 찾을 수 없습니다', 'warn');
+        }
+    }
+
+    async buildBaseCss() {
+        const cssPath = path.resolve('./css/base.css');
+        const outputPath = path.resolve('./css/base.prod.css');
+        
+        if (await this.exists(cssPath)) {
+            const content = await fs.readFile(cssPath, 'utf8');
+            const minifiedContent = this.minifyCSS(content);
+            await fs.writeFile(outputPath, minifiedContent, 'utf8');
+            this.log('📦 base.prod.css 생성 완료', 'verbose');
+        } else {
+            this.log('⚠️ base.css 파일을 찾을 수 없습니다', 'warn');
+        }
+    }
+
+    async buildI18nJs() {
+        const i18nPath = path.resolve('./js/i18n.js');
+        const outputPath = path.resolve('./js/i18n.prod.js');
+        
+        if (await this.exists(i18nPath)) {
+            const content = await fs.readFile(i18nPath, 'utf8');
+            const minifiedContent = this.minifyJavaScript(content);
+            await fs.writeFile(outputPath, minifiedContent, 'utf8');
+            this.log('📦 i18n.prod.js 생성 완료', 'verbose');
+        }
+    }
+
+    minifyJavaScript(code) {
+        return code
+            .replace(/\/\*[\s\S]*?\*\//g, '') // 블록 주석 제거
+            .replace(/\/\/.*$/gm, '')         // 라인 주석 제거
+            .replace(/^\s+/gm, '')            // 행 시작 공백 제거
+            .replace(/\s*\n+\s*/g, '\n')      // 연속된 빈 줄 정리
+            .replace(/\s*{\s*/g, '{')         // 중괄호 정리
+            .replace(/\s*}\s*/g, '}')
+            .replace(/\s*;\s*/g, ';')         // 세미콜론 정리
+            .replace(/\s*,\s*/g, ',')         // 콤마 정리
+            .replace(/\s*\(\s*/g, '(')        // 괄호 정리
+            .replace(/\s*\)\s*/g, ')')
+            .replace(/\s*=\s*/g, '=')         // 등호 정리
+            .replace(/\s*:\s*/g, ':')         // 콜론 정리
+            .replace(/\s+/g, ' ')             // 여러 공백을 하나로
+            .trim();
+    }
+
+    minifyCSS(code) {
+        return code
+            .replace(/\/\*[\s\S]*?\*\//g, '') // 주석 제거
+            .replace(/\s*{\s*/g, '{')         // 중괄호 정리
+            .replace(/\s*}\s*/g, '}')
+            .replace(/\s*;\s*/g, ';')         // 세미콜론 정리
+            .replace(/\s*:\s*/g, ':')         // 콜론 정리
+            .replace(/\s*,\s*/g, ',')         // 콤마 정리
+            .replace(/\s*>\s*/g, '>')         // 자식 선택자 정리
+            .replace(/\s*\+\s*/g, '+')        // 인접 선택자 정리
+            .replace(/\s*~\s*/g, '~')         // 일반 선택자 정리
+            .replace(/\s*\[\s*/g, '[')        // 속성 선택자 정리
+            .replace(/\s*\]\s*/g, ']')
+            .replace(/\s*\(\s*/g, '(')        // 괄호 정리
+            .replace(/\s*\)\s*/g, ')')
+            .replace(/\s+/g, ' ')             // 여러 공백을 하나로
+            .replace(/\n\s*/g, '')            // 줄바꿈과 공백 제거
+            .trim();
     }
 
     async generateManifest() {

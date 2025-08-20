@@ -1,54 +1,54 @@
 {
-  "buildTime": "2025-08-20T05:56:58.264Z",
+  "buildTime": "2025-08-20T07:29:50.313Z",
   "buildVersion": "1.0.0",
   "routes": [
     {
       "name": "404",
       "file": "404.js",
       "size": 10023,
-      "modified": "2025-08-20T05:56:58.127Z"
+      "modified": "2025-08-20T07:29:50.198Z"
     },
     {
       "name": "about",
       "file": "about.js",
       "size": 4835,
-      "modified": "2025-08-20T05:56:58.126Z"
+      "modified": "2025-08-20T07:29:50.197Z"
     },
     {
       "name": "components",
       "file": "components.js",
       "size": 158871,
-      "modified": "2025-08-20T05:56:58.260Z"
+      "modified": "2025-08-20T07:29:50.276Z"
     },
     {
       "name": "contact",
       "file": "contact.js",
       "size": 7116,
-      "modified": "2025-08-20T05:56:58.126Z"
+      "modified": "2025-08-20T07:29:50.199Z"
     },
     {
       "name": "error",
       "file": "error.js",
       "size": 8069,
-      "modified": "2025-08-20T05:56:58.136Z"
+      "modified": "2025-08-20T07:29:50.195Z"
     },
     {
       "name": "home",
       "file": "home.js",
       "size": 11607,
-      "modified": "2025-08-20T05:56:58.159Z"
+      "modified": "2025-08-20T07:29:50.211Z"
     },
     {
       "name": "loading",
       "file": "loading.js",
       "size": 4348,
-      "modified": "2025-08-20T05:56:58.162Z"
+      "modified": "2025-08-20T07:29:50.210Z"
     }
   ],
   "stats": {
     "totalRoutes": 6,
     "successRoutes": 6,
     "failedRoutes": 0,
-    "buildDuration": -1755669418081
+    "buildDuration": -1755674990153
   }
 }

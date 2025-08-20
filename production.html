@@ -4,16 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Vue Router Compatible - Production</title>
-    <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/base.prod.css">
 </head>
 <body>
     <div id="app">
         <div class="loading">로딩 중...</div>
     </div>
 
-    <!-- Vue 3 Runtime + Compiler -->
-    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-    <script src="js/router.js"></script>
+    <!-- Vue 3 Runtime + Compiler (Production) -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+    <script src="js/i18n.prod.js"></script>
+    <script src="js/router.prod.js"></script>
     <script>
         // 프로덕션 환경설정
         const routerConfig = {
