@@ -1,9 +1,35 @@
 <nav class="main-nav">
-    <ul>
-        <li><a @click="navigateTo('home')" :class="{ active: currentRoute === 'home' }">Home</a></li>
-        <li><a @click="navigateTo('about')" :class="{ active: currentRoute === 'about' }">About</a></li>
-        <li><a @click="navigateTo('contact')" :class="{ active: currentRoute === 'contact' }">Contact</a></li>
-    </ul>
+    <div class="nav-container">
+        <!-- 사이트 로고 -->
+        <div class="nav-brand">
+            <a @click="navigateTo('home')" class="brand-link">
+                <span class="brand-logo">🚀</span>
+                <span class="brand-text">ViewLogic</span>
+            </a>
+        </div>
+
+        <!-- 모바일 햄버거 메뉴 버튼 -->
+        <button class="nav-toggle" @click="toggleMobileMenu" :class="{ active: mobileMenuOpen }">
+            <span class="nav-toggle-bar"></span>
+            <span class="nav-toggle-bar"></span>
+            <span class="nav-toggle-bar"></span>
+        </button>
+
+        <!-- 중앙 네비게이션 메뉴 -->
+        <div class="nav-menu" :class="{ active: mobileMenuOpen }">
+            <ul class="nav-links">
+                <li><a @click="navigateTo('home'); closeMobileMenu()" :class="{ active: currentRoute === 'home' }">Home</a></li>
+                <li><a @click="navigateTo('about'); closeMobileMenu()" :class="{ active: currentRoute === 'about' }">About</a></li>
+                <li><a @click="navigateTo('contact'); closeMobileMenu()" :class="{ active: currentRoute === 'contact' }">Contact</a></li>
+            </ul>
+        </div>
+
+        <!-- 오른쪽 로그인/회원가입 -->
+        <div class="nav-auth" :class="{ active: mobileMenuOpen }">
+            <a @click="navigateTo('login'); closeMobileMenu()" class="auth-link login-link">로그인</a>
+            <a @click="navigateTo('signup'); closeMobileMenu()" class="auth-link signup-link">회원가입</a>
+        </div>
+    </div>
 </nav>
 
 <header v-if="showHeader" class="page-header">

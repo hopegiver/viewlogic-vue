@@ -144,5 +144,87 @@ export default {
         today: 'Today',
         yesterday: 'Yesterday',
         tomorrow: 'Tomorrow'
+    },
+
+    // Login page
+    login: {
+        welcome: 'Sign in to your account',
+        email: 'Email',
+        password: 'Password',
+        email_placeholder: 'your@email.com',
+        password_placeholder: 'Enter your password',
+        remember_me: 'Remember me',
+        forgot_password: 'Forgot your password?',
+        sign_in: 'Sign In',
+        signing_in: 'Signing in...',
+        or: 'Or',
+        google_login: 'Sign in with Google',
+        kakao_login: 'Sign in with Kakao',
+        no_account: 'Don\'t have an account?',
+        sign_up: 'Sign up',
+        
+        // Error messages
+        email_required: 'Please enter your email.',
+        email_invalid: 'Please enter a valid email address.',
+        password_required: 'Please enter your password.',
+        password_min_length: 'Password must be at least {length} characters.',
+        invalid_credentials: 'Invalid email or password.',
+        network_error: 'Network error occurred. Please try again.',
+        social_login_failed: 'Social login failed.',
+        social_login_error: 'An error occurred during social login.',
+        
+        // Success messages
+        login_success: 'Login Successful',
+        welcome_back: 'Welcome back, {name}!',
+        error_title: 'Login Failed'
+    },
+
+    // Signup page
+    signup: {
+        welcome: 'Create your new account',
+        first_name: 'First Name',
+        last_name: 'Last Name',
+        email: 'Email',
+        password: 'Password',
+        confirm_password: 'Confirm Password',
+        first_name_placeholder: 'Enter your first name',
+        last_name_placeholder: 'Enter your last name',
+        email_placeholder: 'your@email.com',
+        password_placeholder: 'At least 8 characters',
+        confirm_password_placeholder: 'Re-enter your password',
+        create_account: 'Create Account',
+        creating_account: 'Creating account...',
+        or: 'Or',
+        google_signup: 'Sign up with Google',
+        kakao_signup: 'Sign up with Kakao',
+        have_account: 'Already have an account?',
+        sign_in: 'Sign In',
+        
+        // Terms agreement
+        agree_to: 'I agree to the',
+        terms_of_service: 'Terms of Service',
+        privacy_policy: 'Privacy Policy',
+        and: 'and',
+        
+        // Error messages
+        first_name_required: 'Please enter your first name.',
+        last_name_required: 'Please enter your last name.',
+        email_required: 'Please enter your email.',
+        email_invalid: 'Please enter a valid email address.',
+        email_exists: 'This email is already in use.',
+        password_required: 'Please enter your password.',
+        password_min_length: 'Password must be at least {length} characters.',
+        confirm_password_required: 'Please confirm your password.',
+        password_mismatch: 'Passwords do not match.',
+        terms_required: 'Please agree to the terms of service.',
+        signup_failed: 'Account creation failed.',
+        network_error: 'Network error occurred. Please try again.',
+        social_signup_failed: 'Social signup failed.',
+        social_signup_error: 'An error occurred during social signup.',
+        
+        // Success messages
+        signup_success: 'Account Created Successfully',
+        welcome_message: 'Welcome, {name}!',
+        error_title: 'Signup Failed'
     }
 };

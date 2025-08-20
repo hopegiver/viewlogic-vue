@@ -60,6 +60,7 @@ class ViewLogicRouter {
         this.progressBar = null; // 프로그레스 바 엘리먼트
         this.loadingOverlay = null; // 로딩 오버레이 엘리먼트
         this.componentLoader = null; // 컴포넌트 로더 인스턴스
+        this.mobileMenuOpen = false; // 모바일 메뉴 상태
 
         this.init();        
         this.i18nInitPromise = this.initializeI18n();        
@@ -84,6 +85,75 @@ class ViewLogicRouter {
         }
     }
 
+    /**
+     * 모바일 메뉴 토글
+     */
+    toggleMobileMenu() {
+        this.mobileMenuOpen = !this.mobileMenuOpen;
+        
+        // 현재 Vue 앱에서 상태 업데이트
+        if (this.currentVueApp) {
+            this.currentVueApp.config.globalProperties.mobileMenuOpen = this.mobileMenuOpen;
+            // 강제 업데이트를 위한 이벤트 발생
+            this.updateMobileMenuState();
+        }
+    }
+
+    /**
+     * 모바일 메뉴 닫기
+     */
+    closeMobileMenu() {
+        this.mobileMenuOpen = false;
+        
+        // 현재 Vue 앱에서 상태 업데이트
+        if (this.currentVueApp) {
+            this.currentVueApp.config.globalProperties.mobileMenuOpen = this.mobileMenuOpen;
+            // 강제 업데이트를 위한 이벤트 발생
+            this.updateMobileMenuState();
+        }
+    }
+
+    /**
+     * 모바일 메뉴 상태 업데이트
+     */
+    updateMobileMenuState() {
+        // 모바일 메뉴 상태를 DOM에 반영
+        const navMenus = document.querySelectorAll('.nav-menu, .nav-auth');
+        const navToggle = document.querySelector('.nav-toggle');
+        
+        navMenus.forEach(menu => {
+            if (this.mobileMenuOpen) {
+                menu.classList.add('active');
+            } else {
+                menu.classList.remove('active');
+            }
+        });
+        
+        if (navToggle) {
+            if (this.mobileMenuOpen) {
+                navToggle.classList.add('active');
+            } else {
+                navToggle.classList.remove('active');
+            }
+        }
+        
+        // body 스크롤 제어
+        if (this.mobileMenuOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = '';
+        }
+    }
+
+    /**
+     * 윈도우 리사이즈 시 모바일 메뉴 정리
+     */
+    handleWindowResize() {
+        if (window.innerWidth > 768) {
+            this.closeMobileMenu();
+        }
+    }
+
     init() {
         if (this.config.mode === 'hash') {
             window.addEventListener('hashchange', () => this.handleRouteChange());
@@ -95,6 +165,9 @@ class ViewLogicRouter {
                 // 이미 로드된 경우 즉시 실행
                 setTimeout(() => this.handleRouteChange(), 0);
             }
+            
+            // 윈도우 리사이즈 이벤트 리스너 추가
+            window.addEventListener('resize', () => this.handleWindowResize());
             
             if (!window.location.hash) {
                 window.location.hash = '#/';
@@ -863,7 +936,7 @@ class ViewLogicRouter {
             // 개발 모드: 개별 파일들을 로드하고 병합
             const template = await this.loadTemplate(routeName);
             const style = await this.loadStyle(routeName);
-            const layout = this.config.useLayout ? await this.loadLayout(script.layout || this.config.defaultLayout) : null;
+            const layout = this.config.useLayout && script.layout !== null ? await this.loadLayout(script.layout || this.config.defaultLayout) : null;
             
             const router = this; // 라우터 인스턴스 참조를 컴포넌트 정의 밖에서 저장
             const component = {
@@ -1713,6 +1786,11 @@ class ViewLogicRouter {
                 currentQuery: this.currentQueryParams || {}
             };
 
+            // 모바일 메뉴 전역 함수 추가
+            this.currentVueApp.config.globalProperties.mobileMenuOpen = this.mobileMenuOpen;
+            this.currentVueApp.config.globalProperties.toggleMobileMenu = () => this.toggleMobileMenu();
+            this.currentVueApp.config.globalProperties.closeMobileMenu = () => this.closeMobileMenu();
+
             this.currentVueApp.mount('#app');
             
             this.transitionInProgress = false;
@@ -1761,6 +1839,11 @@ class ViewLogicRouter {
             currentRoute: this.currentHash,
             currentQuery: this.currentQueryParams || {}
         };
+
+        // 모바일 메뉴 전역 함수 추가
+        newVueApp.config.globalProperties.mobileMenuOpen = this.mobileMenuOpen;
+        newVueApp.config.globalProperties.toggleMobileMenu = () => this.toggleMobileMenu();
+        newVueApp.config.globalProperties.closeMobileMenu = () => this.closeMobileMenu();
 
         newVueApp.mount(`#${newPageContainer.id}`);
 
@@ -2297,7 +2380,7 @@ class ViewLogicRouter {
                 
                 // 레이아웃도 프리로드 (스크립트에 layout 정보가 있는 경우)
                 const script = this.getFromCache(`script_${routeName}`);
-                if (script && script.layout && this.config.useLayout) {
+                if (script && script.layout && script.layout !== null && this.config.useLayout) {
                     await this.loadLayout(script.layout);
                 }
             } catch (error) {

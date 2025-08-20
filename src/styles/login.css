@@ -1,0 +1,408 @@
+/* ====================================
+   Login Page Styles
+   ==================================== */
+
+.login-page {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 1rem;
+    padding-top: calc(var(--nav-height) + 1rem);
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    overflow-y: auto;
+    z-index: 9999;
+}
+
+/* 배경 패턴 */
+.login-page::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: 
+        radial-gradient(circle at 20% 80%, rgba(255, 255, 255, 0.1) 0%, transparent 70%),
+        radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.1) 0%, transparent 70%),
+        radial-gradient(circle at 40% 40%, rgba(255, 255, 255, 0.05) 0%, transparent 70%);
+    pointer-events: none;
+}
+
+.login-container {
+    background: var(--color-white);
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-xl);
+    padding: var(--space-xxl);
+    width: 100%;
+    max-width: 440px;
+    position: relative;
+    z-index: 1;
+    backdrop-filter: blur(10px);
+}
+
+/* 로그인 헤더 */
+.login-header {
+    text-align: center;
+    margin-bottom: var(--space-xxl);
+}
+
+.login-logo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-md);
+    margin-bottom: var(--space-lg);
+}
+
+.logo-icon {
+    font-size: 3rem;
+    filter: drop-shadow(0 4px 8px rgba(0, 123, 255, 0.3));
+    animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+    0%, 100% {
+        transform: translateY(0px);
+    }
+    50% {
+        transform: translateY(-10px);
+    }
+}
+
+.logo-text {
+    font-size: var(--font-size-3xl);
+    font-weight: 700;
+    margin: 0;
+    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.login-subtitle {
+    font-size: var(--font-size-lg);
+    color: var(--color-text-muted);
+    margin: 0;
+    font-weight: 400;
+}
+
+/* 로그인 폼 */
+.login-form {
+    margin-bottom: var(--space-xl);
+}
+
+.form-group {
+    margin-bottom: var(--space-lg);
+}
+
+.form-options {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-xl);
+    font-size: var(--font-size-sm);
+}
+
+.remember-me {
+    display: flex;
+    align-items: center;
+}
+
+.forgot-password {
+    color: var(--color-primary);
+    text-decoration: none;
+    font-weight: 500;
+    cursor: pointer;
+    transition: color var(--transition-base);
+}
+
+.forgot-password:hover {
+    color: var(--color-primary-hover);
+    text-decoration: underline;
+}
+
+.login-button {
+    margin-bottom: var(--space-lg);
+    font-weight: 600;
+    font-size: var(--font-size-base);
+    padding: var(--space-md) var(--space-lg);
+    height: 50px;
+    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover));
+    border: none;
+    transition: all var(--transition-base);
+}
+
+.login-button:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 123, 255, 0.3);
+}
+
+.login-button:active {
+    transform: translateY(0);
+}
+
+/* 소셜 로그인 */
+.social-login {
+    margin-bottom: var(--space-xl);
+}
+
+.social-divider {
+    position: relative;
+    text-align: center;
+    margin-bottom: var(--space-lg);
+}
+
+.social-divider::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: var(--color-border);
+}
+
+.social-divider span {
+    background: var(--color-white);
+    padding: 0 var(--space-md);
+    color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
+}
+
+.social-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+}
+
+.social-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-md);
+    padding: var(--space-md) var(--space-lg);
+    height: 48px;
+    font-weight: 500;
+    border: 2px solid var(--color-border);
+    transition: all var(--transition-base);
+}
+
+.social-icon {
+    font-size: var(--font-size-lg);
+}
+
+.google-login {
+    color: #4285f4;
+    border-color: #4285f4;
+}
+
+.google-login:hover {
+    background: #4285f4;
+    color: var(--color-white);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(66, 133, 244, 0.3);
+}
+
+.kakao-login {
+    color: #fee500;
+    background: #fee500;
+    border-color: #fee500;
+    color: #3c1e1e;
+}
+
+.kakao-login:hover {
+    background: #fdd800;
+    border-color: #fdd800;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(254, 229, 0, 0.4);
+}
+
+/* 회원가입 링크 */
+.signup-link {
+    text-align: center;
+    padding-top: var(--space-lg);
+    border-top: 1px solid var(--color-border);
+}
+
+.signup-link p {
+    margin: 0;
+    color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
+}
+
+.signup-text {
+    color: var(--color-primary);
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    margin-left: var(--space-xs);
+    transition: color var(--transition-base);
+}
+
+.signup-text:hover {
+    color: var(--color-primary-hover);
+    text-decoration: underline;
+}
+
+/* 알림 메시지 스타일링 */
+.login-form .alert {
+    margin-bottom: var(--space-lg);
+    border-radius: var(--border-radius-base);
+    font-size: var(--font-size-sm);
+}
+
+/* 입력 필드 커스터마이징 */
+.login-form .input-field {
+    height: 50px;
+    font-size: var(--font-size-base);
+    border-radius: var(--border-radius-base);
+    transition: all var(--transition-base);
+}
+
+.login-form .input-field:focus {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px var(--color-primary-light);
+    transform: translateY(-1px);
+}
+
+.login-form .input-label {
+    font-weight: 600;
+    color: var(--color-text);
+    margin-bottom: var(--space-sm);
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+    .login-page {
+        padding: var(--space-md);
+        align-items: flex-start;
+        padding-top: calc(var(--nav-height) + var(--space-xxl));
+    }
+    
+    .login-container {
+        padding: var(--space-xl) var(--space-lg);
+        max-width: 100%;
+        margin: 0 auto;
+    }
+    
+    .logo-text {
+        font-size: var(--font-size-xxl);
+    }
+    
+    .logo-icon {
+        font-size: 2.5rem;
+    }
+    
+    .form-options {
+        flex-direction: column;
+        gap: var(--space-md);
+        align-items: stretch;
+        text-align: center;
+    }
+    
+    .social-buttons {
+        gap: var(--space-sm);
+    }
+    
+    .social-button {
+        height: 44px;
+        padding: var(--space-sm) var(--space-md);
+        font-size: var(--font-size-sm);
+    }
+    
+    .login-button {
+        height: 48px;
+        font-size: var(--font-size-sm);
+    }
+}
+
+@media (max-width: 480px) {
+    .login-container {
+        padding: var(--space-lg);
+    }
+    
+    .login-header {
+        margin-bottom: var(--space-xl);
+    }
+    
+    .logo-text {
+        font-size: var(--font-size-xl);
+    }
+    
+    .logo-icon {
+        font-size: 2rem;
+    }
+}
+
+/* 접근성 개선 */
+@media (prefers-reduced-motion: reduce) {
+    .logo-icon {
+        animation: none;
+    }
+    
+    .login-button:hover:not(:disabled) {
+        transform: none;
+    }
+    
+    .social-button:hover {
+        transform: none;
+    }
+}
+
+/* 다크 모드 지원 */
+@media (prefers-color-scheme: dark) {
+    .login-page {
+        background: linear-gradient(135deg, #1a365d 0%, #2d3748 100%);
+    }
+    
+    .login-container {
+        background: var(--color-white);
+        border: 1px solid #4a5568;
+    }
+    
+    .social-divider::before {
+        background: #4a5568;
+    }
+    
+    .signup-link {
+        border-top-color: #4a5568;
+    }
+}
+
+/* 로딩 상태 */
+.login-button.btn-loading {
+    cursor: not-allowed;
+}
+
+.social-button.btn-loading {
+    cursor: not-allowed;
+    opacity: 0.8;
+}
+
+/* 폼 애니메이션 */
+.form-group {
+    animation: slideInUp 0.4s ease-out;
+    animation-fill-mode: both;
+}
+
+.form-group:nth-child(1) { animation-delay: 0.1s; }
+.form-group:nth-child(2) { animation-delay: 0.2s; }
+.form-options { animation: slideInUp 0.4s ease-out 0.3s both; }
+.login-button { animation: slideInUp 0.4s ease-out 0.4s both; }
+
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

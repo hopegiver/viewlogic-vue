@@ -1,0 +1,329 @@
+/* ====================================
+   Signup Page Styles
+   ==================================== */
+
+.signup-page {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 1.5rem;
+    padding-top: calc(var(--nav-height) + 12rem);
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    overflow-y: auto;
+    z-index: 9999;
+}
+
+.signup-container {
+    background: var(--color-white);
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-xl);
+    padding: var(--space-xxl);
+    width: 100%;
+    max-width: 480px;
+    position: relative;
+    z-index: 1;
+    backdrop-filter: blur(10px);
+}
+
+/* 회원가입 헤더 */
+.signup-header {
+    text-align: center;
+    margin-bottom: var(--space-xxl);
+}
+
+.signup-logo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-md);
+    margin-bottom: var(--space-lg);
+}
+
+.logo-icon {
+    font-size: 3rem;
+    filter: drop-shadow(0 4px 8px rgba(0, 123, 255, 0.3));
+    animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+    0%, 100% {
+        transform: translateY(0px);
+    }
+    50% {
+        transform: translateY(-10px);
+    }
+}
+
+.logo-text {
+    font-size: var(--font-size-3xl);
+    font-weight: 700;
+    margin: 0;
+    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.signup-subtitle {
+    font-size: var(--font-size-lg);
+    color: var(--color-text-muted);
+    margin: 0;
+    font-weight: 400;
+}
+
+/* 회원가입 폼 */
+.signup-form {
+    margin-bottom: var(--space-xl);
+}
+
+.form-row {
+    display: flex;
+    gap: var(--space-md);
+}
+
+.form-group {
+    margin-bottom: var(--space-lg);
+    flex: 1;
+}
+
+.form-group.full-width {
+    flex: none;
+}
+
+.form-options {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-xl);
+    font-size: var(--font-size-sm);
+}
+
+.terms-agreement {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-xl);
+    font-size: var(--font-size-sm);
+}
+
+.terms-text {
+    line-height: 1.5;
+    color: var(--color-text-muted);
+}
+
+.terms-link {
+    color: var(--color-primary);
+    text-decoration: none;
+    font-weight: 500;
+    cursor: pointer;
+    transition: color var(--transition-base);
+}
+
+.terms-link:hover {
+    color: var(--color-primary-hover);
+    text-decoration: underline;
+}
+
+.signup-button {
+    margin-bottom: var(--space-lg);
+    font-weight: 600;
+    font-size: var(--font-size-base);
+    padding: var(--space-md) var(--space-lg);
+    height: 50px;
+    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover));
+    border: none;
+    transition: all var(--transition-base);
+}
+
+.signup-button:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 123, 255, 0.3);
+}
+
+.signup-button:active {
+    transform: translateY(0);
+}
+
+/* 소셜 회원가입 */
+.social-signup {
+    margin-bottom: var(--space-xl);
+}
+
+.social-divider {
+    position: relative;
+    text-align: center;
+    margin-bottom: var(--space-lg);
+}
+
+.social-divider::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: var(--color-border);
+}
+
+.social-divider span {
+    background: var(--color-white);
+    padding: 0 var(--space-md);
+    color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
+}
+
+.social-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+}
+
+.social-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-md);
+    padding: var(--space-md) var(--space-lg);
+    height: 48px;
+    font-weight: 500;
+    border: 2px solid var(--color-border);
+    transition: all var(--transition-base);
+}
+
+.social-icon {
+    font-size: var(--font-size-lg);
+}
+
+.google-signup {
+    color: #4285f4;
+    border-color: #4285f4;
+}
+
+.google-signup:hover {
+    background: #4285f4;
+    color: var(--color-white);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(66, 133, 244, 0.3);
+}
+
+.kakao-signup {
+    color: #fee500;
+    background: #fee500;
+    border-color: #fee500;
+    color: #3c1e1e;
+}
+
+.kakao-signup:hover {
+    background: #fdd800;
+    border-color: #fdd800;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(254, 229, 0, 0.4);
+}
+
+/* 로그인 링크 */
+.login-link {
+    text-align: center;
+    padding-top: var(--space-lg);
+    border-top: 1px solid var(--color-border);
+}
+
+.login-link p {
+    margin: 0;
+    color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
+}
+
+.login-text {
+    color: var(--color-primary);
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    margin-left: var(--space-xs);
+    transition: color var(--transition-base);
+}
+
+.login-text:hover {
+    color: var(--color-primary-hover);
+    text-decoration: underline;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+    .signup-page {
+        padding: var(--space-md);
+        align-items: flex-start;
+        padding-top: calc(var(--nav-height) + 12rem);
+        padding-bottom: var(--space-lg);
+    }
+    
+    .signup-container {
+        padding: var(--space-xl) var(--space-lg);
+        max-width: 100%;
+        margin: 0 auto;
+    }
+    
+    .form-row {
+        flex-direction: column;
+        gap: 0;
+    }
+    
+    .logo-text {
+        font-size: var(--font-size-xxl);
+    }
+    
+    .logo-icon {
+        font-size: 2.5rem;
+    }
+    
+    .terms-agreement {
+        flex-direction: column;
+        gap: var(--space-sm);
+        align-items: flex-start;
+    }
+    
+    .social-buttons {
+        gap: var(--space-sm);
+    }
+    
+    .social-button {
+        height: 44px;
+        padding: var(--space-sm) var(--space-md);
+        font-size: var(--font-size-sm);
+    }
+    
+    .signup-button {
+        height: 48px;
+        font-size: var(--font-size-sm);
+    }
+}
+
+/* 폼 애니메이션 */
+.form-group {
+    animation: slideInUp 0.4s ease-out;
+    animation-fill-mode: both;
+}
+
+.form-group:nth-child(1) { animation-delay: 0.1s; }
+.form-group:nth-child(2) { animation-delay: 0.2s; }
+.form-group:nth-child(3) { animation-delay: 0.3s; }
+.form-group:nth-child(4) { animation-delay: 0.4s; }
+.form-row { animation: slideInUp 0.4s ease-out 0.2s both; }
+.terms-agreement { animation: slideInUp 0.4s ease-out 0.5s both; }
+.signup-button { animation: slideInUp 0.4s ease-out 0.6s both; }
+
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

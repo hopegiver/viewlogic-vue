@@ -1,0 +1,129 @@
+<div class="login-page">
+    <div class="login-container">
+        <!-- 로그인 헤더 -->
+        <div class="login-header">
+            <div class="login-logo">
+                <span class="logo-icon">🚀</span>
+                <h1 class="logo-text">ViewLogic</h1>
+            </div>
+            <p class="login-subtitle">{{ $t ? $t('login.welcome') : '계정에 로그인하세요' }}</p>
+        </div>
+
+        <!-- 로그인 폼 -->
+        <form @submit.prevent="handleLogin" class="login-form">
+            <!-- 이메일/사용자명 입력 -->
+            <div class="form-group">
+                <Input 
+                    v-model="form.email"
+                    :label="$t ? $t('login.email') : '이메일'"
+                    type="email"
+                    :placeholder="$t ? $t('login.email_placeholder') : 'your@email.com'"
+                    :required="true"
+                    :error="errors.email"
+                    prefix-icon="✉️"
+                    size="large"
+                />
+            </div>
+
+            <!-- 비밀번호 입력 -->
+            <div class="form-group">
+                <Input 
+                    v-model="form.password"
+                    :label="$t ? $t('login.password') : '비밀번호'"
+                    type="password"
+                    :placeholder="$t ? $t('login.password_placeholder') : '비밀번호를 입력하세요'"
+                    :required="true"
+                    :error="errors.password"
+                    prefix-icon="🔒"
+                    size="large"
+                    show-password-toggle
+                />
+            </div>
+
+            <!-- 기억하기 & 비밀번호 찾기 -->
+            <div class="form-options">
+                <div class="remember-me">
+                    <Checkbox 
+                        v-model="form.remember"
+                        :label="$t ? $t('login.remember_me') : '로그인 상태 유지'"
+                    />
+                </div>
+                <a @click="navigateTo('forgot-password')" class="forgot-password">
+                    {{ $t ? $t('login.forgot_password') : '비밀번호를 잊으셨나요?' }}
+                </a>
+            </div>
+
+            <!-- 에러 메시지 -->
+            <Alert 
+                v-if="loginError"
+                type="danger"
+                :title="$t ? $t('login.error_title') : '로그인 실패'"
+                :message="loginError"
+                :closable="true"
+                @close="clearError"
+            />
+
+            <!-- 로그인 버튼 -->
+            <Button 
+                type="submit"
+                variant="primary"
+                size="large"
+                :loading="isLoading"
+                :disabled="!isFormValid"
+                block
+                class="login-button"
+            >
+                <template v-if="isLoading">
+                    {{ $t ? $t('login.signing_in') : '로그인 중...' }}
+                </template>
+                <template v-else>
+                    {{ $t ? $t('login.sign_in') : '로그인' }}
+                </template>
+            </Button>
+        </form>
+
+        <!-- 소셜 로그인 -->
+        <div class="social-login" v-if="socialLoginEnabled">
+            <div class="social-divider">
+                <span>{{ $t ? $t('login.or') : '또는' }}</span>
+            </div>
+            
+            <div class="social-buttons">
+                <Button 
+                    @click="handleSocialLogin('google')"
+                    variant="outline"
+                    size="large"
+                    :loading="socialLoading.google"
+                    class="social-button google-login"
+                >
+                    <span class="social-icon">🌐</span>
+                    {{ $t ? $t('login.google_login') : 'Google로 로그인' }}
+                </Button>
+                
+                <Button 
+                    @click="handleSocialLogin('kakao')"
+                    variant="outline"
+                    size="large"
+                    :loading="socialLoading.kakao"
+                    class="social-button kakao-login"
+                >
+                    <span class="social-icon">💬</span>
+                    {{ $t ? $t('login.kakao_login') : '카카오로 로그인' }}
+                </Button>
+            </div>
+        </div>
+
+        <!-- 회원가입 링크 -->
+        <div class="signup-link">
+            <p>
+                {{ $t ? $t('login.no_account') : '계정이 없으신가요?' }}
+                <a @click="navigateTo('signup')" class="signup-text">
+                    {{ $t ? $t('login.sign_up') : '회원가입' }}
+                </a>
+            </p>
+        </div>
+    </div>
+
+    <!-- Toast 알림 -->
+    <Toast ref="toast" position="top-right" />
+</div>

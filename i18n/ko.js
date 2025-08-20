@@ -144,5 +144,87 @@ export default {
         today: '오늘',
         yesterday: '어제',
         tomorrow: '내일'
+    },
+
+    // 로그인 페이지
+    login: {
+        welcome: '계정에 로그인하세요',
+        email: '이메일',
+        password: '비밀번호',
+        email_placeholder: 'your@email.com',
+        password_placeholder: '비밀번호를 입력하세요',
+        remember_me: '로그인 상태 유지',
+        forgot_password: '비밀번호를 잊으셨나요?',
+        sign_in: '로그인',
+        signing_in: '로그인 중...',
+        or: '또는',
+        google_login: 'Google로 로그인',
+        kakao_login: '카카오로 로그인',
+        no_account: '계정이 없으신가요?',
+        sign_up: '회원가입',
+        
+        // 에러 메시지
+        email_required: '이메일을 입력하세요.',
+        email_invalid: '올바른 이메일 주소를 입력하세요.',
+        password_required: '비밀번호를 입력하세요.',
+        password_min_length: '비밀번호는 {length}자 이상이어야 합니다.',
+        invalid_credentials: '이메일 또는 비밀번호가 올바르지 않습니다.',
+        network_error: '네트워크 오류가 발생했습니다. 다시 시도해주세요.',
+        social_login_failed: '소셜 로그인에 실패했습니다.',
+        social_login_error: '소셜 로그인 중 오류가 발생했습니다.',
+        
+        // 성공 메시지
+        login_success: '로그인 성공',
+        welcome_back: '환영합니다, {name}님!',
+        error_title: '로그인 실패'
+    },
+
+    // 회원가입 페이지
+    signup: {
+        welcome: '새 계정을 만들어보세요',
+        first_name: '이름',
+        last_name: '성',
+        email: '이메일',
+        password: '비밀번호',
+        confirm_password: '비밀번호 확인',
+        first_name_placeholder: '이름을 입력하세요',
+        last_name_placeholder: '성을 입력하세요',
+        email_placeholder: 'your@email.com',
+        password_placeholder: '8자 이상 입력하세요',
+        confirm_password_placeholder: '비밀번호를 다시 입력하세요',
+        create_account: '계정 만들기',
+        creating_account: '계정 생성 중...',
+        or: '또는',
+        google_signup: 'Google로 가입',
+        kakao_signup: '카카오로 가입',
+        have_account: '이미 계정이 있으신가요?',
+        sign_in: '로그인',
+        
+        // 약관 동의
+        agree_to: '다음에 동의합니다',
+        terms_of_service: '이용약관',
+        privacy_policy: '개인정보처리방침',
+        and: '및',
+        
+        // 에러 메시지
+        first_name_required: '이름을 입력하세요.',
+        last_name_required: '성을 입력하세요.',
+        email_required: '이메일을 입력하세요.',
+        email_invalid: '올바른 이메일 주소를 입력하세요.',
+        email_exists: '이미 사용중인 이메일입니다.',
+        password_required: '비밀번호를 입력하세요.',
+        password_min_length: '비밀번호는 {length}자 이상이어야 합니다.',
+        confirm_password_required: '비밀번호 확인을 입력하세요.',
+        password_mismatch: '비밀번호가 일치하지 않습니다.',
+        terms_required: '이용약관에 동의해주세요.',
+        signup_failed: '회원가입에 실패했습니다.',
+        network_error: '네트워크 오류가 발생했습니다. 다시 시도해주세요.',
+        social_signup_failed: '소셜 회원가입에 실패했습니다.',
+        social_signup_error: '소셜 회원가입 중 오류가 발생했습니다.',
+        
+        // 성공 메시지
+        signup_success: '회원가입 성공',
+        welcome_message: '환영합니다, {name}님!',
+        error_title: '회원가입 실패'
     }
 };
