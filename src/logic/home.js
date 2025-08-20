@@ -7,23 +7,13 @@ export default {
     headerSubtitle: 'Vue 3 Compatible Router System with Components',
     data() {
         return {
-            message: 'Vue 3 컴포넌트로 동작중입니다!',
+            message: '',
             actionLoading: false,
             showModal: false,
             modalInput: '',
             demoInput: '',
             activeTab: 'demo1',
-            features: [
-                '해시 기반 라우팅',
-                '동적 Vue SFC 조합',
-                '뷰/로직/스타일 완전 분리',
-                'Vue 3 Composition API 지원',
-                'Vue 스타일 데이터 바인딩',
-                '레이아웃 시스템 지원',
-                '재사용 가능한 컴포넌트 시스템',
-                '로딩 상태 관리',
-                '에러 처리 시스템'
-            ],
+            features: [],
             tabsData: [
                 {
                     name: 'demo1',
@@ -119,18 +109,38 @@ export default {
                     duration: 2000
                 });
             }
+        },
+        
+        loadI18nData() {
+            if (this.$t) {
+                this.message = this.$t('home.message');
+                this.features = this.$t('home.features');
+                this.headerTitle = this.$t('home.title');
+                this.headerSubtitle = this.$t('home.subtitle');
+            }
+        },
+        
+        onLanguageChanged(data) {
+            console.log('Language changed to:', data.language);
+            // 언어가 변경되면 데이터 다시 로드
+            this.$nextTick(() => {
+                this.loadI18nData();
+            });
         }
     },
     
     mounted() {
+        // i18n 데이터 로딩
+        this.loadI18nData();
+        
         // 컴포넌트 시스템 로드 완료 알림
         setTimeout(() => {
             if (this.$refs.toast) {
-                this.$refs.toast.success('컴포넌트 시스템이 로드되었습니다!', {
-                    title: '시스템 준비 완료',
+                this.$refs.toast.success(this.$t ? this.$t('components.toast.test_message') : '컴포넌트 시스템이 로드되었습니다!', {
+                    title: this.$t ? this.$t('common.success') : '시스템 준비 완료',
                     duration: 3000
                 });
             }
         }, 1000);
     }
-}
+};

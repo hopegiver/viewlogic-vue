@@ -52,7 +52,7 @@ export default {
                     <button
                         class="pagination-link"
                         @click="goToPage(page)"
-                        :aria-label="`페이지 ${page}로 이동`"
+                        :aria-label="'페이지 ' + page + '로 이동'"
                         :aria-current="page === currentPage ? 'page' : null"
                     >
                         {{ page }}
@@ -102,6 +102,7 @@ export default {
             </div>
         </nav>
     `,
+    emits: ['update:modelValue', 'change', 'page-change'],
     props: {
         currentPage: {
             type: Number,

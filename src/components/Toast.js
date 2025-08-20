@@ -33,6 +33,7 @@ export default {
             </div>
         </teleport>
     `,
+    emits: ['close'],
     props: {
         position: {
             type: String,

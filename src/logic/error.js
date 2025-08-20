@@ -70,9 +70,9 @@ export default {
         },
         goHome() {
             if (window.router) {
-                window.router.navigate('home');
+                window.router.navigateTo('home');
             } else {
-                window.location.href = '#/home';
+                window.location.href = '#/';
             }
         },
         goBack() {

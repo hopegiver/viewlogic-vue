@@ -143,6 +143,7 @@ export default {
             </div>
         </div>
     `,
+    emits: ['sort', 'select', 'row-click', 'cell-click'],
     props: {
         data: {
             type: Array,

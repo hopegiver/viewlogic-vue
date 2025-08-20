@@ -52,6 +52,7 @@ export default {
             </div>
         </teleport>
     `,
+    emits: ['update:modelValue', 'close', 'cancel', 'confirm'],
     props: {
         modelValue: {
             type: Boolean,

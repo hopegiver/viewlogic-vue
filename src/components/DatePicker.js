@@ -84,6 +84,7 @@ export default {
             </div>
         </div>
     `,
+    emits: ['update:modelValue', 'change', 'clear'],
     props: {
         modelValue: {
             type: [Date, String],

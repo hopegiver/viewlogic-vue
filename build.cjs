@@ -14,7 +14,7 @@ class ViewLogicBuilder {
         this.config = {
             srcPath: options.srcPath || './src',
             routesPath: options.routesPath || './routes',
-            minify: options.minify || false,
+            minify: options.minify || true,
             sourceMap: options.sourceMap || false,
             watch: options.watch || false,
             verbose: options.verbose || false,
@@ -699,8 +699,8 @@ class ViewLogicBuilder {
                 for (const [methodKey, methodValue] of Object.entries(value)) {
                     if (typeof methodValue === 'function') {
                         const funcStr = methodValue.toString();
-                        // 함수 이름이 중복되지 않도록 처리
-                        if (funcStr.startsWith(`${methodKey}(`)) {
+                        // 함수 이름이 중복되지 않도록 처리, async 함수 고려
+                        if (funcStr.startsWith(`${methodKey}(`) || funcStr.startsWith(`async ${methodKey}(`)) {
                             lines.push(`        ${funcStr},`);
                         } else {
                             lines.push(`        ${methodKey}: ${funcStr},`);

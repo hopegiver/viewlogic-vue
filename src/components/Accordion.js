@@ -17,7 +17,7 @@ export default {
                     :class="getHeaderClasses(item, index)"
                     @click="toggleItem(index)"
                     :aria-expanded="isExpanded(index)"
-                    :aria-controls="`accordion-content-${index}`"
+                    :aria-controls="'accordion-content-' + index"
                 >
                     <span v-if="item.icon" :class="['accordion-icon', item.icon]"></span>
                     <span class="accordion-title">{{ item.title }}</span>
@@ -30,12 +30,12 @@ export default {
                 <transition name="accordion-content" @enter="enter" @leave="leave">
                     <div
                         v-if="isExpanded(index)"
-                        :id="`accordion-content-${index}`"
+                        :id="'accordion-content-' + index"
                         class="accordion-content"
                         :class="getContentClasses(item, index)"
                     >
                         <div class="accordion-body">
-                            <slot :name="`content-${index}`" :item="item" :index="index">
+                            <slot :name="'content-' + index" :item="item" :index="index">
                                 <div v-html="item.content"></div>
                             </slot>
                         </div>
@@ -44,6 +44,7 @@ export default {
             </div>
         </div>
     `,
+    emits: ['update:modelValue', 'change'],
     props: {
         items: {
             type: Array,

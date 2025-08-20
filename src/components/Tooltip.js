@@ -32,6 +32,7 @@ export default {
             </teleport>
         </div>
     `,
+    emits: ['show', 'hide'],
     props: {
         content: {
             type: String,

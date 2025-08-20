@@ -60,6 +60,7 @@ export default {
             </div>
         </div>
     `,
+    emits: ['update:modelValue', 'input', 'blur', 'focus', 'enter'],
     props: {
         modelValue: {
             type: [String, Number],

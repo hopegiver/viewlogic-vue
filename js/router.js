@@ -18,11 +18,36 @@ class VueCompatibleRouter {
             loadingMinDuration: options.loadingMinDuration || 300, // 최소 로딩 시간 (UX 개선)
             enableErrorReporting: options.enableErrorReporting !== false, // 에러 리포팅 활성화
             useComponents: options.useComponents !== false, // 컴포넌트 시스템 사용 여부
-            globalComponents: options.globalComponents || ['Button', 'Modal', 'Card', 'Toast', 'Input', 'Tabs'], // 전역 컴포넌트 목록
-            preloadComponents: options.preloadComponents !== false // 컴포넌트 사전 로드 여부
+            // 보안 설정
+            security: {
+                enableParameterValidation: options.security?.enableParameterValidation !== false,
+                maxParameterLength: options.security?.maxParameterLength || 1000,
+                maxParameterCount: options.security?.maxParameterCount || 50,
+                maxArraySize: options.security?.maxArraySize || 100,
+                allowedKeyPattern: options.security?.allowedKeyPattern || /^[a-zA-Z0-9_-]+$/,
+                logSecurityWarnings: options.security?.logSecurityWarnings !== false
+            },
+            // i18n 설정
+            useI18n: options.useI18n !== false, // 다국어 시스템 사용 여부
+            i18nDefaultLanguage: options.i18nDefaultLanguage || 'ko', // 기본 언어 (폴백 언어로도 사용)
+            
+            // 인증 설정
+            auth: {
+                enabled: options.auth?.enabled || false, // 인증 시스템 사용 여부
+                loginRoute: options.auth?.loginRoute || 'login', // 로그인 페이지 라우트
+                protectedRoutes: options.auth?.protectedRoutes || [], // 보호된 특정 라우트들
+                protectedPrefixes: options.auth?.protectedPrefixes || [], // 보호된 prefix들 (예: ['admin', 'dashboard'])
+                publicRoutes: options.auth?.publicRoutes || ['login', 'register', 'home'], // 공개 라우트들
+                checkAuthFunction: options.auth?.checkAuthFunction || null, // 사용자 정의 인증 체크 함수
+                redirectAfterLogin: options.auth?.redirectAfterLogin || 'home', // 로그인 후 리다이렉트할 페이지
+                // 쿠키 기반 인증 설정
+                cookieName: options.auth?.cookieName || 'authToken', // 인증 쿠키 이름
+                fallbackCookieNames: options.auth?.fallbackCookieNames || ['accessToken', 'token', 'jwt'] // 대체 쿠키 이름들
+            }
         };
         
         this.currentHash = '';
+        this.currentQueryParams = {};
         this.currentVueApp = null;
         this.previousVueApp = null; // 이전 Vue 앱 (전환 효과를 위해 보관)
         this.cache = new Map();
@@ -35,13 +60,28 @@ class VueCompatibleRouter {
         this.progressBar = null; // 프로그레스 바 엘리먼트
         this.loadingOverlay = null; // 로딩 오버레이 엘리먼트
         this.componentLoader = null; // 컴포넌트 로더 인스턴스
-        
-        this.init();
+
+        this.init();        
+        this.i18nInitPromise = this.initializeI18n();        
         this.initializeLoadingComponents();
         this.initializeComponentSystem();
 
         // 초기 라우트 로드 후 프리로딩 시작 (설정된 지연 시간 후)
         setTimeout(() => this.startPreloading(), this.config.preloadDelay);
+        
+        // 개발 편의를 위한 전역 캐시 관리 함수 노출
+        if (this.config.environment === 'development') {
+            window.routerCache = {
+                clear: () => this.clearCache(),
+                clearComponents: () => this.clearComponentCache(),
+                invalidateComponent: (routeName) => this.invalidateComponentCache(routeName),
+                stats: () => ({
+                    totalEntries: this.cache.size,
+                    componentEntries: Array.from(this.cache.keys()).filter(key => key.startsWith('component_')).length,
+                    scriptEntries: Array.from(this.cache.keys()).filter(key => key.startsWith('script_')).length
+                })
+            };
+        }
     }
 
     init() {
@@ -57,7 +97,7 @@ class VueCompatibleRouter {
             }
             
             if (!window.location.hash) {
-                window.location.hash = '#home';
+                window.location.hash = '#/';
             }
         } else {
             // History 모드
@@ -203,16 +243,12 @@ class VueCompatibleRouter {
             
             this.componentLoader = getComponentLoader({
                 basePath: this.config.basePath + '/components',
-                globalComponents: this.config.globalComponents,
                 cache: true
             });
 
             console.log('🧩 Component system initialized (development mode)');
             
-            // 컴포넌트 사전 로드
-            if (this.config.preloadComponents && this.config.globalComponents.length > 0) {
-                setTimeout(() => this.preloadGlobalComponents(), 500);
-            }
+            // 컴포넌트는 필요시 동적으로 로드됨
 
         } catch (error) {
             console.warn('⚠️ Component system initialization failed:', error);
@@ -252,28 +288,151 @@ class VueCompatibleRouter {
         }
     }
 
+    async initializeI18n() {
+        try {
+            // 라우터에서 i18n이 비활성화된 경우 초기화하지 않음
+            if (!this.config.useI18n) {
+                console.log('I18n system disabled in router config, skipping initialization');
+                return;
+            }
+            
+            // i18n 스크립트 로드 (ES6 모듈 동적 import 사용)
+            if (typeof window.i18n === 'undefined') {
+                try {
+                    await import('./i18n.js');
+                    console.log('I18n module loaded successfully');
+                } catch (error) {
+                    console.error('Failed to load i18n module:', error);
+                    throw error;
+                }
+            }
+            
+            // i18n 시스템 초기화 (활성화된 경우에만)
+            if (window.i18n) {
+                // 라우터 설정으로 i18n 설정 업데이트
+                if (window.i18n.updateConfig) {
+                    window.i18n.updateConfig({
+                        enabled: this.config.useI18n,
+                        defaultLanguage: this.config.i18nDefaultLanguage,
+                        fallbackLanguage: this.config.i18nDefaultLanguage, // 폴백 언어는 기본 언어와 동일
+                        debug: this.config.environment === 'development' // 개발 환경에서만 디버그 활성화
+                    });
+                }
+                
+                // i18n이 비활성화된 경우 초기화하지 않음
+                if (!window.i18n.isEnabled()) {
+                    console.log('I18n system is disabled, skipping initialization');
+                    return;
+                }
+                
+                await window.i18n.initialize();
+                
+                // URL 쿼리 파라미터에서 언어 설정 확인 및 적용
+                const langFromQuery = this.getQueryParam('lang');
+                if (langFromQuery && langFromQuery !== window.i18n.getCurrentLanguage()) {
+                    console.log('Setting language from URL parameter:', langFromQuery);
+                    await window.i18n.setLanguage(langFromQuery);
+                }
+                
+                // 언어 변경 이벤트 리스너 등록
+                window.i18n.on('languageChanged', (data) => {
+                    this.onLanguageChanged(data);
+                });
+                
+                console.log('I18n system initialized successfully with router config');
+            }
+        } catch (error) {
+            console.warn('Failed to initialize i18n system:', error);
+        }
+    }
+
+    async loadExternalScript(src, options = {}) {
+        return new Promise((resolve, reject) => {
+            if (document.querySelector(`script[src="${src}"]`)) {
+                resolve();
+                return;
+            }
+            
+            const script = document.createElement('script');
+            script.src = src;
+            
+            // ES6 모듈 지원
+            if (options.type === 'module' || src.includes('i18n.js')) {
+                script.type = 'module';
+            }
+            
+            script.onload = resolve;
+            script.onerror = reject;
+            document.head.appendChild(script);
+        });
+    }
+
+    onLanguageChanged(data) {
+        // 언어 변경 시 현재 페이지 다시 렌더링
+        if (this.currentVueApp) {
+            // 현재 라우트 다시 로드하여 번역 적용
+            this.loadRoute(this.currentHash, true);
+        }
+        
+        console.log('Language changed from', data.from, 'to', data.to);
+    }
+
+    updateI18nGlobalProperties(app) {
+        if (app) {
+            // 라우터에서 i18n이 비활성화된 경우 더미 함수 제공
+            if (!this.config.useI18n || (window.i18n && !window.i18n.isEnabled())) {
+                app.config.globalProperties.$t = (key, params) => key;
+                app.config.globalProperties.$i18n = null;
+                app.config.globalProperties.$lang = this.config.i18nDefaultLanguage;
+            } else if (window.i18n) {
+                app.config.globalProperties.$t = (key, params) => window.i18n.t(key, params);
+                app.config.globalProperties.$i18n = window.i18n;
+                app.config.globalProperties.$lang = window.i18n.getCurrentLanguage();
+            } else {
+                // i18n이 아직 로드되지 않은 경우 더미 함수 제공
+                app.config.globalProperties.$t = (key, params) => key;
+                app.config.globalProperties.$i18n = null;
+                app.config.globalProperties.$lang = this.config.i18nDefaultLanguage;
+            }
+        }
+    }
+
+    // DEPRECATED: 컴포넌트는 이제 createVueComponent 단계에서 포함됨
     registerComponentsToVueApp(vueApp) {
         if (!this.config.useComponents || !vueApp) {
-            console.log('⚠️ Components not enabled or Vue app not provided');
+            if (this.config.environment === 'development') {
+                console.log('⚠️ Components not enabled or Vue app not provided');
+            }
             return;
         }
 
-        console.log('🔧 Registering components to Vue app...');
-        console.log('🔧 Environment:', this.config.environment);
-        console.log('🔧 Unified components module available:', !!this.unifiedComponentsModule);
+        // 컴포넌트 등록은 각 Vue 앱마다 필요하므로 항상 수행
+        // 하지만 컴포넌트 모듈은 이미 로드되어 있어서 빠르게 등록됨
+
+        if (this.config.environment === 'development') {
+            console.log('🔧 Registering components to Vue app...');
+            console.log('🔧 Environment:', this.config.environment);
+            console.log('🔧 Unified components module available:', !!this.unifiedComponentsModule);
+        }
 
         try {
             // 프로덕션 모드에서 통합 컴포넌트 등록
             if (this.config.environment === 'production' && this.unifiedComponentsModule) {
-                console.log('🔧 Calling registerComponents function...');
+                if (this.config.environment === 'development') {
+                    console.log('🔧 Calling registerComponents function...');
+                }
                 this.unifiedComponentsModule.registerComponents(vueApp);
-                console.log('✅ Components registered successfully');
+                if (this.config.environment === 'development') {
+                    console.log('✅ Components registered successfully');
+                }
                 return true;
             }
 
             // 개발 모드에서 ComponentLoader 사용
             if (this.componentLoader) {
-                console.log('🔧 Using ComponentLoader for development mode...');
+                if (this.config.environment === 'development') {
+                    console.log('🔧 Using ComponentLoader for development mode...');
+                }
                 this.componentLoader.registerGlobalComponents(vueApp);
                 return true;
             }
@@ -289,24 +448,6 @@ class VueCompatibleRouter {
         return false;
     }
 
-    async preloadGlobalComponents() {
-        if (!this.componentLoader) return;
-
-        try {
-            console.log('🚀 Preloading global components...');
-            const result = await this.componentLoader.preloadComponents(this.config.globalComponents);
-            
-            if (result.successful.length > 0) {
-                console.log(`✅ Preloaded components: ${result.successful.join(', ')}`);
-            }
-            
-            if (result.failed.length > 0) {
-                console.warn(`⚠️ Failed to preload components:`, result.failed.map(f => f.name).join(', '));
-            }
-        } catch (error) {
-            console.warn('Component preloading failed:', error);
-        }
-    }
 
     async registerComponentsForVueApp(vueApp) {
         if (!this.config.useComponents || !vueApp) {
@@ -315,7 +456,7 @@ class VueCompatibleRouter {
 
         // 프로덕션 모드에서는 컴포넌트가 라우트에 인라인으로 포함되어 있음
         if (this.config.environment === 'production') {
-            console.log('📝 Production mode: Components registered via inline routes');
+            // 프로덕션 모드에서는 컴포넌트가 라우트에 인라인으로 포함되어 있음
             return { successful: [], failed: [] };
         }
 
@@ -336,62 +477,38 @@ class VueCompatibleRouter {
         }
     }
 
-    async loadComponentStyles() {
-        // 컴포넌트 CSS는 이제 base.css에 통합되어 있으므로 별도 로딩 불필요
-        console.log('🎨 Component styles already integrated in base.css');
-        return;
-    }
-
-    registerInlineComponents(vueApp, component) {
-        // 프로덕션 빌드에 인라인으로 포함된 컴포넌트들을 등록
-        if (!vueApp || !component) return;
-        
-        if (component.registerInlineComponents && typeof component.registerInlineComponents === 'function') {
-            try {
-                component.registerInlineComponents(vueApp);
-                console.log('📦 Inline components registered for route:', component._routeName);
-            } catch (error) {
-                console.warn('Failed to register inline components:', error);
-            }
-        }
-    }
-
-    addLoadingStyles() {
-        if (!document.getElementById('router-loading-styles')) {
-            const style = document.createElement('style');
-            style.id = 'router-loading-styles';
-            style.textContent = `
-                .page-loading-overlay {
-                    position: fixed;
-                    top: 0; left: 0; right: 0; bottom: 0;
-                    background: rgba(255, 255, 255, 0.9);
-                    z-index: 9999;
-                    display: flex;
-                    justify-content: center;
-                    align-items: center;
-                }
-                .loading-progress {
-                    position: fixed; top: 0; left: 0; width: 100%;
-                    height: 3px; background: #f0f0f0; z-index: 10000;
-                }
-                .loading-progress-bar {
-                    height: 100%; background: linear-gradient(90deg, #007bff, #0056b3);
-                    width: 0%; transition: width 0.3s ease;
-                }
-            `;
-            document.head.appendChild(style);
-        }
-    }
-
     handleRouteChange() {
-        let route;
+        let route, queryParams;
+        
         if (this.config.mode === 'hash') {
-            route = window.location.hash.slice(1) || 'home';
+            let hashPath = window.location.hash.slice(1) || '/';
+            
+            // Extract query parameters from hash
+            const hashParts = hashPath.split('?');
+            const pathPart = hashParts[0];
+            const queryPart = hashParts[1] || window.location.search.slice(1);
+            
+            // Handle both /#/ and /#/home formats
+            if (pathPart === '/' || pathPart === '') {
+                route = 'home';
+            } else if (pathPart.startsWith('/')) {
+                route = pathPart.slice(1) || 'home';
+            } else {
+                // Legacy format support (#home)
+                route = pathPart || 'home';
+            }
+            
+            queryParams = this.parseQueryString(queryPart);
         } else {
+            // History mode
             route = window.location.pathname.slice(1) || 'home';
+            queryParams = this.parseQueryString(window.location.search.slice(1));
         }
         
-        if (route !== this.currentHash) {
+        // Store current query parameters
+        this.currentQueryParams = queryParams;
+        
+        if (route !== this.currentHash || this.hasQueryParamsChanged(queryParams)) {
             this.currentHash = route;
             this.loadRoute(route);
         }
@@ -406,6 +523,15 @@ class VueCompatibleRouter {
         try {
             this.transitionInProgress = true;
             this.showLoading();
+            
+            // 인증 체크
+            const authResult = await this.checkAuthentication(routeName);
+            if (!authResult.allowed) {
+                // 인증 실패 시 로그인 페이지로 리다이렉트
+                await this.hideLoading();
+                this.redirectToLogin(routeName);
+                return;
+            }
             
             const appElement = document.getElementById('app');
             if (!appElement) {
@@ -425,10 +551,12 @@ class VueCompatibleRouter {
             console.error('라우트 로딩 오류:', error);
             
             await this.hideLoading();
-            this.transitionInProgress = false;
             
-            // 에러 타입에 따른 처리
+            // 에러 타입에 따른 처리 (transitionInProgress는 에러 처리 후에 리셋)
             await this.handleRouteError(routeName, error);
+        } finally {
+            // 모든 처리가 완료된 후 전환 상태 리셋
+            this.transitionInProgress = false;
         }
     }
 
@@ -471,29 +599,36 @@ class VueCompatibleRouter {
             }
         } catch (fallbackError) {
             console.error('에러 페이지 로딩 실패:', fallbackError);
-            this.showFallbackError(routeName, errorCode, errorMessage);
+            // 모든 에러 페이지가 실패했을 때 최후의 폴백 페이지 표시
+            this.showFallbackErrorPage(errorCode, errorMessage);
         }
     }
 
     async load404Page() {
         try {
-            this.transitionInProgress = true;
+            console.log('🔍 Loading 404 page...');
             const component = await this.createVueComponent('404');
             await this.renderComponentWithTransition(component, '404');
+            console.log('✅ 404 page loaded successfully');
         } catch (error) {
-            throw new Error('404 페이지 로딩 실패: ' + error.message);
+            console.error('❌ 404 page loading failed:', error);
+            // 404 페이지도 없으면 간단한 에러 메시지 표시
+            this.showFallbackErrorPage('404', '페이지를 찾을 수 없습니다.');
         }
     }
 
     async loadErrorPage(errorCode, errorMessage) {
         try {
-            this.transitionInProgress = true;
+            console.log(`🔍 Loading error page for ${errorCode}...`);
             
             // 에러 컴포넌트 생성
             const errorComponent = await this.createErrorComponent(errorCode, errorMessage);
             await this.renderComponentWithTransition(errorComponent, 'error');
+            console.log(`✅ Error page ${errorCode} loaded successfully`);
         } catch (error) {
-            throw new Error('에러 페이지 로딩 실패: ' + error.message);
+            console.error(`❌ Error page ${errorCode} loading failed:`, error);
+            // 에러 페이지도 로딩 실패하면 폴백 표시
+            this.showFallbackErrorPage(errorCode, errorMessage);
         }
     }
 
@@ -519,79 +654,74 @@ class VueCompatibleRouter {
             
             return errorComponent;
         } catch (error) {
-            // 에러 컴포넌트도 로드할 수 없는 경우 인라인 에러 컴포넌트 생성
-            return this.createInlineErrorComponent(errorCode, errorMessage);
+            // 에러 컴포넌트도 로드할 수 없는 경우 간단한 에러 표시
+            console.error('Error component load failed:', error);
+            throw new Error(`Cannot load error page: ${error.message}`);
         }
     }
 
-    createInlineErrorComponent(errorCode, errorMessage) {
-        return {
-            template: `
-                <div class="error-container" style="text-align: center; padding: 2rem;">
-                    <h1 style="font-size: 4rem; color: #dc3545; margin: 0;">{{ errorCode }}</h1>
-                    <h2 style="color: #333; margin: 1rem 0;">{{ errorTitle }}</h2>
-                    <p style="color: #666; margin: 1rem 0;">{{ errorMessage }}</p>
-                    <div style="margin-top: 2rem;">
-                        <button @click="goHome" style="background: #007bff; color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; margin: 0.5rem; cursor: pointer;">
-                            홈으로 가기
-                        </button>
-                        <button @click="retry" style="background: #6c757d; color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; margin: 0.5rem; cursor: pointer;">
-                            다시 시도
-                        </button>
-                    </div>
-                </div>
-            `,
-            data() {
-                return {
-                    errorCode,
-                    errorMessage
-                };
-            },
-            computed: {
-                errorTitle() {
-                    const titles = {
-                        404: '페이지를 찾을 수 없습니다',
-                        500: '서버 오류',
-                        503: '서비스를 사용할 수 없습니다',
-                        403: '접근 거부됨'
-                    };
-                    return titles[this.errorCode] || '오류가 발생했습니다';
-                }
-            },
-            methods: {
-                goHome() {
-                    if (window.router) {
-                        window.router.navigateTo('home');
-                    }
-                },
-                retry() {
-                    window.location.reload();
-                }
-            }
-        };
-    }
-
-    showFallbackError(routeName, errorCode, errorMessage) {
+    /**
+     * 폴백 에러 페이지 표시 (모든 에러 페이지가 실패했을 때)
+     */
+    showFallbackErrorPage(errorCode, errorMessage) {
         const appElement = document.getElementById('app');
-        if (appElement) {
-            appElement.innerHTML = `
-                <div style="padding: 20px; text-align: center; font-family: Arial, sans-serif;">
-                    <h1 style="color: #dc3545; font-size: 4rem; margin: 0;">${errorCode}</h1>
-                    <h2 style="color: #333; margin: 1rem 0;">페이지를 로드할 수 없습니다</h2>
-                    <p style="color: #666; margin: 1rem 0;">${errorMessage}</p>
-                    <div style="margin-top: 2rem;">
-                        <button onclick="router.navigateTo('home')" 
-                                style="background: #007bff; color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 8px; margin: 0.5rem; cursor: pointer; font-size: 1rem;">
-                            홈으로 가기
-                        </button>
-                        <button onclick="window.location.reload()" 
-                                style="background: #6c757d; color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 8px; margin: 0.5rem; cursor: pointer; font-size: 1rem;">
-                            다시 시도
-                        </button>
-                    </div>
+        if (!appElement) return;
+
+        const fallbackHTML = `
+            <div class="fallback-error-page" style="
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                min-height: 100vh;
+                padding: 2rem;
+                text-align: center;
+                background: #f8f9fa;
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            ">
+                <div style="
+                    background: white;
+                    padding: 3rem;
+                    border-radius: 12px;
+                    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+                    max-width: 500px;
+                ">
+                    <h1 style="
+                        font-size: 4rem;
+                        margin: 0;
+                        color: #dc3545;
+                        font-weight: 300;
+                    ">${errorCode}</h1>
+                    <h2 style="
+                        margin: 1rem 0;
+                        color: #495057;
+                        font-weight: 400;
+                    ">${errorMessage}</h2>
+                    <p style="
+                        color: #6c757d;
+                        margin-bottom: 2rem;
+                        line-height: 1.5;
+                    ">요청하신 페이지를 찾을 수 없습니다.</p>
+                    <button onclick="window.location.hash = '#/'" style="
+                        background: #007bff;
+                        color: white;
+                        border: none;
+                        padding: 12px 24px;
+                        border-radius: 6px;
+                        cursor: pointer;
+                        font-size: 1rem;
+                        transition: background 0.2s;
+                    " onmouseover="this.style.background='#0056b3'" onmouseout="this.style.background='#007bff'">
+                        홈으로 돌아가기
+                    </button>
                 </div>
-            `;
-        }
+            </div>
+        `;
+
+        // 기존 컨테이너들 정리
+        appElement.innerHTML = fallbackHTML;
+        
+        console.log(`📄 Fallback error page displayed for ${errorCode}`);
     }
 
     reportError(routeName, error, errorCode) {
@@ -616,31 +746,117 @@ class VueCompatibleRouter {
     }
 
     async createVueComponent(routeName) {
+        // 캐시된 Vue 컴포넌트가 있는지 확인
+        const cacheKey = `component_${routeName}`;
+        const cached = this.getFromCache(cacheKey);
+        if (cached) {
+            console.log(`📦 Using cached Vue component: ${routeName}`);
+            return cached;
+        }
+        
+        // i18n 초기화가 완료될 때까지 대기
+        if (this.config.useI18n && this.i18nInitPromise) {
+            try {
+                await this.i18nInitPromise;
+                console.log('📄 I18n initialization completed before component creation');
+                
+                // i18n이 제대로 로드되었는지 확인하고 추가 대기
+                if (window.i18n && window.i18n.isReady) {
+                    await window.i18n.isReady();
+                }
+            } catch (error) {
+                console.warn('⚠️ I18n initialization failed, proceeding without translations:', error);
+            }
+        }
+        
         const script = await this.loadScript(routeName);
         
         if (this.config.environment === 'production') {
             // 프로덕션 모드: 빌드된 컴포넌트는 이미 완성되어 있음
+            const router = this; // 라우터 인스턴스 참조를 컴포넌트 정의 밖에서 저장
             const component = {
                 ...script,
-                methods: {
-                    ...script.methods,
-                    navigateTo: (route) => this.navigateTo(route),
-                    getCurrentRoute: () => this.getCurrentRoute()
-                },
+                // name이 없으면 라우트명을 자동으로 설정 (PascalCase로 변환)
+                name: script.name || this.toPascalCase(routeName),
+                // template이 없으면 기본 템플릿 생성
+                template: script.template || this.generateDefaultTemplate(routeName),
+                // UI 컴포넌트들을 컴포넌트 레벨에서 등록
+                components: await this.getUIComponents(),
                 data() {
                     const originalData = script.data ? script.data() : {};
                     return {
                         ...originalData,
                         currentRoute: routeName,
-                        pageTitle: script.pageTitle || routeName,
+                        pageTitle: script.pageTitle || router.generatePageTitle(routeName),
                         showHeader: script.showHeader !== false,
-                        headerTitle: script.headerTitle,
-                        headerSubtitle: script.headerSubtitle
+                        headerTitle: script.headerTitle || router.generatePageTitle(routeName),
+                        headerSubtitle: script.headerSubtitle,
+                        $query: router.currentQueryParams || {},
+                        // i18n 관련 데이터
+                        $lang: router.getCurrentLanguage(),
+                        // dataURL 관련 로딩 상태
+                        $dataLoading: false
                     };
                 },
-                _routeName: routeName,
-                _hasInlineComponents: Boolean(script.registerInlineComponents)
+                async mounted() {
+                    // 원래 mounted 함수 실행
+                    if (script.mounted) {
+                        await script.mounted.call(this);
+                    }
+                    
+                    // dataURL이 있으면 데이터 가져오기
+                    if (script.dataURL) {
+                        await this.$fetchData();
+                    }
+                },
+                methods: {
+                    ...script.methods,
+                    navigateTo: (route, params) => router.navigateTo(route, params),
+                    getCurrentRoute: () => router.getCurrentRoute(),
+                    getQueryParams: () => router.getQueryParams(),
+                    getQueryParam: (key) => router.getQueryParam(key),
+                    setQueryParams: (params, replace) => router.setQueryParams(params, replace),
+                    removeQueryParams: (keys) => router.removeQueryParams(keys),
+                    // i18n 함수들을 메서드로 포함
+                    $t: this.getI18nTranslateFunction(),
+                    $i18n: () => window.i18n || null,
+                    // 인증 관련 메서드
+                    $isAuthenticated: () => router.isUserAuthenticated(),
+                    $logout: () => router.handleLogout(),
+                    $loginSuccess: () => router.handleLoginSuccess(),
+                    $checkAuth: (route) => router.checkAuthentication(route),
+                    $getToken: () => router.getAccessToken(),
+                    $setToken: (token, options) => router.setAccessToken(token, options),
+                    $removeToken: (storage) => router.removeToken(storage),
+                    $getAuthCookie: () => router.getAuthCookie(),
+                    $getCookie: (name) => router.getCookieValue(name),
+                    // 데이터 fetch 메서드
+                    async $fetchData() {
+                        if (!script.dataURL) return;
+                        
+                        this.$dataLoading = true;
+                        try {
+                            const data = await router.fetchComponentData(script.dataURL);
+                            console.log(`📊 Data fetched for ${routeName}:`, data);
+                            
+                            // 데이터를 컴포넌트에 직접 할당
+                            Object.assign(this, data);
+                            
+                            this.$emit('data-loaded', data);
+                        } catch (error) {
+                            console.warn(`⚠️ Failed to fetch data for ${routeName}:`, error);
+                            this.$emit('data-error', error);
+                        } finally {
+                            this.$dataLoading = false;
+                        }
+                    }
+                },
+                _routeName: routeName
             };
+            
+            // 캐시에 저장
+            this.setCache(cacheKey, component);
+            console.log(`💾 Cached Vue component: ${routeName}`);
             
             return component;
         } else {
@@ -649,33 +865,693 @@ class VueCompatibleRouter {
             const style = await this.loadStyle(routeName);
             const layout = this.config.useLayout ? await this.loadLayout(script.layout || this.config.defaultLayout) : null;
             
+            const router = this; // 라우터 인스턴스 참조를 컴포넌트 정의 밖에서 저장
             const component = {
                 ...script,
+                // name이 없으면 라우트명을 자동으로 설정 (PascalCase로 변환)
+                name: script.name || this.toPascalCase(routeName),
                 template: layout ? this.mergeLayoutWithTemplate(routeName, layout, template) : template,
-                methods: {
-                    ...script.methods,
-                    navigateTo: (route) => this.navigateTo(route),
-                    getCurrentRoute: () => this.getCurrentRoute()
-                },
+                // UI 컴포넌트들을 컴포넌트 레벨에서 등록
+                components: await this.getUIComponents(),
                 data() {
                     const originalData = script.data ? script.data() : {};
                     return {
                         ...originalData,
                         currentRoute: routeName,
-                        pageTitle: script.pageTitle || routeName,
+                        pageTitle: script.pageTitle || router.generatePageTitle(routeName),
                         pageStyle: style,
                         showHeader: script.showHeader !== false,
-                        headerTitle: script.headerTitle,
-                        headerSubtitle: script.headerSubtitle
+                        headerTitle: script.headerTitle || router.generatePageTitle(routeName),
+                        headerSubtitle: script.headerSubtitle,
+                        $query: router.currentQueryParams || {},
+                        // i18n 관련 데이터
+                        $lang: router.getCurrentLanguage(),
+                        // dataURL 관련 로딩 상태
+                        $dataLoading: false
                     };
+                },
+                async mounted() {
+                    // 원래 mounted 함수 실행
+                    if (script.mounted) {
+                        await script.mounted.call(this);
+                    }
+                    
+                    // dataURL이 있으면 데이터 가져오기
+                    if (script.dataURL) {
+                        await this.$fetchData();
+                    }
+                },
+                methods: {
+                    ...script.methods,
+                    navigateTo: (route, params) => router.navigateTo(route, params),
+                    getCurrentRoute: () => router.getCurrentRoute(),
+                    getQueryParams: () => router.getQueryParams(),
+                    getQueryParam: (key) => router.getQueryParam(key),
+                    setQueryParams: (params, replace) => router.setQueryParams(params, replace),
+                    removeQueryParams: (keys) => router.removeQueryParams(keys),
+                    // i18n 함수들을 메서드로 포함
+                    $t: this.getI18nTranslateFunction(),
+                    $i18n: () => window.i18n || null,
+                    // 인증 관련 메서드
+                    $isAuthenticated: () => router.isUserAuthenticated(),
+                    $logout: () => router.handleLogout(),
+                    $loginSuccess: () => router.handleLoginSuccess(),
+                    $checkAuth: (route) => router.checkAuthentication(route),
+                    $getToken: () => router.getAccessToken(),
+                    $setToken: (token, options) => router.setAccessToken(token, options),
+                    $removeToken: (storage) => router.removeToken(storage),
+                    $getAuthCookie: () => router.getAuthCookie(),
+                    $getCookie: (name) => router.getCookieValue(name),
+                    // 데이터 fetch 메서드
+                    async $fetchData() {
+                        if (!script.dataURL) return;
+                        
+                        this.$dataLoading = true;
+                        try {
+                            const data = await router.fetchComponentData(script.dataURL);
+                            console.log(`📊 Data fetched for ${routeName}:`, data);
+                            
+                            // 데이터를 컴포넌트에 직접 할당
+                            Object.assign(this, data);
+                            
+                            this.$emit('data-loaded', data);
+                        } catch (error) {
+                            console.warn(`⚠️ Failed to fetch data for ${routeName}:`, error);
+                            this.$emit('data-error', error);
+                        } finally {
+                            this.$dataLoading = false;
+                        }
+                    }
                 },
                 _style: style,
                 _routeName: routeName,
                 _layout: layout
             };
             
+            // 캐시에 저장
+            this.setCache(cacheKey, component);
+            console.log(`💾 Cached Vue component: ${routeName}`);
+            
             return component;
         }
+    }
+
+    /**
+     * i18n 번역 함수 생성
+     */
+    getI18nTranslateFunction() {
+        if (!this.config.useI18n || (window.i18n && !window.i18n.isEnabled())) {
+            // i18n이 비활성화된 경우 키를 그대로 반환하는 더미 함수
+            return (key, params) => key;
+        } else if (window.i18n && typeof window.i18n.t === 'function') {
+            // i18n이 활성화된 경우 실제 번역 함수
+            return (key, params) => window.i18n.t(key, params);
+        } else {
+            // i18n이 아직 로드되지 않은 경우 키를 반환하는 더미 함수
+            return (key, params) => key;
+        }
+    }
+
+    /**
+     * 현재 언어 가져오기
+     */
+    getCurrentLanguage() {
+        if (!this.config.useI18n || (window.i18n && !window.i18n.isEnabled())) {
+            // i18n이 비활성화된 경우 기본 언어 반환
+            return this.config.i18nDefaultLanguage;
+        } else if (window.i18n && typeof window.i18n.getCurrentLanguage === 'function') {
+            // i18n이 활성화된 경우 현재 언어 반환
+            return window.i18n.getCurrentLanguage();
+        } else {
+            // i18n이 아직 로드되지 않은 경우 기본 언어 반환
+            return this.config.i18nDefaultLanguage;
+        }
+    }
+
+    /**
+     * 문자열을 PascalCase로 변환
+     */
+    toPascalCase(str) {
+        return str
+            .split(/[-_\s]+/) // 하이픈, 언더스코어, 공백으로 분리
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+            .join('');
+    }
+
+    /**
+     * 페이지 제목 생성
+     */
+    generatePageTitle(routeName) {
+        return this.toPascalCase(routeName).replace(/([A-Z])/g, ' $1').trim();
+    }
+
+    /**
+     * 기본 템플릿 생성
+     */
+    generateDefaultTemplate(routeName) {
+        const title = this.generatePageTitle(routeName);
+        return `
+<div class="page-container">
+    <header v-if="showHeader" class="page-header">
+        <div class="container">
+            <h1>{{ headerTitle || pageTitle }}</h1>
+            <p v-if="headerSubtitle" class="subtitle">{{ headerSubtitle }}</p>
+        </div>
+    </header>
+    
+    <main class="main-content">
+        <div class="container">
+            <div v-if="$dataLoading" class="loading-state">
+                <div class="loading-spinner"></div>
+                <p>데이터를 불러오는 중...</p>
+            </div>
+            
+            <div v-else class="content">
+                <h2>${title}</h2>
+                <p>이 페이지는 자동으로 생성된 기본 템플릿입니다.</p>
+                
+                <!-- 데이터가 있으면 표시 -->
+                <div v-if="Object.keys($data).some(key => !key.startsWith('$') && !['currentRoute', 'pageTitle', 'showHeader', 'headerTitle', 'headerSubtitle'].includes(key))" class="data-display">
+                    <h3>데이터</h3>
+                    <pre>{{ JSON.stringify($data, null, 2) }}</pre>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+        `.trim();
+    }
+
+    /**
+     * 인증 체크
+     */
+    async checkAuthentication(routeName) {
+        // 인증 시스템이 비활성화된 경우 모든 접근 허용
+        if (!this.config.auth.enabled) {
+            return { allowed: true, reason: 'auth_disabled' };
+        }
+
+        // 공개 라우트 체크
+        if (this.config.auth.publicRoutes.includes(routeName)) {
+            return { allowed: true, reason: 'public_route' };
+        }
+
+        // 보호된 라우트 체크
+        const isProtectedRoute = this.config.auth.protectedRoutes.includes(routeName);
+        const isProtectedPrefix = this.config.auth.protectedPrefixes.some(prefix => 
+            routeName.startsWith(prefix + '/') || routeName === prefix
+        );
+
+        // 보호된 라우트가 아니면 접근 허용
+        if (!isProtectedRoute && !isProtectedPrefix) {
+            return { allowed: true, reason: 'not_protected' };
+        }
+
+        // 사용자 정의 인증 체크 함수가 있으면 사용
+        if (typeof this.config.auth.checkAuthFunction === 'function') {
+            try {
+                const isAuthenticated = await this.config.auth.checkAuthFunction(routeName);
+                return { 
+                    allowed: isAuthenticated, 
+                    reason: isAuthenticated ? 'custom_auth_success' : 'custom_auth_failed',
+                    route: routeName
+                };
+            } catch (error) {
+                console.error('Custom auth function failed:', error);
+                return { allowed: false, reason: 'custom_auth_error', error };
+            }
+        }
+
+        // 기본 인증 체크 (토큰 기반)
+        const isAuthenticated = this.isUserAuthenticated();
+        return { 
+            allowed: isAuthenticated, 
+            reason: isAuthenticated ? 'authenticated' : 'not_authenticated',
+            route: routeName
+        };
+    }
+
+    /**
+     * 기본 사용자 인증 상태 체크
+     */
+    isUserAuthenticated() {
+        // 여러 방법으로 인증 상태 확인
+        
+        // 1. localStorage에서 토큰 확인
+        const token = localStorage.getItem('authToken') || localStorage.getItem('accessToken');
+        if (token) {
+            try {
+                // JWT 토큰인 경우 만료 시간 체크
+                if (token.includes('.')) {
+                    const payload = JSON.parse(atob(token.split('.')[1]));
+                    const isExpired = payload.exp && payload.exp * 1000 < Date.now();
+                    if (isExpired) {
+                        localStorage.removeItem('authToken');
+                        localStorage.removeItem('accessToken');
+                        return false;
+                    }
+                }
+                return true;
+            } catch (error) {
+                console.warn('Token validation failed:', error);
+                return false;
+            }
+        }
+
+        // 2. sessionStorage 확인
+        const sessionToken = sessionStorage.getItem('authToken') || sessionStorage.getItem('accessToken');
+        if (sessionToken) {
+            return true;
+        }
+
+        // 3. 쿠키 확인 (설정된 쿠키 이름들 확인)
+        const authCookie = this.getAuthCookie();
+        if (authCookie) {
+            try {
+                // JWT 토큰인 경우 만료 시간 체크
+                if (authCookie.includes('.')) {
+                    const payload = JSON.parse(atob(authCookie.split('.')[1]));
+                    const isExpired = payload.exp && payload.exp * 1000 < Date.now();
+                    if (isExpired) {
+                        this.removeAuthCookie();
+                        return false;
+                    }
+                }
+                return true;
+            } catch (error) {
+                console.warn('Cookie token validation failed:', error);
+                return false;
+            }
+        }
+
+        // 4. 전역 변수 확인
+        if (window.user || window.isAuthenticated) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * 인증 쿠키 값 가져오기
+     */
+    getAuthCookie() {
+        // 기본 쿠키 이름 확인
+        const primaryCookie = this.getCookieValue(this.config.auth.cookieName);
+        if (primaryCookie) {
+            return primaryCookie;
+        }
+
+        // 대체 쿠키 이름들 확인
+        for (const cookieName of this.config.auth.fallbackCookieNames) {
+            const cookieValue = this.getCookieValue(cookieName);
+            if (cookieValue) {
+                return cookieValue;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * 특정 쿠키 값 가져오기
+     */
+    getCookieValue(name) {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) {
+            return parts.pop().split(';').shift();
+        }
+        return null;
+    }
+
+    /**
+     * 인증 쿠키 제거
+     */
+    removeAuthCookie() {
+        const cookiesToRemove = [this.config.auth.cookieName, ...this.config.auth.fallbackCookieNames];
+        
+        for (const cookieName of cookiesToRemove) {
+            document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+            // 도메인별로도 제거 시도
+            const hostname = window.location.hostname;
+            document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.${hostname};`;
+        }
+    }
+
+    /**
+     * 액세스 토큰 가져오기 (컴포넌트에서 사용)
+     */
+    getAccessToken() {
+        // 1. localStorage 확인
+        let token = localStorage.getItem('authToken') || localStorage.getItem('accessToken');
+        if (token) return token;
+
+        // 2. sessionStorage 확인
+        token = sessionStorage.getItem('authToken') || sessionStorage.getItem('accessToken');
+        if (token) return token;
+
+        // 3. 쿠키 확인
+        token = this.getAuthCookie();
+        if (token) return token;
+
+        return null;
+    }
+
+    /**
+     * 액세스 토큰 설정 (컴포넌트에서 사용)
+     */
+    setAccessToken(token, options = {}) {
+        if (!token) {
+            console.warn('Token is required');
+            return false;
+        }
+
+        const {
+            storage = 'localStorage', // 'localStorage', 'sessionStorage', 'cookie'
+            cookieOptions = {},
+            skipValidation = false
+        } = options;
+
+        // JWT 토큰 유효성 검사 (선택사항)
+        if (!skipValidation && token.includes('.')) {
+            try {
+                const payload = JSON.parse(atob(token.split('.')[1]));
+                const isExpired = payload.exp && payload.exp * 1000 < Date.now();
+                if (isExpired) {
+                    console.warn('Token is already expired');
+                    return false;
+                }
+                console.log(`Token expires at: ${new Date(payload.exp * 1000).toISOString()}`);
+            } catch (error) {
+                console.warn('Token validation failed:', error);
+                if (!skipValidation) {
+                    return false;
+                }
+            }
+        }
+
+        try {
+            switch (storage) {
+                case 'localStorage':
+                    localStorage.setItem('authToken', token);
+                    console.log('✅ Token saved to localStorage');
+                    break;
+                
+                case 'sessionStorage':
+                    sessionStorage.setItem('authToken', token);
+                    console.log('✅ Token saved to sessionStorage');
+                    break;
+                
+                case 'cookie':
+                    this.setAuthCookie(token, cookieOptions);
+                    console.log('✅ Token saved to cookie');
+                    break;
+                
+                default:
+                    // 기본적으로 localStorage에 저장
+                    localStorage.setItem('authToken', token);
+                    console.log('✅ Token saved to localStorage (default)');
+            }
+
+            // 인증 이벤트 발생
+            this.emitAuthEvent('token_set', { 
+                storage, 
+                tokenLength: token.length,
+                hasExpiration: token.includes('.')
+            });
+
+            return true;
+        } catch (error) {
+            console.error('Failed to set token:', error);
+            return false;
+        }
+    }
+
+    /**
+     * 인증 쿠키 설정
+     */
+    setAuthCookie(token, options = {}) {
+        const {
+            cookieName = this.config.auth.cookieName,
+            expires = null, // Date 객체 또는 일수 (숫자)
+            path = '/',
+            domain = null,
+            secure = window.location.protocol === 'https:',
+            sameSite = 'Lax'
+        } = options;
+
+        let cookieString = `${cookieName}=${encodeURIComponent(token)}; path=${path}`;
+
+        // 만료 시간 설정
+        if (expires) {
+            if (typeof expires === 'number') {
+                // 일수로 지정된 경우
+                const expireDate = new Date();
+                expireDate.setDate(expireDate.getDate() + expires);
+                cookieString += `; expires=${expireDate.toUTCString()}`;
+            } else if (expires instanceof Date) {
+                // Date 객체로 지정된 경우
+                cookieString += `; expires=${expires.toUTCString()}`;
+            }
+        } else {
+            // JWT 토큰에서 만료시간 추출
+            if (token.includes('.')) {
+                try {
+                    const payload = JSON.parse(atob(token.split('.')[1]));
+                    if (payload.exp) {
+                        const expireDate = new Date(payload.exp * 1000);
+                        cookieString += `; expires=${expireDate.toUTCString()}`;
+                    }
+                } catch (error) {
+                    console.debug('Could not extract expiration from JWT token');
+                }
+            }
+        }
+
+        // 도메인 설정
+        if (domain) {
+            cookieString += `; domain=${domain}`;
+        }
+
+        // Secure 플래그
+        if (secure) {
+            cookieString += '; secure';
+        }
+
+        // SameSite 설정
+        cookieString += `; samesite=${sameSite}`;
+
+        document.cookie = cookieString;
+        console.log(`🍪 Cookie set: ${cookieName}`);
+    }
+
+    /**
+     * 토큰 제거
+     */
+    removeToken(storage = 'all') {
+        switch (storage) {
+            case 'localStorage':
+                localStorage.removeItem('authToken');
+                localStorage.removeItem('accessToken');
+                break;
+            
+            case 'sessionStorage':
+                sessionStorage.removeItem('authToken');
+                sessionStorage.removeItem('accessToken');
+                break;
+            
+            case 'cookie':
+                this.removeAuthCookie();
+                break;
+            
+            case 'all':
+            default:
+                localStorage.removeItem('authToken');
+                localStorage.removeItem('accessToken');
+                sessionStorage.removeItem('authToken');
+                sessionStorage.removeItem('accessToken');
+                this.removeAuthCookie();
+                break;
+        }
+
+        // 인증 이벤트 발생
+        this.emitAuthEvent('token_removed', { storage });
+        console.log(`🗑️ Token removed from ${storage}`);
+    }
+
+    /**
+     * 로그인 페이지로 리다이렉트
+     */
+    redirectToLogin(originalRoute) {
+        console.log(`🔒 Authentication required for route: ${originalRoute}`);
+        
+        // 원래 요청한 페이지를 쿼리 파라미터로 저장
+        const redirectUrl = originalRoute !== this.config.auth.loginRoute ? 
+            `${this.config.auth.loginRoute}?redirect=${encodeURIComponent(originalRoute)}` : 
+            this.config.auth.loginRoute;
+        
+        // 로그인 페이지로 이동
+        this.navigateTo(redirectUrl);
+        
+        // 인증 이벤트 발생
+        this.emitAuthEvent('auth_required', { 
+            originalRoute, 
+            loginRoute: this.config.auth.loginRoute 
+        });
+    }
+
+    /**
+     * 로그인 성공 후 원래 페이지로 리다이렉트
+     */
+    handleLoginSuccess() {
+        const redirectParam = this.getQueryParam('redirect');
+        const targetRoute = redirectParam || this.config.auth.redirectAfterLogin;
+        
+        console.log(`✅ Login successful, redirecting to: ${targetRoute}`);
+        
+        // 리다이렉트 파라미터 제거하고 이동
+        this.navigateTo(targetRoute);
+        
+        // 인증 이벤트 발생
+        this.emitAuthEvent('login_success', { targetRoute });
+    }
+
+    /**
+     * 로그아웃 처리
+     */
+    handleLogout() {
+        // 토큰 제거
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('accessToken');
+        sessionStorage.removeItem('authToken');
+        sessionStorage.removeItem('accessToken');
+        
+        // 설정된 쿠키들 제거
+        this.removeAuthCookie();
+        
+        // 전역 변수 제거
+        if (window.user) delete window.user;
+        if (window.isAuthenticated) window.isAuthenticated = false;
+        
+        console.log('🚪 User logged out');
+        
+        // 로그인 페이지로 이동
+        this.navigateTo(this.config.auth.loginRoute);
+        
+        // 인증 이벤트 발생
+        this.emitAuthEvent('logout', {});
+    }
+
+    /**
+     * 인증 이벤트 발생
+     */
+    emitAuthEvent(eventType, data) {
+        const event = new CustomEvent('router:auth', {
+            detail: { type: eventType, data, timestamp: Date.now() }
+        });
+        window.dispatchEvent(event);
+    }
+
+    /**
+     * 컴포넌트 데이터 가져오기 (dataURL 사용)
+     */
+    async fetchComponentData(dataURL) {
+        try {
+            // 현재 쿼리 파라미터를 URL에 추가
+            const queryString = this.buildQueryString(this.currentQueryParams || {});
+            const fullURL = queryString ? `${dataURL}?${queryString}` : dataURL;
+            
+            console.log(`🌐 Fetching data from: ${fullURL}`);
+            
+            const response = await fetch(fullURL, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            
+            // 데이터 유효성 검사
+            if (typeof data !== 'object' || data === null) {
+                throw new Error('Invalid data format: expected object');
+            }
+            
+            return data;
+            
+        } catch (error) {
+            console.error('Failed to fetch component data:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * UI 컴포넌트들을 가져오기
+     */
+    async getUIComponents() {
+        if (this.config.environment === 'production') {
+            // 프로덕션 모드: 통합 컴포넌트에서 가져오기
+            if (this.unifiedComponentsModule) {
+                // components export 확인
+                if (this.unifiedComponentsModule.components) {
+                    return this.unifiedComponentsModule.components;
+                }
+                // registerComponents 함수가 있는 경우 (기존 방식 호환)
+                console.debug('Using legacy component registration method');
+                return {};
+            }
+            return {};
+        } else {
+            // 개발 모드: ComponentLoader에서 필요한 컴포넌트들 로드
+            if (this.componentLoader) {
+                try {
+                    // 기본 UI 컴포넌트들 로드
+                    const componentNames = ['Button', 'Modal', 'Card', 'Toast', 'Input', 'Tabs', 'LanguageSwitcher'];
+                    const components = {};
+                    
+                    for (const name of componentNames) {
+                        try {
+                            const component = await this.componentLoader.loadComponent(name);
+                            if (component) {
+                                components[name] = component;
+                            }
+                        } catch (error) {
+                            console.debug(`Failed to load component ${name}:`, error.message);
+                        }
+                    }
+                    
+                    return components;
+                } catch (error) {
+                    console.warn('Failed to load UI components:', error);
+                    return {};
+                }
+            }
+            return {};
+        }
+    }
+
+    /**
+     * Vue 컴포넌트 캐시 무효화
+     */
+    invalidateComponentCache(routeName) {
+        const cacheKey = `component_${routeName}`;
+        this.removeFromCache(cacheKey);
+        console.log(`🗑️ Invalidated component cache: ${routeName}`);
+    }
+
+    /**
+     * 모든 Vue 컴포넌트 캐시 지우기
+     */
+    clearComponentCache() {
+        const componentKeys = Array.from(this.cache.keys()).filter(key => key.startsWith('component_'));
+        componentKeys.forEach(key => this.cache.delete(key));
+        console.log(`🗑️ Cleared ${componentKeys.length} component cache entries`);
     }
 
     async loadLayout(layoutName) {
@@ -825,23 +1701,20 @@ class VueCompatibleRouter {
             const { createApp } = Vue;
             this.currentVueApp = createApp(vueComponent);
             
-            // 컴포넌트 등록 (통합 컴포넌트 시스템 또는 개발 모드)
-            this.registerComponentsToVueApp(this.currentVueApp);
-            
             // Vue 3 전역 속성 설정
             this.currentVueApp.config.globalProperties.$router = {
-                navigateTo: (route) => this.navigateTo(route),
+                navigateTo: (route, params) => this.navigateTo(route, params),
                 getCurrentRoute: () => this.getCurrentRoute(),
-                currentRoute: this.currentHash
+                getQueryParams: () => this.getQueryParams(),
+                getQueryParam: (key) => this.getQueryParam(key),
+                setQueryParams: (params, replace) => this.setQueryParams(params, replace),
+                removeQueryParams: (keys) => this.removeQueryParams(keys),
+                currentRoute: this.currentHash,
+                currentQuery: this.currentQueryParams || {}
             };
 
-            // 글로벌 컴포넌트 등록
-            await this.registerComponentsForVueApp(this.currentVueApp);
-            
-            // 인라인 컴포넌트 등록 (프로덕션 빌드에 포함된 컴포넌트)
-            this.registerInlineComponents(this.currentVueApp, vueComponent);
-            
             this.currentVueApp.mount('#app');
+            
             this.transitionInProgress = false;
         } else {
             // 이후 로드들은 전환 효과 사용
@@ -877,22 +1750,18 @@ class VueCompatibleRouter {
         const { createApp } = Vue;
         const newVueApp = createApp(vueComponent);
         
-        // 컴포넌트 등록 (통합 컴포넌트 시스템 또는 개발 모드)
-        this.registerComponentsToVueApp(newVueApp);
-        
         // Vue 3 전역 속성 설정
         newVueApp.config.globalProperties.$router = {
-            navigateTo: (route) => this.navigateTo(route),
+            navigateTo: (route, params) => this.navigateTo(route, params),
             getCurrentRoute: () => this.getCurrentRoute(),
-            currentRoute: this.currentHash
+            getQueryParams: () => this.getQueryParams(),
+            getQueryParam: (key) => this.getQueryParam(key),
+            setQueryParams: (params, replace) => this.setQueryParams(params, replace),
+            removeQueryParams: (keys) => this.removeQueryParams(keys),
+            currentRoute: this.currentHash,
+            currentQuery: this.currentQueryParams || {}
         };
 
-        // 글로벌 컴포넌트 등록
-        await this.registerComponentsForVueApp(newVueApp);
-        
-        // 인라인 컴포넌트 등록 (프로덕션 빌드에 포함된 컴포넌트)
-        this.registerInlineComponents(newVueApp, vueComponent);
-        
         newVueApp.mount(`#${newPageContainer.id}`);
 
         // 즉시 이전 페이지들 정리
@@ -952,17 +1821,354 @@ class VueCompatibleRouter {
     }
 
 
-    navigateTo(routeName) {
-        if (this.config.mode === 'hash') {
-            window.location.hash = `#${routeName}`;
-        } else {
-            window.history.pushState({}, '', `/${routeName}`);
-            this.handleRouteChange();
+    navigateTo(routeName, params = null) {
+        // If routeName is an object, treat it as {route, params}
+        if (typeof routeName === 'object') {
+            params = routeName.params || null;
+            routeName = routeName.route;
         }
+        
+        // Clear current query params if navigating to a different route
+        if (routeName !== this.currentHash) {
+            this.currentQueryParams = {};
+        }
+        
+        // Update URL with new route and params
+        this.updateURL(routeName, params);
     }
 
     getCurrentRoute() {
         return this.currentHash;
+    }
+
+    // 보안 필터링 메서드들
+    sanitizeParameter(value) {
+        if (typeof value !== 'string') return value;
+        
+        // XSS 방어: HTML 태그와 스크립트 제거
+        let sanitized = value
+            .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '') // script 태그 제거
+            .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '') // iframe 태그 제거
+            .replace(/<object\b[^<]*(?:(?!<\/object>)<[^<]*)*<\/object>/gi, '') // object 태그 제거
+            .replace(/<embed\b[^<]*(?:(?!<\/embed>)<[^<]*)*<\/embed>/gi, '') // embed 태그 제거
+            .replace(/<link\b[^<]*>/gi, '') // link 태그 제거
+            .replace(/<meta\b[^<]*>/gi, '') // meta 태그 제거
+            .replace(/javascript:/gi, '') // javascript: 프로토콜 제거
+            .replace(/vbscript:/gi, '') // vbscript: 프로토콜 제거
+            .replace(/data:/gi, '') // data: 프로토콜 제거
+            .replace(/on\w+\s*=/gi, '') // 이벤트 핸들러 제거 (onclick, onload 등)
+            .replace(/expression\s*\(/gi, '') // CSS expression 제거
+            .replace(/url\s*\(/gi, ''); // CSS url() 제거
+        
+        // SQL Injection 방어: 위험한 SQL 키워드 필터링
+        const sqlPatterns = [
+            /(\b(union|select|insert|update|delete|drop|create|alter|exec|execute|sp_|xp_)\b)/gi,
+            /(;|\||&|\*|%|<|>)/g, // 위험한 특수문자
+            /(--|\/\*|\*\/)/g, // SQL 주석
+            /(\bor\b.*\b=\b|\band\b.*\b=\b)/gi, // OR/AND 조건문
+            /('.*'|".*")/g, // 따옴표로 둘러싸인 문자열
+            /(\\\w+)/g // 백슬래시 이스케이프
+        ];
+        
+        for (const pattern of sqlPatterns) {
+            sanitized = sanitized.replace(pattern, '');
+        }
+        
+        // 추가 보안: 연속된 특수문자 제거
+        sanitized = sanitized.replace(/[<>'"&]{2,}/g, '');
+        
+        // 길이 제한 (DoS 방어) - 설정 가능
+        if (sanitized.length > this.config.security.maxParameterLength) {
+            sanitized = sanitized.substring(0, this.config.security.maxParameterLength);
+        }
+        
+        return sanitized.trim();
+    }
+
+    validateParameter(key, value) {
+        // 보안 검증이 비활성화된 경우 통과
+        if (!this.config.security.enableParameterValidation) {
+            return true;
+        }
+        
+        // 파라미터 키 검증
+        if (typeof key !== 'string' || key.length === 0) {
+            return false;
+        }
+        
+        // 키 이름 제한 (설정 가능한 패턴 사용)
+        if (!this.config.security.allowedKeyPattern.test(key)) {
+            if (this.config.security.logSecurityWarnings) {
+                console.warn(`Invalid parameter key format: ${key}`);
+            }
+            return false;
+        }
+        
+        // 키 길이 제한
+        if (key.length > 50) {
+            if (this.config.security.logSecurityWarnings) {
+                console.warn(`Parameter key too long: ${key}`);
+            }
+            return false;
+        }
+        
+        // 값 타입 검증
+        if (value !== null && value !== undefined) {
+            if (typeof value === 'string') {
+                // 문자열 길이 제한 (설정 가능)
+                if (value.length > this.config.security.maxParameterLength) {
+                    if (this.config.security.logSecurityWarnings) {
+                        console.warn(`Parameter value too long for key: ${key}`);
+                    }
+                    return false;
+                }
+                
+                // 위험한 패턴 감지
+                const dangerousPatterns = [
+                    /<script|<iframe|<object|<embed/gi,
+                    /javascript:|vbscript:|data:/gi,
+                    /union.*select|insert.*into|delete.*from/gi,
+                    /\.\.\//g, // 경로 탐색 공격
+                    /[<>'"&]{3,}/g // 연속된 특수문자
+                ];
+                
+                for (const pattern of dangerousPatterns) {
+                    if (pattern.test(value)) {
+                        if (this.config.security.logSecurityWarnings) {
+                            console.warn(`Dangerous pattern detected in parameter ${key}:`, value);
+                        }
+                        return false;
+                    }
+                }
+            } else if (Array.isArray(value)) {
+                // 배열 길이 제한 (설정 가능)
+                if (value.length > this.config.security.maxArraySize) {
+                    if (this.config.security.logSecurityWarnings) {
+                        console.warn(`Parameter array too large for key: ${key}`);
+                    }
+                    return false;
+                }
+                
+                // 배열 각 요소 검증
+                for (const item of value) {
+                    if (!this.validateParameter(`${key}[]`, item)) {
+                        return false;
+                    }
+                }
+            }
+        }
+        
+        return true;
+    }
+
+    // 쿼리스트링 파라미터 관리 메서드들
+    parseQueryString(queryString) {
+        const params = {};
+        if (!queryString) return params;
+        
+        const pairs = queryString.split('&');
+        for (const pair of pairs) {
+            try {
+                const [rawKey, rawValue] = pair.split('=');
+                if (!rawKey) continue;
+                
+                let key, value;
+                try {
+                    key = decodeURIComponent(rawKey);
+                    value = rawValue ? decodeURIComponent(rawValue) : '';
+                } catch (e) {
+                    console.warn('Failed to decode URI component:', pair);
+                    continue;
+                }
+                
+                // 보안 검증
+                if (!this.validateParameter(key, value)) {
+                    console.warn(`Parameter rejected by security filter: ${key}`);
+                    continue;
+                }
+                
+                // 값 sanitize
+                const sanitizedValue = this.sanitizeParameter(value);
+                
+                // 배열 형태의 파라미터 처리 (예: tags[]=a&tags[]=b)
+                if (key.endsWith('[]')) {
+                    const arrayKey = key.slice(0, -2);
+                    
+                    // 배열 키도 검증
+                    if (!this.validateParameter(arrayKey, [])) {
+                        continue;
+                    }
+                    
+                    if (!params[arrayKey]) params[arrayKey] = [];
+                    
+                    // 배열 크기 제한 (설정 가능)
+                    if (params[arrayKey].length < this.config.security.maxArraySize) {
+                        params[arrayKey].push(sanitizedValue);
+                    } else {
+                        if (this.config.security.logSecurityWarnings) {
+                            console.warn(`Array parameter ${arrayKey} size limit exceeded`);
+                        }
+                    }
+                } else {
+                    params[key] = sanitizedValue;
+                }
+            } catch (error) {
+                console.warn('Error parsing query parameter:', pair, error);
+            }
+        }
+        
+        // 전체 파라미터 개수 제한 (설정 가능)
+        const paramCount = Object.keys(params).length;
+        if (paramCount > this.config.security.maxParameterCount) {
+            if (this.config.security.logSecurityWarnings) {
+                console.warn(`Too many parameters (${paramCount}). Limiting to first ${this.config.security.maxParameterCount}.`);
+            }
+            const limitedParams = {};
+            let count = 0;
+            for (const [key, value] of Object.entries(params)) {
+                if (count >= this.config.security.maxParameterCount) break;
+                limitedParams[key] = value;
+                count++;
+            }
+            return limitedParams;
+        }
+        
+        return params;
+    }
+
+    buildQueryString(params) {
+        if (!params || Object.keys(params).length === 0) return '';
+        
+        const pairs = [];
+        for (const [key, value] of Object.entries(params)) {
+            if (Array.isArray(value)) {
+                // 배열 파라미터 처리
+                for (const item of value) {
+                    pairs.push(`${encodeURIComponent(key)}[]=${encodeURIComponent(item)}`);
+                }
+            } else if (value !== undefined && value !== null) {
+                pairs.push(`${encodeURIComponent(key)}=${encodeURIComponent(value)}`);
+            }
+        }
+        return pairs.join('&');
+    }
+
+    hasQueryParamsChanged(newParams) {
+        if (!this.currentQueryParams && !newParams) return false;
+        if (!this.currentQueryParams || !newParams) return true;
+        
+        const oldKeys = Object.keys(this.currentQueryParams);
+        const newKeys = Object.keys(newParams);
+        
+        if (oldKeys.length !== newKeys.length) return true;
+        
+        for (const key of oldKeys) {
+            if (JSON.stringify(this.currentQueryParams[key]) !== JSON.stringify(newParams[key])) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    getQueryParams() {
+        return { ...this.currentQueryParams };
+    }
+
+    getQueryParam(key) {
+        return this.currentQueryParams ? this.currentQueryParams[key] : undefined;
+    }
+
+    setQueryParams(params, replace = false) {
+        if (!params || typeof params !== 'object') {
+            console.warn('Invalid parameters object provided to setQueryParams');
+            return;
+        }
+        
+        const currentParams = replace ? {} : { ...this.currentQueryParams };
+        const sanitizedParams = {};
+        
+        // 파라미터 검증 및 sanitize
+        for (const [key, value] of Object.entries(params)) {
+            // 키와 값 검증
+            if (!this.validateParameter(key, value)) {
+                console.warn(`Parameter ${key} rejected by security filter`);
+                continue;
+            }
+            
+            // 값 sanitize
+            if (value !== undefined && value !== null) {
+                if (Array.isArray(value)) {
+                    sanitizedParams[key] = value.map(item => this.sanitizeParameter(item));
+                } else {
+                    sanitizedParams[key] = this.sanitizeParameter(value);
+                }
+            }
+        }
+        
+        const newParams = { ...currentParams, ...sanitizedParams };
+        
+        // Remove undefined/null values
+        for (const key of Object.keys(newParams)) {
+            if (newParams[key] === undefined || newParams[key] === null || newParams[key] === '') {
+                delete newParams[key];
+            }
+        }
+        
+        // 전체 파라미터 개수 제한 (설정 가능)
+        if (Object.keys(newParams).length > this.config.security.maxParameterCount) {
+            if (this.config.security.logSecurityWarnings) {
+                console.warn('Too many query parameters. Some may be ignored.');
+            }
+            return;
+        }
+        
+        this.updateURL(this.currentHash, newParams);
+    }
+
+    removeQueryParams(keys) {
+        const newParams = { ...this.currentQueryParams };
+        const keysToRemove = Array.isArray(keys) ? keys : [keys];
+        
+        for (const key of keysToRemove) {
+            delete newParams[key];
+        }
+        
+        this.updateURL(this.currentHash, newParams);
+    }
+
+    updateURL(route, params = null) {
+        const queryParams = params || this.currentQueryParams || {};
+        const queryString = this.buildQueryString(queryParams);
+        
+        if (this.config.mode === 'hash') {
+            let newHash;
+            if (route === 'home') {
+                newHash = queryString ? `#/?${queryString}` : '#/';
+            } else {
+                newHash = queryString ? `#/${route}?${queryString}` : `#/${route}`;
+            }
+            
+            // Prevent triggering hashchange if URL is the same
+            if (window.location.hash !== newHash) {
+                window.location.hash = newHash;
+            }
+        } else {
+            let newPath;
+            if (route === 'home') {
+                newPath = queryString ? `/?${queryString}` : '/';
+            } else {
+                newPath = queryString ? `/${route}?${queryString}` : `/${route}`;
+            }
+            
+            // Use replaceState to avoid adding to history when only query params change
+            const isSameRoute = window.location.pathname === (route === 'home' ? '/' : `/${route}`);
+            if (isSameRoute) {
+                window.history.replaceState({}, '', newPath);
+            } else {
+                window.history.pushState({}, '', newPath);
+            }
+            this.handleRouteChange();
+        }
     }
     
     // 캐시 관리 메서드들

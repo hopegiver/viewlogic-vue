@@ -19,6 +19,7 @@ export default {
             <span v-if="loading && loadingText" class="btn-loading-text">{{ loadingText }}</span>
         </button>
     `,
+    emits: ['click'],
     props: {
         variant: {
             type: String,

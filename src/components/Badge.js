@@ -13,6 +13,7 @@ export default {
             <button v-if="closable" class="badge-close" @click.stop="handleClose">×</button>
         </span>
     `,
+    emits: ['click', 'close'],
     props: {
         text: {
             type: String,

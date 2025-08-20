@@ -33,7 +33,7 @@ export default {
                 
                 <div v-if="progress !== null" class="loading-progress">
                     <div class="progress-bar">
-                        <div class="progress-fill" :style="{ width: `${progress}%` }"></div>
+                        <div class="progress-fill" :style="{ width: progress + '%' }"></div>
                     </div>
                     <div class="progress-text">{{ progress }}%</div>
                 </div>
@@ -44,6 +44,7 @@ export default {
             </div>
         </div>
     `,
+    emits: ['complete'],
     props: {
         visible: {
             type: Boolean,

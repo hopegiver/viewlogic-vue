@@ -72,6 +72,7 @@ export default {
             </div>
         </div>
     `,
+    emits: ['update:modelValue', 'change', 'clear', 'focus', 'blur'],
     props: {
         modelValue: {
             type: [String, Number, Object, Array],

@@ -26,7 +26,10 @@
             environment: 'production',     // 프로덕션 모드로 설정
             //preloadRoutes: ['home', 'about', 'contact'], // 프리로드할 라우트들 (home은 첫 페이지이므로 제외)
             //preloadDelay: 1500,            // 프리로드 시작 지연 시간 (1.5초)
-            //preloadInterval: 300           // 프리로드 간격 (0.3초)
+            //preloadInterval: 300,          // 프리로드 간격 (0.3초)
+            // 다국어 설정
+            useI18n: true,                          // 다국어 시스템 사용 여부
+            i18nDefaultLanguage: 'ko'               // 기본 언어 (폴백 언어로도 사용)
         };
         
         // 환경설정과 함께 라우터 생성

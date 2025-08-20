@@ -70,7 +70,7 @@ export default {
                                     </div>
                                     <div v-if="file.progress !== undefined" class="file-upload-file-progress">
                                         <div class="progress-bar">
-                                            <div class="progress-fill" :style="{ width: `${file.progress}%` }"></div>
+                                            <div class="progress-fill" :style="{ width: file.progress + '%' }"></div>
                                         </div>
                                         <span class="progress-text">{{ file.progress }}%</span>
                                     </div>
@@ -115,6 +115,7 @@ export default {
             </div>
         </div>
     `,
+    emits: ['update:modelValue', 'change', 'upload', 'error', 'progress'],
     props: {
         modelValue: {
             type: [File, Array],

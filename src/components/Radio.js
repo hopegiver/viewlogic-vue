@@ -33,6 +33,7 @@ export default {
             </div>
         </div>
     `,
+    emits: ['update:modelValue', 'change'],
     props: {
         modelValue: {
             type: [String, Number, Boolean],

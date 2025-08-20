@@ -46,6 +46,7 @@ export default {
             </div>
         </div>
     `,
+    emits: ['click'],
     props: {
         title: {
             type: String,

@@ -59,6 +59,7 @@ export default {
             </div>
         </div>
     `,
+    emits: ['update:modelValue', 'tab-change', 'tab-close', 'tab-add', 'tab-update'],
     props: {
         modelValue: {
             type: String,

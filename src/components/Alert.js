@@ -27,7 +27,7 @@ export default {
                             <button
                                 v-for="action in actions"
                                 :key="action.text"
-                                :class="['alert-action', `alert-action-${action.type || 'default'}`]"
+                                :class="['alert-action', 'alert-action-' + (action.type || 'default')]"
                                 @click="handleAction(action)"
                             >
                                 {{ action.text }}
@@ -38,6 +38,7 @@ export default {
             </div>
         </transition>
     `,
+    emits: ['update:modelValue', 'close', 'destroyed', 'action'],
     props: {
         modelValue: {
             type: Boolean,

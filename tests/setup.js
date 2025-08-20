@@ -23,7 +23,7 @@ Object.defineProperty(window, 'location', {
     port: '3000',
     pathname: '/',
     search: '',
-    hash: '#home',
+    hash: '#/',
     reload: jest.fn(),
     assign: jest.fn(),
     replace: jest.fn()

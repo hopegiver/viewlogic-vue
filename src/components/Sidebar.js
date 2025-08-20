@@ -95,6 +95,7 @@ export default {
             <div v-if="resizable" class="sidebar-resize-handle" @mousedown="startResize"></div>
         </aside>
     `,
+    emits: ['update:modelValue', 'toggle'],
     props: {
         modelValue: {
             type: Boolean,

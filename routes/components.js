@@ -1,14 +1,279 @@
 /**
  * ViewLogic 통합 컴포넌트 시스템
- * 빌드 시간: 2025-08-20T02:13:26.622Z
+ * 빌드 시간: 2025-08-20T05:56:58.251Z
  * 빌드 버전: 1.0.0
- * 포함된 컴포넌트: Badge, Breadcrumb, Button, Card, Checkbox, DatePicker, Input, Modal, Progress, Radio, Select, Sidebar, Table, Tabs, Toast, Tooltip
+ * 포함된 컴포넌트: Accordion, Alert, Badge, Breadcrumb, Button, Card, Checkbox, DatePicker, FileUpload, Input, LanguageSwitcher, Loading, Modal, Pagination, Progress, Radio, Select, Sidebar, Table, Tabs, Toast, Tooltip
  */
+
+// Component: Accordion
+const AccordionComponent = {
+    name: "Accordion",
+    template: "\n        <div class=\"accordion\" :class=\"accordionClasses\">\n            <div\n                v-for=\"(item, index) in items\"\n                :key=\"item.key || index\"\n                class=\"accordion-item\"\n                :class=\"getItemClasses(item, index)\"\n            >\n                <div\n                    class=\"accordion-header\"\n                    :class=\"getHeaderClasses(item, index)\"\n                    @click=\"toggleItem(index)\"\n                    :aria-expanded=\"isExpanded(index)\"\n                    :aria-controls=\"'accordion-content-' + index\"\n                >\n                    <span v-if=\"item.icon\" :class=\"['accordion-icon', item.icon]\"></span>\n                    <span class=\"accordion-title\">{{ item.title }}</span>\n                    <span v-if=\"item.badge\" class=\"accordion-badge\">{{ item.badge }}</span>\n                    <span class=\"accordion-arrow\" :class=\"{ 'accordion-arrow-expanded': isExpanded(index) }\">\n                        ›\n                    </span>\n                </div>\n                \n                <transition name=\"accordion-content\" @enter=\"enter\" @leave=\"leave\">\n                    <div\n                        v-if=\"isExpanded(index)\"\n                        :id=\"'accordion-content-' + index\"\n                        class=\"accordion-content\"\n                        :class=\"getContentClasses(item, index)\"\n                    >\n                        <div class=\"accordion-body\">\n                            <slot :name=\"'content-' + index\" :item=\"item\" :index=\"index\">\n                                <div v-html=\"item.content\"></div>\n                            </slot>\n                        </div>\n                    </div>\n                </transition>\n            </div>\n        </div>\n    ",
+    emits: ["update:modelValue","change"],
+    props: {
+        items: {
+            type: Array,
+            required: true,
+        },
+        modelValue: {
+            type: [Number, Array],
+            default: null,
+        },
+        multiple: {
+            type: Boolean,
+            default: false,
+        },
+        collapsible: {
+            type: Boolean,
+            default: true,
+        },
+        variant: {
+            type: String,
+            default: "default",
+            validator: (value) => ['default', 'flush', 'bordered'].includes(value),
+        },
+        size: {
+            type: String,
+            default: "medium",
+            validator: (value) => ['small', 'medium', 'large'].includes(value),
+        },
+    },
+    data() {
+        return {
+            expandedItems: this.getInitialExpanded()
+        };
+    },
+    computed: {
+        accordionClasses() {
+            return [
+                'accordion',
+                `accordion-${this.variant}`,
+                `accordion-${this.size}`,
+                {
+                    'accordion-multiple': this.multiple
+                }
+            ];
+        },
+    },
+    methods: {
+        getInitialExpanded() {
+            if (this.modelValue === null) {
+                return this.multiple ? [] : -1;
+            }
+            return this.multiple ? [...this.modelValue] : this.modelValue;
+        },
+        isExpanded(index) {
+            if (this.multiple) {
+                return this.expandedItems.includes(index);
+            }
+            return this.expandedItems === index;
+        },
+        toggleItem(index) {
+            if (this.items[index].disabled) return;
+            
+            if (this.multiple) {
+                const currentIndex = this.expandedItems.indexOf(index);
+                if (currentIndex > -1) {
+                    if (this.collapsible) {
+                        this.expandedItems.splice(currentIndex, 1);
+                    }
+                } else {
+                    this.expandedItems.push(index);
+                }
+            } else {
+                if (this.expandedItems === index && this.collapsible) {
+                    this.expandedItems = -1;
+                } else {
+                    this.expandedItems = index;
+                }
+            }
+            
+            this.$emit('update:modelValue', this.expandedItems);
+            this.$emit('change', {
+                index,
+                item: this.items[index],
+                expanded: this.isExpanded(index)
+            });
+        },
+        getItemClasses(item, index) {
+            return {
+                'accordion-item-expanded': this.isExpanded(index),
+                'accordion-item-disabled': item.disabled
+            };
+        },
+        getHeaderClasses(item, index) {
+            return {
+                'accordion-header-expanded': this.isExpanded(index),
+                'accordion-header-disabled': item.disabled
+            };
+        },
+        getContentClasses(item, index) {
+            return {
+                'accordion-content-expanded': this.isExpanded(index)
+            };
+        },
+        enter(el) {
+            el.style.height = '0';
+            el.offsetHeight; // force reflow
+            el.style.height = el.scrollHeight + 'px';
+        },
+        leave(el) {
+            el.style.height = el.scrollHeight + 'px';
+            el.offsetHeight; // force reflow
+            el.style.height = '0';
+        },
+    },
+    watch: {
+        modelValue(newValue) {
+            this.expandedItems = this.multiple ? [...newValue] : newValue;
+        },
+    },
+};
+
+// Component: Alert
+const AlertComponent = {
+    name: "Alert",
+    template: "\n        <transition name=\"alert\" @after-leave=\"$emit('destroyed')\">\n            <div v-if=\"visible\" :class=\"alertClasses\" role=\"alert\">\n                <div v-if=\"icon || closable\" class=\"alert-header\">\n                    <span v-if=\"icon\" :class=\"['alert-icon', iconClass]\">\n                        {{ iconText }}\n                    </span>\n                    <button v-if=\"closable\" class=\"alert-close\" @click=\"close\" aria-label=\"닫기\">\n                        ×\n                    </button>\n                </div>\n                \n                <div class=\"alert-content\">\n                    <h4 v-if=\"title\" class=\"alert-title\">{{ title }}</h4>\n                    <div class=\"alert-message\">\n                        <slot>{{ message }}</slot>\n                    </div>\n                    \n                    <div v-if=\"actions.length > 0 || $slots.actions\" class=\"alert-actions\">\n                        <slot name=\"actions\">\n                            <button\n                                v-for=\"action in actions\"\n                                :key=\"action.text\"\n                                :class=\"['alert-action', 'alert-action-' + (action.type || 'default')]\"\n                                @click=\"handleAction(action)\"\n                            >\n                                {{ action.text }}\n                            </button>\n                        </slot>\n                    </div>\n                </div>\n            </div>\n        </transition>\n    ",
+    emits: ["update:modelValue","close","destroyed","action"],
+    props: {
+        modelValue: {
+            type: Boolean,
+            default: true,
+        },
+        title: {
+            type: String,
+            default: "",
+        },
+        message: {
+            type: String,
+            default: "",
+        },
+        type: {
+            type: String,
+            default: "info",
+            validator: (value) => ['success', 'info', 'warning', 'error'].includes(value),
+        },
+        variant: {
+            type: String,
+            default: "filled",
+            validator: (value) => ['filled', 'outlined', 'minimal'].includes(value),
+        },
+        closable: {
+            type: Boolean,
+            default: false,
+        },
+        autoClose: {
+            type: Boolean,
+            default: false,
+        },
+        duration: {
+            type: Number,
+            default: 5000,
+        },
+        icon: {
+            type: Boolean,
+            default: true,
+        },
+        actions: {
+            type: Array,
+            default: () => [],
+        },
+        persistent: {
+            type: Boolean,
+            default: false,
+        },
+    },
+    data() {
+        return {
+            visible: this.modelValue,
+            timer: null
+        };
+    },
+    computed: {
+        alertClasses() {
+            return [
+                'alert',
+                `alert-${this.type}`,
+                `alert-${this.variant}`,
+                {
+                    'alert-closable': this.closable,
+                    'alert-with-icon': this.icon,
+                    'alert-with-title': this.title,
+                    'alert-with-actions': this.actions.length > 0 || this.$slots.actions
+                }
+            ];
+        },
+        iconClass() {
+            const iconMap = {
+                success: 'alert-icon-success',
+                info: 'alert-icon-info',
+                warning: 'alert-icon-warning',
+                error: 'alert-icon-error'
+            };
+            return iconMap[this.type] || 'alert-icon-info';
+        },
+        iconText() {
+            const iconMap = {
+                success: '✓',
+                info: 'ℹ',
+                warning: '⚠',
+                error: '✕'
+            };
+            return iconMap[this.type] || 'ℹ';
+        },
+    },
+    methods: {
+        close() {
+            this.visible = false;
+            this.$emit('update:modelValue', false);
+            this.$emit('close');
+            this.clearTimer();
+        },
+        handleAction(action) {
+            this.$emit('action', action);
+            if (action.close !== false) {
+                this.close();
+            }
+        },
+        startTimer() {
+            if (this.autoClose && this.duration > 0) {
+                this.timer = setTimeout(() => {
+                    this.close();
+                }, this.duration);
+            }
+        },
+        clearTimer() {
+            if (this.timer) {
+                clearTimeout(this.timer);
+                this.timer = null;
+            }
+        },
+    },
+    watch: {
+        modelValue(newValue) {
+            this.visible = newValue;
+            if (newValue) {
+                this.startTimer();
+            } else {
+                this.clearTimer();
+            }
+        },
+    },
+    mounted() {
+        if (this.visible) {
+            this.startTimer();
+        }
+    },
+    unmounted() {
+        this.clearTimer();
+    },
+};
 
 // Component: Badge
 const BadgeComponent = {
     name: "Badge",
     template: "\n        <span :class=\"badgeClasses\" @click=\"handleClick\">\n            <span v-if=\"icon\" :class=\"['badge-icon', icon]\"></span>\n            <span class=\"badge-text\">\n                <slot>{{ text }}</slot>\n            </span>\n            <button v-if=\"closable\" class=\"badge-close\" @click.stop=\"handleClose\">×</button>\n        </span>\n    ",
+    emits: ["click","close"],
     props: {
         text: {
             type: String,
@@ -86,6 +351,7 @@ const BadgeComponent = {
 const BreadcrumbComponent = {
     name: "Breadcrumb",
     template: "\n        <nav class=\"breadcrumb-wrapper\" :class=\"wrapperClasses\" aria-label=\"경로\">\n            <ol class=\"breadcrumb\" :class=\"breadcrumbClasses\">\n                <li\n                    v-for=\"(item, index) in items\"\n                    :key=\"item.key || index\"\n                    class=\"breadcrumb-item\"\n                    :class=\"getItemClasses(item, index)\"\n                >\n                    <a\n                        v-if=\"!isLast(index) && item.href\"\n                        :href=\"item.href\"\n                        class=\"breadcrumb-link\"\n                        @click=\"handleClick(item, index, $event)\"\n                    >\n                        <span v-if=\"item.icon\" :class=\"['breadcrumb-icon', item.icon]\"></span>\n                        <span class=\"breadcrumb-text\">{{ item.label }}</span>\n                    </a>\n                    \n                    <span v-else class=\"breadcrumb-current\">\n                        <span v-if=\"item.icon\" :class=\"['breadcrumb-icon', item.icon]\"></span>\n                        <span class=\"breadcrumb-text\">{{ item.label }}</span>\n                    </span>\n                    \n                    <span\n                        v-if=\"!isLast(index)\"\n                        class=\"breadcrumb-separator\"\n                        :class=\"separatorClasses\"\n                        aria-hidden=\"true\"\n                    >\n                        {{ separatorIcon }}\n                    </span>\n                </li>\n            </ol>\n        </nav>\n    ",
+    emits: ["click"],
     props: {
         items: {
             type: Array,
@@ -205,6 +471,7 @@ const BreadcrumbComponent = {
 const ButtonComponent = {
     name: "Button",
     template: "\n        <button \n            :class=\"buttonClasses\" \n            :disabled=\"disabled || loading\"\n            @click=\"handleClick\"\n            :type=\"type\"\n        >\n            <span v-if=\"loading\" class=\"btn-spinner\"></span>\n            <span v-if=\"icon && !loading\" :class=\"'btn-icon ' + icon\"></span>\n            <span class=\"btn-text\" v-if=\"!loading || showTextWhileLoading\">\n                <slot>{{ text }}</slot>\n            </span>\n            <span v-if=\"loading && loadingText\" class=\"btn-loading-text\">{{ loadingText }}</span>\n        </button>\n    ",
+    emits: ["click"],
     props: {
         variant: {
             type: String,
@@ -283,6 +550,7 @@ const ButtonComponent = {
 const CardComponent = {
     name: "Card",
     template: "\n        <div :class=\"cardClasses\" @click=\"handleClick\">\n            <div v-if=\"hasHeader\" class=\"card-header\">\n                <div v-if=\"image\" class=\"card-image\">\n                    <img :src=\"image\" :alt=\"imageAlt\" />\n                </div>\n                <div v-if=\"title || $slots.header\" class=\"card-header-content\">\n                    <h3 v-if=\"title\" class=\"card-title\">{{ title }}</h3>\n                    <p v-if=\"subtitle\" class=\"card-subtitle\">{{ subtitle }}</p>\n                    <slot name=\"header\"></slot>\n                </div>\n                <div v-if=\"$slots.actions || showDefaultActions\" class=\"card-actions\">\n                    <slot name=\"actions\">\n                        <button v-if=\"showDefaultActions\" class=\"btn btn-sm btn-outline\">더보기</button>\n                    </slot>\n                </div>\n            </div>\n            \n            <div class=\"card-body\" v-if=\"$slots.default || content\">\n                <p v-if=\"content\" class=\"card-content\">{{ content }}</p>\n                <slot></slot>\n            </div>\n            \n            <div v-if=\"$slots.footer || tags.length > 0\" class=\"card-footer\">\n                <div v-if=\"tags.length > 0\" class=\"card-tags\">\n                    <span \n                        v-for=\"tag in tags\" \n                        :key=\"tag\" \n                        class=\"card-tag\"\n                        :class=\"tagVariant\"\n                    >\n                        {{ tag }}\n                    </span>\n                </div>\n                <slot name=\"footer\"></slot>\n            </div>\n            \n            <div v-if=\"loading\" class=\"card-loading\">\n                <div class=\"loading-spinner\"></div>\n            </div>\n        </div>\n    ",
+    emits: ["click"],
     props: {
         title: {
             type: String,
@@ -369,6 +637,7 @@ const CardComponent = {
 const CheckboxComponent = {
     name: "Checkbox",
     template: "\n        <div class=\"checkbox-wrapper\" :class=\"wrapperClasses\">\n            <label :for=\"checkboxId\" class=\"checkbox-label\" :class=\"labelClasses\">\n                <input\n                    :id=\"checkboxId\"\n                    type=\"checkbox\"\n                    class=\"checkbox-input\"\n                    :checked=\"isChecked\"\n                    :disabled=\"disabled\"\n                    :required=\"required\"\n                    :value=\"value\"\n                    @change=\"handleChange\"\n                    ref=\"checkbox\"\n                />\n                <span class=\"checkbox-box\" :class=\"boxClasses\">\n                    <span v-if=\"isChecked\" class=\"checkbox-check\">✓</span>\n                    <span v-else-if=\"indeterminate\" class=\"checkbox-indeterminate\">-</span>\n                </span>\n                <span v-if=\"label || $slots.default\" class=\"checkbox-text\">\n                    <slot>{{ label }}</slot>\n                </span>\n            </label>\n            \n            <div v-if=\"helpText || errorMessage\" class=\"checkbox-help\">\n                <p v-if=\"errorMessage\" class=\"checkbox-error\">{{ errorMessage }}</p>\n                <p v-else-if=\"helpText\" class=\"checkbox-help-text\">{{ helpText }}</p>\n            </div>\n        </div>\n    ",
+    emits: ["update:modelValue","change"],
     props: {
         modelValue: {
             type: [Boolean, Array],
@@ -512,6 +781,7 @@ const CheckboxComponent = {
 const DatePickerComponent = {
     name: "DatePicker",
     template: "\n        <div class=\"datepicker-wrapper\" :class=\"wrapperClasses\">\n            <label v-if=\"label\" :for=\"inputId\" class=\"datepicker-label\">{{ label }}</label>\n            \n            <div class=\"datepicker-input-container\" @click=\"toggleCalendar\">\n                <input\n                    :id=\"inputId\"\n                    type=\"text\"\n                    class=\"datepicker-input\"\n                    :class=\"inputClasses\"\n                    :value=\"displayValue\"\n                    :placeholder=\"placeholder\"\n                    :disabled=\"disabled\"\n                    :readonly=\"true\"\n                    ref=\"input\"\n                />\n                <span class=\"datepicker-icon\">📅</span>\n                <button v-if=\"clearable && modelValue\" class=\"datepicker-clear\" @click.stop=\"clear\">\n                    ×\n                </button>\n            </div>\n            \n            <transition name=\"datepicker-dropdown\">\n                <div v-if=\"isOpen\" class=\"datepicker-dropdown\" :class=\"dropdownClasses\">\n                    <!-- 헤더 -->\n                    <div class=\"datepicker-header\">\n                        <button class=\"datepicker-nav\" @click=\"previousMonth\">‹</button>\n                        <div class=\"datepicker-title\">\n                            <select v-model=\"currentYear\" class=\"datepicker-year-select\">\n                                <option v-for=\"year in availableYears\" :key=\"year\" :value=\"year\">\n                                    {{ year }}\n                                </option>\n                            </select>\n                            <select v-model=\"currentMonth\" class=\"datepicker-month-select\">\n                                <option v-for=\"(month, index) in monthNames\" :key=\"index\" :value=\"index\">\n                                    {{ month }}\n                                </option>\n                            </select>\n                        </div>\n                        <button class=\"datepicker-nav\" @click=\"nextMonth\">›</button>\n                    </div>\n                    \n                    <!-- 요일 -->\n                    <div class=\"datepicker-weekdays\">\n                        <div v-for=\"day in weekDays\" :key=\"day\" class=\"datepicker-weekday\">\n                            {{ day }}\n                        </div>\n                    </div>\n                    \n                    <!-- 날짜 -->\n                    <div class=\"datepicker-calendar\">\n                        <div\n                            v-for=\"date in calendarDates\"\n                            :key=\"date.key\"\n                            class=\"datepicker-date\"\n                            :class=\"getDateClasses(date)\"\n                            @click=\"selectDate(date)\"\n                        >\n                            {{ date.day }}\n                        </div>\n                    </div>\n                    \n                    <!-- 하단 버튼 -->\n                    <div v-if=\"showFooter\" class=\"datepicker-footer\">\n                        <button class=\"datepicker-today-btn\" @click=\"selectToday\">\n                            오늘\n                        </button>\n                        <button class=\"datepicker-clear-btn\" @click=\"clear\">\n                            취소\n                        </button>\n                    </div>\n                </div>\n            </transition>\n            \n            <div v-if=\"helpText || errorMessage\" class=\"datepicker-help\">\n                <p v-if=\"errorMessage\" class=\"datepicker-error\">{{ errorMessage }}</p>\n                <p v-else-if=\"helpText\" class=\"datepicker-help-text\">{{ helpText }}</p>\n            </div>\n        </div>\n    ",
+    emits: ["update:modelValue","change","clear"],
     props: {
         modelValue: {
             type: [Date, String],
@@ -755,10 +1025,352 @@ const DatePickerComponent = {
     },
 };
 
+// Component: FileUpload
+const FileUploadComponent = {
+    name: "FileUpload",
+    template: "\n        <div class=\"file-upload-wrapper\" :class=\"wrapperClasses\">\n            <label v-if=\"label\" class=\"file-upload-label\">{{ label }}</label>\n            \n            <!-- 드래그 앤 드롭 영역 -->\n            <div\n                class=\"file-upload-area\"\n                :class=\"areaClasses\"\n                @click=\"openFileDialog\"\n                @drop=\"handleDrop\"\n                @dragover=\"handleDragOver\"\n                @dragenter=\"handleDragEnter\"\n                @dragleave=\"handleDragLeave\"\n            >\n                <input\n                    ref=\"fileInput\"\n                    type=\"file\"\n                    class=\"file-upload-input\"\n                    :accept=\"accept\"\n                    :multiple=\"multiple\"\n                    :disabled=\"disabled\"\n                    @change=\"handleFileSelect\"\n                    style=\"display: none;\"\n                />\n                \n                <div class=\"file-upload-content\">\n                    <div v-if=\"!files.length\" class=\"file-upload-placeholder\">\n                        <div class=\"file-upload-icon\">\n                            <span v-if=\"dragActive\">📤</span>\n                            <span v-else-if=\"uploadProgress > 0\">🔄</span>\n                            <span v-else>📁</span>\n                        </div>\n                        <div class=\"file-upload-text\">\n                            <p class=\"file-upload-primary-text\">\n                                {{ dragActive ? '파일을 여기에 드롭하세요' : '파일을 선택하거나 드래그하세요' }}\n                            </p>\n                            <p class=\"file-upload-secondary-text\">\n                                {{ acceptText }}\n                            </p>\n                        </div>\n                        <button type=\"button\" class=\"file-upload-button\" :disabled=\"disabled\">\n                            파일 선택\n                        </button>\n                    </div>\n                    \n                    <!-- 업로드된 파일 목록 -->\n                    <div v-else class=\"file-upload-files\">\n                        <div\n                            v-for=\"(file, index) in files\"\n                            :key=\"file.id || index\"\n                            class=\"file-upload-file\"\n                            :class=\"getFileClasses(file)\"\n                        >\n                            <div class=\"file-upload-file-info\">\n                                <div class=\"file-upload-file-icon\">\n                                    {{ getFileIcon(file) }}\n                                </div>\n                                <div class=\"file-upload-file-details\">\n                                    <div class=\"file-upload-file-name\" :title=\"file.name\">\n                                        {{ file.name }}\n                                    </div>\n                                    <div class=\"file-upload-file-size\">\n                                        {{ formatFileSize(file.size) }}\n                                    </div>\n                                    <div v-if=\"file.progress !== undefined\" class=\"file-upload-file-progress\">\n                                        <div class=\"progress-bar\">\n                                            <div class=\"progress-fill\" :style=\"{ width: file.progress + '%' }\"></div>\n                                        </div>\n                                        <span class=\"progress-text\">{{ file.progress }}%</span>\n                                    </div>\n                                </div>\n                            </div>\n                            \n                            <div class=\"file-upload-file-actions\">\n                                <button\n                                    v-if=\"file.status === 'error'\"\n                                    class=\"file-upload-retry\"\n                                    @click.stop=\"retryUpload(file, index)\"\n                                    title=\"다시 시도\"\n                                >\n                                    🔄\n                                </button>\n                                <button\n                                    class=\"file-upload-remove\"\n                                    @click.stop=\"removeFile(index)\"\n                                    title=\"제거\"\n                                >\n                                    ×\n                                </button>\n                            </div>\n                        </div>\n                        \n                        <button\n                            v-if=\"multiple\"\n                            type=\"button\"\n                            class=\"file-upload-add-more\"\n                            @click=\"openFileDialog\"\n                            :disabled=\"disabled\"\n                        >\n                            + 파일 추가\n                        </button>\n                    </div>\n                </div>\n            </div>\n            \n            <div v-if=\"helpText || errorMessage\" class=\"file-upload-help\">\n                <p v-if=\"errorMessage\" class=\"file-upload-error\">{{ errorMessage }}</p>\n                <p v-else-if=\"helpText\" class=\"file-upload-help-text\">{{ helpText }}</p>\n            </div>\n        </div>\n    ",
+    emits: ["update:modelValue","change","upload","error","progress"],
+    props: {
+        modelValue: {
+            type: [File, Array],
+            default: null,
+        },
+        label: {
+            type: String,
+            default: "",
+        },
+        accept: {
+            type: String,
+            default: "",
+        },
+        multiple: {
+            type: Boolean,
+            default: false,
+        },
+        disabled: {
+            type: Boolean,
+            default: false,
+        },
+        maxSize: {
+            type: Number,
+            default: null,
+        },
+        maxFiles: {
+            type: Number,
+            default: null,
+        },
+        autoUpload: {
+            type: Boolean,
+            default: false,
+        },
+        uploadUrl: {
+            type: String,
+            default: "",
+        },
+        uploadHeaders: {
+            type: Object,
+            default: () => ({}),
+        },
+        uploadData: {
+            type: Object,
+            default: () => ({}),
+        },
+        preview: {
+            type: Boolean,
+            default: true,
+        },
+        size: {
+            type: String,
+            default: "medium",
+            validator: (value) => ['small', 'medium', 'large'].includes(value),
+        },
+        helpText: {
+            type: String,
+            default: "",
+        },
+        errorMessage: {
+            type: String,
+            default: "",
+        },
+    },
+    data() {
+        return {
+            files: [],
+            dragActive: false,
+            uploadProgress: 0,
+            nextFileId: 1
+        };
+    },
+    computed: {
+        wrapperClasses() {
+            return [
+                'file-upload-wrapper',
+                `file-upload-size-${this.size}`,
+                {
+                    'file-upload-disabled': this.disabled,
+                    'file-upload-error': this.errorMessage,
+                    'file-upload-multiple': this.multiple
+                }
+            ];
+        },
+        areaClasses() {
+            return [
+                'file-upload-area',
+                {
+                    'file-upload-area-drag-active': this.dragActive,
+                    'file-upload-area-disabled': this.disabled,
+                    'file-upload-area-has-files': this.files.length > 0
+                }
+            ];
+        },
+        acceptText() {
+            if (!this.accept) return '모든 파일';
+            
+            const types = this.accept.split(',').map(type => type.trim());
+            const extensions = types.filter(type => type.startsWith('.'));
+            const mimeTypes = types.filter(type => !type.startsWith('.'));
+            
+            let text = '';
+            if (extensions.length > 0) {
+                text += extensions.join(', ');
+            }
+            if (mimeTypes.length > 0) {
+                if (text) text += ', ';
+                text += mimeTypes.map(type => {
+                    if (type.startsWith('image/')) return '이미지';
+                    if (type.startsWith('video/')) return '비디오';
+                    if (type.startsWith('audio/')) return '오디오';
+                    return type;
+                }).join(', ');
+            }
+            
+            return text || '모든 파일';
+        },
+    },
+    methods: {
+        openFileDialog() {
+            if (this.disabled) return;
+            this.$refs.fileInput.click();
+        },
+        handleFileSelect(event) {
+            const files = Array.from(event.target.files);
+            this.addFiles(files);
+            // 입력 초기화
+            event.target.value = '';
+        },
+        handleDrop(event) {
+            event.preventDefault();
+            this.dragActive = false;
+            
+            if (this.disabled) return;
+            
+            const files = Array.from(event.dataTransfer.files);
+            this.addFiles(files);
+        },
+        handleDragOver(event) {
+            event.preventDefault();
+        },
+        handleDragEnter(event) {
+            event.preventDefault();
+            this.dragActive = true;
+        },
+        handleDragLeave(event) {
+            event.preventDefault();
+            if (!this.$el.contains(event.relatedTarget)) {
+                this.dragActive = false;
+            }
+        },
+        addFiles(newFiles) {
+            const validFiles = newFiles.filter(file => this.validateFile(file));
+            
+            if (this.multiple) {
+                if (this.maxFiles && this.files.length + validFiles.length > this.maxFiles) {
+                    const remaining = this.maxFiles - this.files.length;
+                    validFiles.splice(remaining);
+                }
+                
+                const filesWithId = validFiles.map(file => ({
+                    ...file,
+                    id: this.nextFileId++,
+                    status: 'pending'
+                }));
+                
+                this.files.push(...filesWithId);
+            } else {
+                if (validFiles.length > 0) {
+                    this.files = [{
+                        ...validFiles[0],
+                        id: this.nextFileId++,
+                        status: 'pending'
+                    }];
+                }
+            }
+            
+            this.updateModelValue();
+            
+            if (this.autoUpload) {
+                this.uploadFiles();
+            }
+        },
+        removeFile(index) {
+            this.files.splice(index, 1);
+            this.updateModelValue();
+        },
+        validateFile(file) {
+            // 크기 검증
+            if (this.maxSize && file.size > this.maxSize) {
+                this.$emit('error', {
+                    type: 'size',
+                    file,
+                    message: `파일 크기가 너무 큽니다. 최대 ${this.formatFileSize(this.maxSize)}`
+                });
+                return false;
+            }
+            
+            // 파일 형식 검증
+            if (this.accept && !this.isAcceptedFileType(file)) {
+                this.$emit('error', {
+                    type: 'type',
+                    file,
+                    message: '지원되지 않는 파일 형식입니다.'
+                });
+                return false;
+            }
+            
+            return true;
+        },
+        isAcceptedFileType(file) {
+            const acceptTypes = this.accept.split(',').map(type => type.trim());
+            
+            return acceptTypes.some(type => {
+                if (type.startsWith('.')) {
+                    return file.name.toLowerCase().endsWith(type.toLowerCase());
+                } else {
+                    return file.type === type || file.type.startsWith(type.replace('*', ''));
+                }
+            });
+        },
+        updateModelValue() {
+            const fileList = this.files.map(f => f.file || f);
+            
+            if (this.multiple) {
+                this.$emit('update:modelValue', fileList);
+            } else {
+                this.$emit('update:modelValue', fileList[0] || null);
+            }
+            
+            this.$emit('change', fileList);
+        },
+        uploadFiles() {
+            if (!this.uploadUrl) return;
+            
+            this.files.forEach((file, index) => {
+                if (file.status === 'pending') {
+                    this.uploadFile(file, index);
+                }
+            });
+        },
+        async uploadFile(file, index) {
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            // 추가 데이터 추가
+            Object.keys(this.uploadData).forEach(key => {
+                formData.append(key, this.uploadData[key]);
+            });
+            
+            try {
+                file.status = 'uploading';
+                file.progress = 0;
+                
+                const xhr = new XMLHttpRequest();
+                
+                xhr.upload.addEventListener('progress', (event) => {
+                    if (event.lengthComputable) {
+                        file.progress = Math.round((event.loaded / event.total) * 100);
+                    }
+                });
+                
+                xhr.onload = () => {
+                    if (xhr.status === 200) {
+                        file.status = 'success';
+                        file.progress = 100;
+                        this.$emit('upload-success', { file, response: xhr.response });
+                    } else {
+                        file.status = 'error';
+                        this.$emit('upload-error', { file, error: xhr.statusText });
+                    }
+                };
+                
+                xhr.onerror = () => {
+                    file.status = 'error';
+                    this.$emit('upload-error', { file, error: '업로드 실패' });
+                };
+                
+                // 헤더 설정
+                Object.keys(this.uploadHeaders).forEach(key => {
+                    xhr.setRequestHeader(key, this.uploadHeaders[key]);
+                });
+                
+                xhr.open('POST', this.uploadUrl);
+                xhr.send(formData);
+                
+            } catch (error) {
+                file.status = 'error';
+                this.$emit('upload-error', { file, error });
+            }
+        },
+        retryUpload(file, index) {
+            file.status = 'pending';
+            delete file.progress;
+            this.uploadFile(file, index);
+        },
+        getFileClasses(file) {
+            return {
+                'file-upload-file-pending': file.status === 'pending',
+                'file-upload-file-uploading': file.status === 'uploading',
+                'file-upload-file-success': file.status === 'success',
+                'file-upload-file-error': file.status === 'error'
+            };
+        },
+        getFileIcon(file) {
+            const type = file.type || '';
+            
+            if (type.startsWith('image/')) return '🖼️';
+            if (type.startsWith('video/')) return '🎥';
+            if (type.startsWith('audio/')) return '🎧';
+            if (type.includes('pdf')) return '📄';
+            if (type.includes('word')) return '📄';
+            if (type.includes('excel') || type.includes('spreadsheet')) return '📈';
+            if (type.includes('powerpoint') || type.includes('presentation')) return '📉';
+            if (type.includes('zip') || type.includes('rar')) return '🗜️';
+            
+            return '📁';
+        },
+        formatFileSize(bytes) {
+            if (bytes === 0) return '0 B';
+            
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+        },
+    },
+    watch: {
+        modelValue(newValue) {
+            if (!newValue) {
+                this.files = [];
+            }
+        },
+    },
+};
+
 // Component: Input
 const InputComponent = {
     name: "Input",
     template: "\n        <div :class=\"wrapperClasses\">\n            <label v-if=\"label\" :for=\"inputId\" class=\"input-label\" :class=\"{ 'required': required }\">\n                {{ label }}\n            </label>\n            \n            <div class=\"input-container\">\n                <span v-if=\"prefixIcon\" class=\"input-prefix-icon\" :class=\"prefixIcon\"></span>\n                \n                <input\n                    :id=\"inputId\"\n                    :type=\"inputType\"\n                    :class=\"inputClasses\"\n                    :value=\"modelValue\"\n                    :placeholder=\"placeholder\"\n                    :disabled=\"disabled\"\n                    :readonly=\"readonly\"\n                    :required=\"required\"\n                    :min=\"min\"\n                    :max=\"max\"\n                    :step=\"step\"\n                    :maxlength=\"maxlength\"\n                    @input=\"handleInput\"\n                    @blur=\"handleBlur\"\n                    @focus=\"handleFocus\"\n                    @keyup.enter=\"handleEnter\"\n                    ref=\"input\"\n                />\n                \n                <span v-if=\"suffixIcon\" class=\"input-suffix-icon\" :class=\"suffixIcon\"></span>\n                \n                <button\n                    v-if=\"clearable && modelValue && !disabled && !readonly\"\n                    class=\"input-clear\"\n                    @click=\"clearInput\"\n                    type=\"button\"\n                >\n                    ×\n                </button>\n                \n                <button\n                    v-if=\"type === 'password'\"\n                    class=\"input-password-toggle\"\n                    @click=\"togglePasswordVisibility\"\n                    type=\"button\"\n                >\n                    {{ showPassword ? '🙈' : '👁' }}\n                </button>\n            </div>\n            \n            <div v-if=\"helpText || errorMessage\" class=\"input-help\">\n                <p v-if=\"errorMessage\" class=\"input-error\">{{ errorMessage }}</p>\n                <p v-else-if=\"helpText\" class=\"input-help-text\">{{ helpText }}</p>\n            </div>\n        </div>\n    ",
+    emits: ["update:modelValue","input","blur","focus","enter"],
     props: {
         modelValue: {
             type: [String, Number],
@@ -908,10 +1520,234 @@ const InputComponent = {
     },
 };
 
+// Component: LanguageSwitcher
+const LanguageSwitcherComponent = {
+    name: "LanguageSwitcher",
+    template: "\n        <div class=\"language-switcher\" :class=\"switcherClasses\">\n            <button\n                v-if=\"variant === 'button'\"\n                class=\"language-button\"\n                @click=\"toggleDropdown\"\n                :disabled=\"loading\"\n            >\n                <span class=\"language-icon\">🌐</span>\n                <span class=\"language-text\">{{ currentLanguageLabel }}</span>\n                <span class=\"language-arrow\" :class=\"{ 'language-arrow-open': showDropdown }\">▼</span>\n            </button>\n            \n            <select\n                v-else-if=\"variant === 'select'\"\n                class=\"language-select\"\n                :value=\"currentLanguage\"\n                @change=\"changeLanguage\"\n                :disabled=\"loading\"\n            >\n                <option\n                    v-for=\"lang in availableLanguages\"\n                    :key=\"lang.code\"\n                    :value=\"lang.code\"\n                >\n                    {{ lang.label }}\n                </option>\n            </select>\n            \n            <div\n                v-else\n                class=\"language-inline\"\n            >\n                <button\n                    v-for=\"lang in availableLanguages\"\n                    :key=\"lang.code\"\n                    class=\"language-option\"\n                    :class=\"{ 'language-option-active': lang.code === currentLanguage }\"\n                    @click=\"setLanguage(lang.code)\"\n                    :disabled=\"loading || lang.code === currentLanguage\"\n                >\n                    {{ lang.label }}\n                </button>\n            </div>\n            \n            <!-- 드롭다운 메뉴 -->\n            <div\n                v-if=\"variant === 'button' && showDropdown\"\n                class=\"language-dropdown\"\n                @click.stop\n            >\n                <button\n                    v-for=\"lang in availableLanguages\"\n                    :key=\"lang.code\"\n                    class=\"language-dropdown-option\"\n                    :class=\"{ 'language-dropdown-option-active': lang.code === currentLanguage }\"\n                    @click=\"setLanguage(lang.code)\"\n                    :disabled=\"loading\"\n                >\n                    <span class=\"language-flag\">{{ lang.flag }}</span>\n                    <span class=\"language-name\">{{ lang.label }}</span>\n                    <span v-if=\"lang.code === currentLanguage\" class=\"language-check\">✓</span>\n                </button>\n            </div>\n            \n            <!-- 로딩 오버레이 -->\n            <div v-if=\"loading\" class=\"language-loading\">\n                <div class=\"language-spinner\"></div>\n            </div>\n        </div>\n    ",
+    emits: ["language-changed"],
+    props: {
+        variant: {
+            type: String,
+            default: "button",
+            validator: (value) => ['button', 'select', 'inline'].includes(value),
+        },
+        size: {
+            type: String,
+            default: "medium",
+            validator: (value) => ['small', 'medium', 'large'].includes(value),
+        },
+        showLabels: {
+            type: Boolean,
+            default: true,
+        },
+        useQueryParam: {
+            type: Boolean,
+            default: true,
+        },
+    },
+    data() {
+        return {
+            currentLanguage: 'ko',
+            showDropdown: false,
+            loading: false,
+            availableLanguages: [
+                {
+                    code: 'ko',
+                    label: '한국어',
+                    flag: '🇰🇷'
+                },
+                {
+                    code: 'en',
+                    label: 'English',
+                    flag: '🇺🇸'
+                }
+            ]
+        };
+    },
+    computed: {
+        switcherClasses() {
+            return [
+                `language-switcher-${this.variant}`,
+                `language-switcher-${this.size}`,
+                {
+                    'language-switcher-loading': this.loading,
+                    'language-switcher-dropdown-open': this.showDropdown
+                }
+            ];
+        },
+        currentLanguageLabel() {
+            const lang = this.availableLanguages.find(l => l.code === this.currentLanguage);
+            return lang ? lang.label : this.currentLanguage;
+        },
+    },
+    mounted() {
+        // i18n 시스템에서 현재 언어 가져오기
+        if (window.i18n) {
+            this.currentLanguage = window.i18n.getCurrentLanguage();
+            
+            // 언어 변경 이벤트 리스너 등록
+            window.i18n.on('languageChanged', this.onLanguageChanged);
+        }
+        
+        // 외부 클릭 시 드롭다운 닫기
+        document.addEventListener('click', this.closeDropdown);
+    },
+    unmounted() {
+        // 이벤트 리스너 제거
+        if (window.i18n) {
+            window.i18n.off('languageChanged', this.onLanguageChanged);
+        }
+        document.removeEventListener('click', this.closeDropdown);
+    },
+    methods: {
+        async setLanguage(languageCode) {
+            if (this.loading || languageCode === this.currentLanguage) {
+                return;
+            }
+            
+            this.loading = true;
+            this.showDropdown = false;
+            
+            try {
+                if (window.i18n) {
+                    const success = await window.i18n.setLanguage(languageCode);
+                    if (success) {
+                        this.currentLanguage = languageCode;
+                        
+                        // 쿼리 파라미터 업데이트
+                        if (this.useQueryParam && window.router) {
+                            window.router.setQueryParams({ lang: languageCode });
+                        }
+                        
+                        this.$emit('language-changed', {
+                            language: languageCode,
+                            label: this.currentLanguageLabel
+                        });
+                    }
+                } else {
+                    console.warn('i18n system not available');
+                }
+            } catch (error) {
+                console.error('Failed to change language:', error);
+            } finally {
+                this.loading = false;
+            }
+        },
+        changeLanguage(event) {
+            this.setLanguage(event.target.value);
+        },
+        toggleDropdown() {
+            if (!this.loading) {
+                this.showDropdown = !this.showDropdown;
+            }
+        },
+        closeDropdown() {
+            this.showDropdown = false;
+        },
+        onLanguageChanged(data) {
+            this.currentLanguage = data.to;
+        },
+    },
+};
+
+// Component: Loading
+const LoadingComponent = {
+    name: "Loading",
+    template: "\n        <div v-if=\"visible\" :class=\"loadingClasses\">\n            <div class=\"loading-backdrop\" v-if=\"overlay\" @click=\"handleBackdropClick\"></div>\n            \n            <div class=\"loading-content\" :class=\"contentClasses\">\n                <div class=\"loading-spinner\" :class=\"spinnerClasses\">\n                    <div v-if=\"type === 'dots'\" class=\"spinner-dots\">\n                        <div class=\"dot\" v-for=\"i in 3\" :key=\"i\"></div>\n                    </div>\n                    <div v-else-if=\"type === 'bars'\" class=\"spinner-bars\">\n                        <div class=\"bar\" v-for=\"i in 4\" :key=\"i\"></div>\n                    </div>\n                    <div v-else-if=\"type === 'pulse'\" class=\"spinner-pulse\">\n                        <div class=\"pulse-ring\"></div>\n                    </div>\n                    <div v-else-if=\"type === 'ring'\" class=\"spinner-ring\">\n                        <div class=\"ring\"></div>\n                    </div>\n                    <div v-else class=\"spinner-circle\">\n                        <div class=\"circle\"></div>\n                    </div>\n                </div>\n                \n                <div v-if=\"text || $slots.default\" class=\"loading-text\">\n                    <slot>{{ text }}</slot>\n                </div>\n                \n                <div v-if=\"progress !== null\" class=\"loading-progress\">\n                    <div class=\"progress-bar\">\n                        <div class=\"progress-fill\" :style=\"{ width: progress + '%' }\"></div>\n                    </div>\n                    <div class=\"progress-text\">{{ progress }}%</div>\n                </div>\n                \n                <button v-if=\"cancelable\" class=\"loading-cancel\" @click=\"handleCancel\">\n                    취소\n                </button>\n            </div>\n        </div>\n    ",
+    emits: ["complete"],
+    props: {
+        visible: {
+            type: Boolean,
+            default: true,
+        },
+        text: {
+            type: String,
+            default: "",
+        },
+        type: {
+            type: String,
+            default: "circle",
+            validator: (value) => ['circle', 'dots', 'bars', 'pulse', 'ring'].includes(value),
+        },
+        size: {
+            type: String,
+            default: "medium",
+            validator: (value) => ['small', 'medium', 'large'].includes(value),
+        },
+        color: {
+            type: String,
+            default: "primary",
+            validator: (value) => ['primary', 'secondary', 'success', 'warning', 'danger'].includes(value),
+        },
+        overlay: {
+            type: Boolean,
+            default: false,
+        },
+        backdrop: {
+            type: Boolean,
+            default: true,
+        },
+        position: {
+            type: String,
+            default: "center",
+            validator: (value) => ['center', 'top', 'bottom', 'inline'].includes(value),
+        },
+        progress: {
+            type: Number,
+            default: null,
+            validator: (value) => value === null || (value >= 0 && value <= 100),
+        },
+        cancelable: {
+            type: Boolean,
+            default: false,
+        },
+    },
+    computed: {
+        loadingClasses() {
+            return [
+                'loading',
+                `loading-${this.position}`,
+                {
+                    'loading-overlay': this.overlay,
+                    'loading-with-backdrop': this.backdrop && this.overlay
+                }
+            ];
+        },
+        contentClasses() {
+            return [
+                'loading-content',
+                `loading-size-${this.size}`,
+                {
+                    'loading-with-text': this.text || this.$slots.default,
+                    'loading-with-progress': this.progress !== null
+                }
+            ];
+        },
+        spinnerClasses() {
+            return [
+                'loading-spinner',
+                `spinner-${this.type}`,
+                `spinner-${this.color}`
+            ];
+        },
+    },
+    methods: {
+        handleBackdropClick() {
+            if (!this.backdrop) {
+                this.$emit('backdrop-click');
+            }
+        },
+        handleCancel() {
+            this.$emit('cancel');
+        },
+    },
+};
+
 // Component: Modal
 const ModalComponent = {
     name: "Modal",
     template: "\n        <teleport to=\"body\" v-if=\"modelValue\">\n            <div class=\"modal-overlay\" @click=\"handleOverlayClick\" :class=\"{ 'modal-overlay-visible': modelValue }\">\n                <div \n                    class=\"modal-container\" \n                    :class=\"[sizeClass, { 'modal-container-visible': modelValue }]\"\n                    @click.stop\n                >\n                    <div class=\"modal-header\" v-if=\"showHeader\">\n                        <h3 class=\"modal-title\" v-if=\"title\">{{ title }}</h3>\n                        <slot name=\"header\" v-else></slot>\n                        <button \n                            v-if=\"showCloseButton\" \n                            class=\"modal-close\" \n                            @click=\"closeModal\"\n                            aria-label=\"닫기\"\n                        >\n                            ×\n                        </button>\n                    </div>\n                    \n                    <div class=\"modal-body\">\n                        <slot></slot>\n                    </div>\n                    \n                    <div class=\"modal-footer\" v-if=\"showFooter\">\n                        <slot name=\"footer\">\n                            <button \n                                v-if=\"showCancelButton\" \n                                class=\"btn btn-secondary\" \n                                @click=\"handleCancel\"\n                            >\n                                {{ cancelText }}\n                            </button>\n                            <button \n                                v-if=\"showConfirmButton\" \n                                class=\"btn btn-primary\" \n                                @click=\"handleConfirm\"\n                                :disabled=\"confirmDisabled\"\n                            >\n                                {{ confirmText }}\n                            </button>\n                        </slot>\n                    </div>\n                </div>\n            </div>\n        </teleport>\n    ",
+    emits: ["update:modelValue","close","cancel","confirm"],
     props: {
         modelValue: {
             type: Boolean,
@@ -1009,6 +1845,132 @@ const ModalComponent = {
         if (this.$unmounted) {
             this.$unmounted();
         }
+    },
+};
+
+// Component: Pagination
+const PaginationComponent = {
+    name: "Pagination",
+    template: "\n        <nav class=\"pagination-wrapper\" :class=\"wrapperClasses\">\n            <div v-if=\"showInfo\" class=\"pagination-info\">\n                <slot name=\"info\">\n                    {{ infoText }}\n                </slot>\n            </div>\n            \n            <ul class=\"pagination\" :class=\"paginationClasses\">\n                <!-- 첫 페이지 -->\n                <li v-if=\"showFirstLast\" class=\"pagination-item\">\n                    <button\n                        class=\"pagination-link\"\n                        :disabled=\"currentPage === 1\"\n                        @click=\"goToPage(1)\"\n                        :aria-label=\"'첫 페이지로 이동'\"\n                    >\n                        ««\n                    </button>\n                </li>\n                \n                <!-- 이전 페이지 -->\n                <li class=\"pagination-item\">\n                    <button\n                        class=\"pagination-link\"\n                        :disabled=\"currentPage === 1\"\n                        @click=\"goToPage(currentPage - 1)\"\n                        :aria-label=\"'이전 페이지로 이동'\"\n                    >\n                        ‹\n                    </button>\n                </li>\n                \n                <!-- 시작 생략 -->\n                <li v-if=\"showStartEllipsis\" class=\"pagination-item pagination-ellipsis\">\n                    <span class=\"pagination-link\">…</span>\n                </li>\n                \n                <!-- 페이지 번호들 -->\n                <li\n                    v-for=\"page in visiblePages\"\n                    :key=\"page\"\n                    class=\"pagination-item\"\n                    :class=\"{ 'pagination-active': page === currentPage }\"\n                >\n                    <button\n                        class=\"pagination-link\"\n                        @click=\"goToPage(page)\"\n                        :aria-label=\"'페이지 ' + page + '로 이동'\"\n                        :aria-current=\"page === currentPage ? 'page' : null\"\n                    >\n                        {{ page }}\n                    </button>\n                </li>\n                \n                <!-- 끝 생략 -->\n                <li v-if=\"showEndEllipsis\" class=\"pagination-item pagination-ellipsis\">\n                    <span class=\"pagination-link\">…</span>\n                </li>\n                \n                <!-- 다음 페이지 -->\n                <li class=\"pagination-item\">\n                    <button\n                        class=\"pagination-link\"\n                        :disabled=\"currentPage === totalPages\"\n                        @click=\"goToPage(currentPage + 1)\"\n                        :aria-label=\"'다음 페이지로 이동'\"\n                    >\n                        ›\n                    </button>\n                </li>\n                \n                <!-- 마지막 페이지 -->\n                <li v-if=\"showFirstLast\" class=\"pagination-item\">\n                    <button\n                        class=\"pagination-link\"\n                        :disabled=\"currentPage === totalPages\"\n                        @click=\"goToPage(totalPages)\"\n                        :aria-label=\"'마지막 페이지로 이동'\"\n                    >\n                        »»\n                    </button>\n                </li>\n            </ul>\n            \n            <!-- 페이지 크기 선택 -->\n            <div v-if=\"showPageSize\" class=\"pagination-page-size\">\n                <label class=\"pagination-page-size-label\">\n                    페이지당 항목 수:\n                    <select v-model=\"localPageSize\" @change=\"handlePageSizeChange\" class=\"pagination-page-size-select\">\n                        <option v-for=\"size in pageSizeOptions\" :key=\"size\" :value=\"size\">\n                            {{ size }}\n                        </option>\n                    </select>\n                </label>\n            </div>\n        </nav>\n    ",
+    emits: ["update:modelValue","change","page-change"],
+    props: {
+        currentPage: {
+            type: Number,
+            default: 1,
+        },
+        totalPages: {
+            type: Number,
+            required: true,
+        },
+        totalItems: {
+            type: Number,
+            default: 0,
+        },
+        pageSize: {
+            type: Number,
+            default: 10,
+        },
+        maxVisiblePages: {
+            type: Number,
+            default: 5,
+        },
+        size: {
+            type: String,
+            default: "medium",
+            validator: (value) => ['small', 'medium', 'large'].includes(value),
+        },
+        variant: {
+            type: String,
+            default: "default",
+            validator: (value) => ['default', 'outline', 'minimal'].includes(value),
+        },
+        showFirstLast: {
+            type: Boolean,
+            default: true,
+        },
+        showInfo: {
+            type: Boolean,
+            default: false,
+        },
+        showPageSize: {
+            type: Boolean,
+            default: false,
+        },
+        pageSizeOptions: {
+            type: Array,
+            default: () => [10, 20, 50, 100],
+        },
+        disabled: {
+            type: Boolean,
+            default: false,
+        },
+    },
+    data() {
+        return {
+            localPageSize: this.pageSize
+        };
+    },
+    computed: {
+        wrapperClasses() {
+            return [
+                'pagination-wrapper',
+                `pagination-size-${this.size}`,
+                {
+                    'pagination-disabled': this.disabled
+                }
+            ];
+        },
+        paginationClasses() {
+            return [
+                'pagination',
+                `pagination-${this.variant}`
+            ];
+        },
+        visiblePages() {
+            const total = this.totalPages;
+            const current = this.currentPage;
+            const max = this.maxVisiblePages;
+            
+            if (total <= max) {
+                return Array.from({ length: total }, (_, i) => i + 1);
+            }
+            
+            const half = Math.floor(max / 2);
+            let start = Math.max(1, current - half);
+            let end = Math.min(total, start + max - 1);
+            
+            if (end - start + 1 < max) {
+                start = Math.max(1, end - max + 1);
+            }
+            
+            return Array.from({ length: end - start + 1 }, (_, i) => start + i);
+        },
+        showStartEllipsis() {
+            return this.visiblePages[0] > 2;
+        },
+        showEndEllipsis() {
+            return this.visiblePages[this.visiblePages.length - 1] < this.totalPages - 1;
+        },
+        infoText() {
+            const start = (this.currentPage - 1) * this.localPageSize + 1;
+            const end = Math.min(start + this.localPageSize - 1, this.totalItems);
+            return `${start}-${end} / 총 ${this.totalItems}개`;
+        },
+    },
+    methods: {
+        goToPage(page) {
+            if (page >= 1 && page <= this.totalPages && page !== this.currentPage && !this.disabled) {
+                this.$emit('page-change', page);
+            }
+        },
+        handlePageSizeChange() {
+            this.$emit('page-size-change', this.localPageSize);
+        },
+    },
+    watch: {
+        pageSize(newValue) {
+            this.localPageSize = newValue;
+        },
     },
 };
 
@@ -1156,6 +2118,7 @@ const ProgressComponent = {
 const RadioComponent = {
     name: "Radio",
     template: "\n        <div class=\"radio-wrapper\" :class=\"wrapperClasses\">\n            <label :for=\"radioId\" class=\"radio-label\" :class=\"labelClasses\">\n                <input\n                    :id=\"radioId\"\n                    type=\"radio\"\n                    class=\"radio-input\"\n                    :checked=\"isChecked\"\n                    :disabled=\"disabled\"\n                    :required=\"required\"\n                    :value=\"value\"\n                    :name=\"name\"\n                    @change=\"handleChange\"\n                    ref=\"radio\"\n                />\n                <span class=\"radio-circle\" :class=\"circleClasses\">\n                    <span v-if=\"isChecked\" class=\"radio-dot\"></span>\n                </span>\n                <span v-if=\"label || $slots.default\" class=\"radio-text\">\n                    <slot>{{ label }}</slot>\n                </span>\n            </label>\n            \n            <div v-if=\"helpText || errorMessage\" class=\"radio-help\">\n                <p v-if=\"errorMessage\" class=\"radio-error\">{{ errorMessage }}</p>\n                <p v-else-if=\"helpText\" class=\"radio-help-text\">{{ helpText }}</p>\n            </div>\n        </div>\n    ",
+    emits: ["update:modelValue","change"],
     props: {
         modelValue: {
             type: [String, Number, Boolean],
@@ -1264,6 +2227,7 @@ const RadioComponent = {
 const SelectComponent = {
     name: "Select",
     template: "\n        <div class=\"select-wrapper\" :class=\"wrapperClasses\">\n            <label v-if=\"label\" :for=\"selectId\" class=\"select-label\" :class=\"{ 'required': required }\">\n                {{ label }}\n            </label>\n            \n            <div class=\"select-container\" @click=\"toggleDropdown\" ref=\"container\">\n                <div class=\"select-display\" :class=\"displayClasses\">\n                    <span v-if=\"selectedOption\" class=\"select-value\">\n                        <slot name=\"option\" :option=\"selectedOption\">\n                            {{ selectedOption[labelKey] }}\n                        </slot>\n                    </span>\n                    <span v-else class=\"select-placeholder\">{{ placeholder }}</span>\n                    \n                    <span class=\"select-arrow\" :class=\"{ 'select-arrow-up': isOpen }\">\n                        ▼\n                    </span>\n                </div>\n                \n                <div v-if=\"clearable && modelValue\" class=\"select-clear\" @click.stop=\"clearSelection\">\n                    ×\n                </div>\n            </div>\n            \n            <!-- 드롭다운 옵션 -->\n            <transition name=\"select-dropdown\">\n                <div v-if=\"isOpen\" class=\"select-dropdown\" :class=\"dropdownClasses\">\n                    <div v-if=\"searchable\" class=\"select-search\">\n                        <input\n                            v-model=\"searchTerm\"\n                            type=\"text\"\n                            class=\"select-search-input\"\n                            :placeholder=\"searchPlaceholder\"\n                            @click.stop\n                            ref=\"searchInput\"\n                        />\n                    </div>\n                    \n                    <div class=\"select-options\" ref=\"optionsList\">\n                        <div\n                            v-for=\"(option, index) in filteredOptions\"\n                            :key=\"getOptionKey(option)\"\n                            class=\"select-option\"\n                            :class=\"getOptionClasses(option, index)\"\n                            @click=\"selectOption(option)\"\n                            @mouseenter=\"highlightedIndex = index\"\n                        >\n                            <slot name=\"option\" :option=\"option\" :selected=\"isSelected(option)\">\n                                {{ option[labelKey] }}\n                            </slot>\n                            \n                            <span v-if=\"isSelected(option)\" class=\"select-check\">✓</span>\n                        </div>\n                        \n                        <div v-if=\"filteredOptions.length === 0\" class=\"select-no-options\">\n                            {{ noOptionsText }}\n                        </div>\n                    </div>\n                </div>\n            </transition>\n            \n            <div v-if=\"helpText || errorMessage\" class=\"select-help\">\n                <p v-if=\"errorMessage\" class=\"select-error\">{{ errorMessage }}</p>\n                <p v-else-if=\"helpText\" class=\"select-help-text\">{{ helpText }}</p>\n            </div>\n        </div>\n    ",
+    emits: ["update:modelValue","change","clear","focus","blur"],
     props: {
         modelValue: {
             type: [String, Number, Object, Array],
@@ -1513,6 +2477,7 @@ const SelectComponent = {
 const SidebarComponent = {
     name: "Sidebar",
     template: "\n        <aside :class=\"sidebarClasses\" :style=\"sidebarStyle\">\n            <!-- 오버레이 -->\n            <div v-if=\"overlay && isOpen\" class=\"sidebar-overlay\" @click=\"close\"></div>\n            \n            <!-- 사이드바 콘텐츠 -->\n            <div class=\"sidebar-content\">\n                <!-- 헤더 -->\n                <div v-if=\"$slots.header || title\" class=\"sidebar-header\">\n                    <slot name=\"header\">\n                        <h3 v-if=\"title\" class=\"sidebar-title\">{{ title }}</h3>\n                    </slot>\n                    <button v-if=\"closable\" class=\"sidebar-close\" @click=\"close\">\n                        ×\n                    </button>\n                </div>\n                \n                <!-- 메인 콘텐츠 -->\n                <div class=\"sidebar-body\">\n                    <nav v-if=\"navigation && menuItems.length > 0\" class=\"sidebar-nav\">\n                        <ul class=\"sidebar-menu\">\n                            <li\n                                v-for=\"item in menuItems\"\n                                :key=\"item.key || item.label\"\n                                class=\"sidebar-menu-item\"\n                                :class=\"getMenuItemClasses(item)\"\n                            >\n                                <a\n                                    v-if=\"!item.children\"\n                                    :href=\"item.href\"\n                                    class=\"sidebar-menu-link\"\n                                    :class=\"{ 'sidebar-menu-link-active': item.active }\"\n                                    @click=\"handleMenuClick(item, $event)\"\n                                >\n                                    <span v-if=\"item.icon\" :class=\"['sidebar-menu-icon', item.icon]\"></span>\n                                    <span class=\"sidebar-menu-text\">{{ item.label }}</span>\n                                    <span v-if=\"item.badge\" class=\"sidebar-menu-badge\">{{ item.badge }}</span>\n                                </a>\n                                \n                                <div v-else class=\"sidebar-menu-group\">\n                                    <div\n                                        class=\"sidebar-menu-group-header\"\n                                        @click=\"toggleGroup(item)\"\n                                    >\n                                        <span v-if=\"item.icon\" :class=\"['sidebar-menu-icon', item.icon]\"></span>\n                                        <span class=\"sidebar-menu-text\">{{ item.label }}</span>\n                                        <span class=\"sidebar-menu-arrow\" :class=\"{ 'sidebar-menu-arrow-open': item.expanded }\">\n                                            ›\n                                        </span>\n                                    </div>\n                                    \n                                    <transition name=\"sidebar-submenu\">\n                                        <ul v-if=\"item.expanded\" class=\"sidebar-submenu\">\n                                            <li\n                                                v-for=\"subItem in item.children\"\n                                                :key=\"subItem.key || subItem.label\"\n                                                class=\"sidebar-submenu-item\"\n                                            >\n                                                <a\n                                                    :href=\"subItem.href\"\n                                                    class=\"sidebar-submenu-link\"\n                                                    :class=\"{ 'sidebar-submenu-link-active': subItem.active }\"\n                                                    @click=\"handleMenuClick(subItem, $event)\"\n                                                >\n                                                    <span v-if=\"subItem.icon\" :class=\"['sidebar-submenu-icon', subItem.icon]\"></span>\n                                                    <span class=\"sidebar-submenu-text\">{{ subItem.label }}</span>\n                                                    <span v-if=\"subItem.badge\" class=\"sidebar-submenu-badge\">{{ subItem.badge }}</span>\n                                                </a>\n                                            </li>\n                                        </ul>\n                                    </transition>\n                                </div>\n                            </li>\n                        </ul>\n                    </nav>\n                    \n                    <div class=\"sidebar-slot-content\">\n                        <slot></slot>\n                    </div>\n                </div>\n                \n                <!-- 푸터 -->\n                <div v-if=\"$slots.footer\" class=\"sidebar-footer\">\n                    <slot name=\"footer\"></slot>\n                </div>\n            </div>\n            \n            <!-- 리사이즈 핸들 -->\n            <div v-if=\"resizable\" class=\"sidebar-resize-handle\" @mousedown=\"startResize\"></div>\n        </aside>\n    ",
+    emits: ["update:modelValue","toggle"],
     props: {
         modelValue: {
             type: Boolean,
@@ -1712,6 +2677,7 @@ const SidebarComponent = {
 const TableComponent = {
     name: "Table",
     template: "\n        <div class=\"table-wrapper\">\n            <!-- 검색 및 필터 -->\n            <div v-if=\"searchable || filterable\" class=\"table-header\">\n                <div v-if=\"searchable\" class=\"table-search\">\n                    <input\n                        v-model=\"searchTerm\"\n                        type=\"text\"\n                        :placeholder=\"searchPlaceholder\"\n                        class=\"table-search-input\"\n                    />\n                </div>\n                <div v-if=\"filterable && filters.length > 0\" class=\"table-filters\">\n                    <select\n                        v-for=\"filter in filters\"\n                        :key=\"filter.key\"\n                        v-model=\"activeFilters[filter.key]\"\n                        class=\"table-filter-select\"\n                    >\n                        <option value=\"\">{{ filter.label }}</option>\n                        <option\n                            v-for=\"option in filter.options\"\n                            :key=\"option.value\"\n                            :value=\"option.value\"\n                        >\n                            {{ option.label }}\n                        </option>\n                    </select>\n                </div>\n            </div>\n\n            <!-- 테이블 -->\n            <div class=\"table-container\" :class=\"tableClasses\">\n                <table class=\"table\" :class=\"{ 'table-loading': loading }\">\n                    <thead>\n                        <tr>\n                            <th\n                                v-for=\"column in columns\"\n                                :key=\"column.key\"\n                                :class=\"getColumnClasses(column)\"\n                                @click=\"handleSort(column)\"\n                            >\n                                <div class=\"table-header-content\">\n                                    <span>{{ column.label }}</span>\n                                    <span\n                                        v-if=\"column.sortable\"\n                                        class=\"table-sort-icon\"\n                                        :class=\"getSortIconClass(column.key)\"\n                                    >\n                                        ↕\n                                    </span>\n                                </div>\n                            </th>\n                        </tr>\n                    </thead>\n                    <tbody>\n                        <tr\n                            v-for=\"(row, index) in paginatedData\"\n                            :key=\"getRowKey(row, index)\"\n                            :class=\"getRowClasses(row, index)\"\n                            @click=\"handleRowClick(row, index)\"\n                        >\n                            <td\n                                v-for=\"column in columns\"\n                                :key=\"column.key\"\n                                :class=\"getCellClasses(column, row)\"\n                            >\n                                <slot\n                                    :name=\"column.key\"\n                                    :row=\"row\"\n                                    :value=\"getNestedValue(row, column.key)\"\n                                    :index=\"index\"\n                                >\n                                    {{ formatValue(getNestedValue(row, column.key), column) }}\n                                </slot>\n                            </td>\n                        </tr>\n                        <tr v-if=\"paginatedData.length === 0\" class=\"table-empty\">\n                            <td :colspan=\"columns.length\" class=\"table-empty-cell\">\n                                {{ emptyText }}\n                            </td>\n                        </tr>\n                    </tbody>\n                </table>\n            </div>\n\n            <!-- 로딩 상태 -->\n            <div v-if=\"loading\" class=\"table-loading-overlay\">\n                <div class=\"table-spinner\"></div>\n            </div>\n\n            <!-- 페이지네이션 -->\n            <div v-if=\"pagination && totalPages > 1\" class=\"table-pagination\">\n                <div class=\"pagination-info\">\n                    {{ paginationInfo }}\n                </div>\n                <div class=\"pagination-controls\">\n                    <button\n                        @click=\"goToPage(1)\"\n                        :disabled=\"currentPage === 1\"\n                        class=\"pagination-btn\"\n                    >\n                        ««\n                    </button>\n                    <button\n                        @click=\"goToPage(currentPage - 1)\"\n                        :disabled=\"currentPage === 1\"\n                        class=\"pagination-btn\"\n                    >\n                        ‹\n                    </button>\n                    <span class=\"pagination-pages\">\n                        <button\n                            v-for=\"page in visiblePages\"\n                            :key=\"page\"\n                            @click=\"goToPage(page)\"\n                            :class=\"['pagination-btn', { active: page === currentPage }]\"\n                        >\n                            {{ page }}\n                        </button>\n                    </span>\n                    <button\n                        @click=\"goToPage(currentPage + 1)\"\n                        :disabled=\"currentPage === totalPages\"\n                        class=\"pagination-btn\"\n                    >\n                        ›\n                    </button>\n                    <button\n                        @click=\"goToPage(totalPages)\"\n                        :disabled=\"currentPage === totalPages\"\n                        class=\"pagination-btn\"\n                    >\n                        »»\n                    </button>\n                </div>\n            </div>\n        </div>\n    ",
+    emits: ["sort","select","row-click","cell-click"],
     props: {
         data: {
             type: Array,
@@ -1954,6 +2920,7 @@ const TableComponent = {
 const TabsComponent = {
     name: "Tabs",
     template: "\n        <div :class=\"tabsClasses\">\n            <div class=\"tabs-header\" role=\"tablist\">\n                <button\n                    v-for=\"(tab, index) in tabs\"\n                    :key=\"tab.name\"\n                    :class=\"getTabClasses(tab, index)\"\n                    :disabled=\"tab.disabled\"\n                    @click=\"selectTab(tab, index)\"\n                    role=\"tab\"\n                    :aria-selected=\"activeTab === tab.name\"\n                    :aria-controls=\"'tab-panel-' + tab.name\"\n                >\n                    <span v-if=\"tab.icon\" :class=\"['tab-icon', tab.icon]\"></span>\n                    <span class=\"tab-label\">{{ tab.label }}</span>\n                    <span v-if=\"tab.badge\" class=\"tab-badge\">{{ tab.badge }}</span>\n                    <button\n                        v-if=\"tab.closable && closable\"\n                        class=\"tab-close\"\n                        @click.stop=\"closeTab(tab, index)\"\n                        :aria-label=\"'Close ' + tab.label\"\n                    >\n                        ×\n                    </button>\n                </button>\n                \n                <div v-if=\"addable\" class=\"tab-add\">\n                    <button class=\"tab-add-button\" @click=\"addTab\" aria-label=\"Add new tab\">\n                        +\n                    </button>\n                </div>\n            </div>\n            \n            <div class=\"tabs-content\">\n                <div\n                    v-for=\"(tab, index) in tabs\"\n                    :key=\"tab.name\"\n                    v-show=\"activeTab === tab.name\"\n                    :class=\"getTabPanelClasses(tab)\"\n                    role=\"tabpanel\"\n                    :id=\"'tab-panel-' + tab.name\"\n                    :aria-labelledby=\"'tab-' + tab.name\"\n                >\n                    <component \n                        v-if=\"tab.component\" \n                        :is=\"tab.component\" \n                        v-bind=\"tab.props || {}\"\n                        @update=\"(data) => updateTabData(tab, data)\"\n                    />\n                    <div v-else-if=\"tab.content\" v-html=\"tab.content\"></div>\n                    <slot v-else :name=\"tab.name\" :tab=\"tab\" :index=\"index\"></slot>\n                </div>\n            </div>\n        </div>\n    ",
+    emits: ["update:modelValue","tab-change","tab-close","tab-add","tab-update"],
     props: {
         modelValue: {
             type: String,
@@ -2106,6 +3073,7 @@ const TabsComponent = {
 const ToastComponent = {
     name: "Toast",
     template: "\n        <teleport to=\"body\">\n            <div class=\"toast-container\" :class=\"positionClass\">\n                <transition-group name=\"toast\" tag=\"div\">\n                    <div\n                        v-for=\"toast in toasts\"\n                        :key=\"toast.id\"\n                        :class=\"getToastClasses(toast)\"\n                        @click=\"closeToast(toast.id)\"\n                    >\n                        <div class=\"toast-icon\" v-if=\"toast.icon\">\n                            <span :class=\"toast.icon\"></span>\n                        </div>\n                        <div class=\"toast-content\">\n                            <h4 v-if=\"toast.title\" class=\"toast-title\">{{ toast.title }}</h4>\n                            <p class=\"toast-message\">{{ toast.message }}</p>\n                        </div>\n                        <button \n                            v-if=\"toast.closable\" \n                            class=\"toast-close\" \n                            @click.stop=\"closeToast(toast.id)\"\n                        >\n                            ×\n                        </button>\n                    </div>\n                </transition-group>\n            </div>\n        </teleport>\n    ",
+    emits: ["close"],
     props: {
         position: {
             type: String,
@@ -2209,6 +3177,7 @@ const ToastComponent = {
 const TooltipComponent = {
     name: "Tooltip",
     template: "\n        <div class=\"tooltip-wrapper\" @mouseenter=\"show\" @mouseleave=\"hide\" @focus=\"show\" @blur=\"hide\">\n            <slot></slot>\n            \n            <teleport to=\"body\">\n                <transition name=\"tooltip\" @after-leave=\"resetPosition\">\n                    <div\n                        v-if=\"visible\"\n                        ref=\"tooltip\"\n                        :class=\"tooltipClasses\"\n                        :style=\"tooltipStyle\"\n                        role=\"tooltip\"\n                        :aria-hidden=\"!visible\"\n                    >\n                        <div class=\"tooltip-content\">\n                            <div v-if=\"title\" class=\"tooltip-title\">{{ title }}</div>\n                            <div class=\"tooltip-text\">\n                                <slot name=\"content\">\n                                    {{ content }}\n                                </slot>\n                            </div>\n                        </div>\n                        <div class=\"tooltip-arrow\" :class=\"arrowClasses\"></div>\n                    </div>\n                </transition>\n            </teleport>\n        </div>\n    ",
+    emits: ["show","hide"],
     props: {
         content: {
             type: String,
@@ -2471,14 +3440,20 @@ export function registerComponents(vueApp) {
         return;
     }
 
+    vueApp.component('Accordion', AccordionComponent);
+    vueApp.component('Alert', AlertComponent);
     vueApp.component('Badge', BadgeComponent);
     vueApp.component('Breadcrumb', BreadcrumbComponent);
     vueApp.component('Button', ButtonComponent);
     vueApp.component('Card', CardComponent);
     vueApp.component('Checkbox', CheckboxComponent);
     vueApp.component('DatePicker', DatePickerComponent);
+    vueApp.component('FileUpload', FileUploadComponent);
     vueApp.component('Input', InputComponent);
+    vueApp.component('LanguageSwitcher', LanguageSwitcherComponent);
+    vueApp.component('Loading', LoadingComponent);
     vueApp.component('Modal', ModalComponent);
+    vueApp.component('Pagination', PaginationComponent);
     vueApp.component('Progress', ProgressComponent);
     vueApp.component('Radio', RadioComponent);
     vueApp.component('Select', SelectComponent);
@@ -2489,20 +3464,26 @@ export function registerComponents(vueApp) {
     vueApp.component('Tooltip', TooltipComponent);
 
     console.log("📦 ViewLogic 컴포넌트 시스템 등록 완료:", [
-        "Badge", "Breadcrumb", "Button", "Card", "Checkbox", "DatePicker", "Input", "Modal", "Progress", "Radio", "Select", "Sidebar", "Table", "Tabs", "Toast", "Tooltip"
+        "Accordion", "Alert", "Badge", "Breadcrumb", "Button", "Card", "Checkbox", "DatePicker", "FileUpload", "Input", "LanguageSwitcher", "Loading", "Modal", "Pagination", "Progress", "Radio", "Select", "Sidebar", "Table", "Tabs", "Toast", "Tooltip"
     ]);
 }
 
 // 컴포넌트 맵
 export const components = {
+    Accordion: AccordionComponent,
+    Alert: AlertComponent,
     Badge: BadgeComponent,
     Breadcrumb: BreadcrumbComponent,
     Button: ButtonComponent,
     Card: CardComponent,
     Checkbox: CheckboxComponent,
     DatePicker: DatePickerComponent,
+    FileUpload: FileUploadComponent,
     Input: InputComponent,
+    LanguageSwitcher: LanguageSwitcherComponent,
+    Loading: LoadingComponent,
     Modal: ModalComponent,
+    Pagination: PaginationComponent,
     Progress: ProgressComponent,
     Radio: RadioComponent,
     Select: SelectComponent,

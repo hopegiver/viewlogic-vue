@@ -40,6 +40,7 @@ export default {
             </ol>
         </nav>
     `,
+    emits: ['click'],
     props: {
         items: {
             type: Array,

@@ -1,17 +1,22 @@
 <div class="home-page">
+    <!-- 언어 스위처 -->
+    <div class="language-switcher-container" style="position: absolute; top: 1rem; right: 1rem;">
+        <LanguageSwitcher variant="select" @language-changed="onLanguageChanged" />
+    </div>
+    
     <div class="hero-section">
-        <h2>Welcome to ViewLogic</h2>
-        <p>Vue SFC 호환 라우터에 오신 것을 환영합니다!</p>
+        <h2>{{ $t ? $t('home.title') : 'Welcome to ViewLogic' }}</h2>
+        <p>{{ $t ? $t('home.subtitle') : 'Vue SFC 호환 라우터에 오신 것을 환영합니다!' }}</p>
     </div>
     
     <div class="home-content">
         <Card 
-            title="ViewLogic Router" 
-            subtitle="Vue 3 호환 라우터 시스템"
+            :title="$t ? $t('home.router_title') : 'ViewLogic Router'"
+            :subtitle="$t ? $t('home.router_subtitle') : 'Vue 3 호환 라우터 시스템'"
             :hoverable="true"
             shadow="medium"
         >
-            <p><strong>{{ message || 'Vue 스타일 컴포넌트로 동작중입니다!' }}</strong></p>
+            <p><strong>{{ message || ($t ? $t('home.message') : 'Vue 스타일 컴포넌트로 동작중입니다!') }}</strong></p>
             
             <template #footer>
                 <div class="card-tags">
@@ -22,7 +27,7 @@
         </Card>
         
         <Card 
-            title="주요 기능" 
+            :title="$t ? $t('home.features_title') : '주요 기능'"
             :hoverable="true"
             shadow="small"
             style="margin-top: 1rem;"
@@ -39,7 +44,7 @@
                 @click="navigateTo('about')"
                 icon="📖"
             >
-                About 페이지
+                {{ $t ? $t('home.about_page') : 'About 페이지' }}
             </Button>
             
             <Button 
@@ -48,7 +53,7 @@
                 @click="navigateTo('contact')"
                 icon="📞"
             >
-                Contact 페이지
+                {{ $t ? $t('home.contact_page') : 'Contact 페이지' }}
             </Button>
             
             <Button 
@@ -58,7 +63,7 @@
                 @click="handleAction"
                 icon="🚀"
             >
-                테스트 액션
+                {{ $t ? $t('home.test_action') : '테스트 액션' }}
             </Button>
 
             <Button 
@@ -67,7 +72,7 @@
                 @click="showToast"
                 icon="💬"
             >
-                알림 테스트
+                {{ $t ? $t('home.notification_test') : '알림 테스트' }}
             </Button>
 
             <Button 
@@ -76,7 +81,7 @@
                 @click="showModal = true"
                 icon="🔧"
             >
-                모달 테스트
+                {{ $t ? $t('home.modal_test') : '모달 테스트' }}
             </Button>
         </div>
 
