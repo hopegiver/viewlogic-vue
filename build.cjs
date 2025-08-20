@@ -14,7 +14,7 @@ class ViewLogicBuilder {
         this.config = {
             srcPath: options.srcPath || './src',
             routesPath: options.routesPath || './routes',
-            minify: options.minify || true,
+            minify: options.minify || false,
             sourceMap: options.sourceMap || false,
             watch: options.watch || false,
             verbose: options.verbose || false,
@@ -78,10 +78,18 @@ class ViewLogicBuilder {
 
     async validateEnvironment() {
         const requiredDirs = ['src', 'src/logic', 'src/views'];
+        const optionalDirs = ['src/components'];
         
         for (const dir of requiredDirs) {
             if (!await this.exists(dir)) {
                 throw new Error(`필수 디렉토리가 없습니다: ${dir}`);
+            }
+        }
+        
+        // 컴포넌트 디렉토리 확인
+        for (const dir of optionalDirs) {
+            if (await this.exists(dir)) {
+                this.log(`✅ 컴포넌트 디렉토리 발견: ${dir}`, 'verbose');
             }
         }
         
@@ -238,14 +246,63 @@ class ViewLogicBuilder {
         const sources = {};
         
         // 병렬 로딩으로 성능 향상
-        const [template, logic, style, layout] = await Promise.all([
+        const [template, logic, style, layout, allComponents] = await Promise.all([
             this.loadTemplate(routeName).catch(() => null),
             this.loadLogic(routeName),
             this.loadStyle(routeName).catch(() => ''),
-            this.loadLayoutForRoute(routeName).catch(() => null)
+            this.loadLayoutForRoute(routeName).catch(() => null),
+            this.loadComponents().catch(() => [])
         ]);
         
-        return { template, logic, style, layout };
+        // 템플릿에서 실제 사용된 컴포넌트만 필터링
+        const usedComponents = this.filterUsedComponents(template, allComponents);
+        
+        return { template, logic, style, layout, components: usedComponents };
+    }
+
+    filterUsedComponents(template, allComponents) {
+        if (!template || !allComponents || allComponents.length === 0) {
+            return [];
+        }
+
+        const usedComponents = [];
+        
+        for (const componentInfo of allComponents) {
+            const componentName = componentInfo.name;
+            
+            // 다양한 패턴으로 컴포넌트 사용 감지
+            const patterns = [
+                // 자체 닫는 태그: <ComponentName />
+                new RegExp(`<${componentName}\\s*\/?>`, 'gi'),
+                // 여는/닫는 태그 쌍: <ComponentName> ... </ComponentName>
+                new RegExp(`<${componentName}[\\s>]`, 'gi'),
+                // 케밥 케이스: <component-name>
+                new RegExp(`<${this.camelToKebab(componentName)}[\\s>\/]`, 'gi'),
+                // Vue 동적 컴포넌트: :is="ComponentName"
+                new RegExp(`:is=["']${componentName}["']`, 'gi'),
+                // Vue 동적 컴포넌트 변수: :is="componentVariable"에서 componentVariable이 ComponentName을 참조
+                new RegExp(`component.*=.*["']${componentName}["']`, 'gi')
+            ];
+            
+            // 패턴 중 하나라도 매치되면 컴포넌트 사용으로 간주
+            const isUsed = patterns.some(pattern => pattern.test(template));
+            
+            if (isUsed) {
+                usedComponents.push(componentInfo);
+                this.log(`  📦 컴포넌트 포함: ${componentName}`, 'verbose');
+            } else {
+                this.log(`  📋 컴포넌트 제외: ${componentName}`, 'verbose');
+            }
+        }
+        
+        this.log(`📊 ${allComponents.length}개 중 ${usedComponents.length}개 컴포넌트 포함`, 'info');
+        
+        return usedComponents;
+    }
+
+    // 카멜케이스를 케밥케이스로 변환 (예: ButtonComponent -> button-component)
+    camelToKebab(str) {
+        return str.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase();
     }
 
     async loadTemplate(routeName) {
@@ -289,8 +346,53 @@ class ViewLogicBuilder {
         return await fs.readFile(layoutPath, 'utf8');
     }
 
+    async loadComponents() {
+        const componentsPath = path.resolve(this.config.srcPath, 'components');
+        
+        if (!await this.exists(componentsPath)) {
+            return [];
+        }
+
+        const components = [];
+        const files = await fs.readdir(componentsPath);
+        
+        for (const file of files) {
+            if (!file.endsWith('.js')) continue;
+            
+            const componentName = path.basename(file, '.js');
+            
+            // 특별한 파일들은 스킵
+            if (['ComponentLoader', 'components'].includes(componentName)) {
+                continue;
+            }
+            
+            try {
+                const componentPath = path.join(componentsPath, file);
+                const absolutePath = 'file://' + componentPath.replace(/\\/g, '/');
+                
+                // 캐시 무효화
+                delete require.cache[require.resolve(componentPath)];
+                
+                const module = await import(absolutePath);
+                const component = module.default || {};
+                
+                components.push({
+                    name: componentName,
+                    component: component,
+                    source: await fs.readFile(componentPath, 'utf8')
+                });
+                
+                this.log(`  📦 컴포넌트 로드: ${componentName}`, 'verbose');
+            } catch (error) {
+                this.log(`⚠️ 컴포넌트 '${componentName}' 로드 실패: ${error.message}`, 'warn');
+            }
+        }
+        
+        return components;
+    }
+
     async combineAndOptimizeRoute(routeName, sources) {
-        const { template, logic, style, layout } = sources;
+        const { template, logic, style, layout, components } = sources;
         
         // 컴포넌트 데이터 생성
         const componentData = {
@@ -298,7 +400,8 @@ class ViewLogicBuilder {
             _routeName: routeName,
             _isBuilt: true,
             _buildTime: new Date().toISOString(),
-            _buildVersion: this.getBuildVersion()
+            _buildVersion: this.getBuildVersion(),
+            _components: components ? components.map(c => c.name) : []
         };
 
         // 레이아웃과 템플릿 병합
@@ -307,13 +410,13 @@ class ViewLogicBuilder {
             finalTemplate = this.mergeLayoutWithTemplate(layout, template);
         }
 
-        // 코드 생성
-        const output = this.generateOptimizedCode(routeName, componentData, finalTemplate, style);
+        // 코드 생성 (컴포넌트 포함)
+        const output = this.generateOptimizedCode(routeName, componentData, finalTemplate, style, components);
         
         return this.config.minify ? this.minifyCode(output) : output;
     }
 
-    generateOptimizedCode(routeName, componentData, template, style) {
+    generateOptimizedCode(routeName, componentData, template, style, components = []) {
         const lines = [];
         
         // 헤더 코멘트
@@ -321,9 +424,32 @@ class ViewLogicBuilder {
         lines.push(` * ViewLogic 빌드된 라우트: ${routeName}`);
         lines.push(` * 빌드 시간: ${componentData._buildTime}`);
         lines.push(` * 빌드 버전: ${componentData._buildVersion}`);
+        if (components.length > 0) {
+            lines.push(` * 포함된 컴포넌트: ${components.map(c => c.name).join(', ')}`);
+        }
         lines.push(` */`);
         lines.push('');
         
+        // 인라인 컴포넌트들 (독립적으로 동작)
+        if (components && components.length > 0) {
+            lines.push('// 인라인 컴포넌트들');
+            components.forEach(comp => {
+                lines.push(`// Component: ${comp.name}`);
+                lines.push(`const ${comp.name}Component = ${this.serializeVueComponent(comp.component)};`);
+            });
+            lines.push('');
+            
+            // 컴포넌트 등록 함수
+            lines.push('// 컴포넌트 자동 등록 함수');
+            lines.push('const registerInlineComponents = (vueApp) => {');
+            lines.push('    if (!vueApp || typeof vueApp.component !== "function") return;');
+            components.forEach(comp => {
+                lines.push(`    vueApp.component('${comp.name}', ${comp.name}Component);`);
+            });
+            lines.push('};');
+            lines.push('');
+        }
+
         // 스타일 자동 적용 (최적화된 방식)
         if (style && style.trim()) {
             lines.push('// 스타일 자동 적용');
@@ -367,6 +493,13 @@ class ViewLogicBuilder {
         lines.push(`component.template = \`${this.escapeTemplate(template)}\`;`);
         lines.push('');
         
+        // 컴포넌트 등록 함수 추가
+        if (components && components.length > 0) {
+            lines.push('// 빌드된 컴포넌트 등록 메서드 추가');
+            lines.push('component.registerInlineComponents = registerInlineComponents;');
+            lines.push('');
+        }
+        
         // Export
         lines.push('export default component;');
         
@@ -399,6 +532,75 @@ class ViewLogicBuilder {
             .replace(/\r\n/g, '\\n')
             .replace(/\n/g, '\\n')
             .replace(/\r/g, '\\r');
+    }
+
+    serializeVueComponent(component) {
+        if (!component) return '{}';
+        
+        const lines = ['{'];
+        
+        for (const [key, value] of Object.entries(component)) {
+            if (typeof value === 'function') {
+                // 함수는 toString()으로 직렬화
+                lines.push(`    ${value.toString()},`);
+            } else if (key === 'methods' && typeof value === 'object' && value !== null) {
+                // methods 객체 처리
+                lines.push(`    methods: {`);
+                for (const [methodKey, methodValue] of Object.entries(value)) {
+                    if (typeof methodValue === 'function') {
+                        const funcStr = methodValue.toString();
+                        // 함수 이름이 중복되지 않도록 처리
+                        if (funcStr.startsWith(`${methodKey}(`)) {
+                            lines.push(`        ${funcStr},`);
+                        } else {
+                            lines.push(`        ${methodKey}: ${funcStr},`);
+                        }
+                    }
+                }
+                lines.push('    },');
+            } else if (key === 'computed' && typeof value === 'object' && value !== null) {
+                // computed 객체 처리
+                lines.push(`    computed: {`);
+                for (const [computedKey, computedValue] of Object.entries(value)) {
+                    if (typeof computedValue === 'function') {
+                        const funcStr = computedValue.toString();
+                        // 함수 이름이 중복되지 않도록 처리
+                        if (funcStr.startsWith(`${computedKey}(`)) {
+                            lines.push(`        ${funcStr},`);
+                        } else {
+                            lines.push(`        ${computedKey}: ${funcStr},`);
+                        }
+                    }
+                }
+                lines.push('    },');
+            } else if (key === 'watch' && typeof value === 'object' && value !== null) {
+                // watch 객체 처리
+                lines.push(`    watch: {`);
+                for (const [watchKey, watchValue] of Object.entries(value)) {
+                    if (typeof watchValue === 'function') {
+                        const funcStr = watchValue.toString();
+                        // 함수 이름이 중복되지 않도록 처리
+                        if (funcStr.startsWith(`${watchKey}(`)) {
+                            lines.push(`        ${funcStr},`);
+                        } else {
+                            lines.push(`        ${watchKey}: ${funcStr},`);
+                        }
+                    } else if (typeof watchValue === 'object' && watchValue !== null) {
+                        lines.push(`        ${watchKey}: ${JSON.stringify(watchValue)},`);
+                    }
+                }
+                lines.push('    },');
+            } else if (typeof value === 'object' && value !== null) {
+                // 일반 객체는 JSON.stringify 사용
+                lines.push(`    ${key}: ${JSON.stringify(value)},`);
+            } else {
+                // 원시 타입
+                lines.push(`    ${key}: ${JSON.stringify(value)},`);
+            }
+        }
+        
+        lines.push('}');
+        return lines.join('\n');
     }
 
     minifyCode(code) {

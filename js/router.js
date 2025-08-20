@@ -190,8 +190,14 @@ class VueCompatibleRouter {
             return;
         }
 
+        // 프로덕션 모드에서는 컴포넌트가 라우트에 인라인으로 포함되어 있음
+        if (this.config.environment === 'production') {
+            console.log('🧩 Production mode: Components are inlined in routes');
+            return;
+        }
+
         try {
-            // ComponentLoader 동적 로드
+            // 개발 모드에서만 ComponentLoader 동적 로드
             const { getComponentLoader } = await import(this.config.basePath + '/components/ComponentLoader.js');
             
             this.componentLoader = getComponentLoader({
@@ -200,7 +206,7 @@ class VueCompatibleRouter {
                 cache: true
             });
 
-            console.log('🧩 Component system initialized');
+            console.log('🧩 Component system initialized (development mode)');
             
             // 컴포넌트 사전 로드
             if (this.config.preloadComponents && this.config.globalComponents.length > 0) {
@@ -233,16 +239,25 @@ class VueCompatibleRouter {
     }
 
     async registerComponentsForVueApp(vueApp) {
-        if (!this.config.useComponents || !this.componentLoader || !vueApp) {
+        if (!this.config.useComponents || !vueApp) {
+            return { successful: [], failed: [] };
+        }
+
+        // 프로덕션 모드에서는 컴포넌트가 라우트에 인라인으로 포함되어 있음
+        if (this.config.environment === 'production') {
+            console.log('📝 Production mode: Components registered via inline routes');
+            return { successful: [], failed: [] };
+        }
+
+        if (!this.componentLoader) {
             return { successful: [], failed: [] };
         }
 
         try {
-            console.log('📝 Registering global components with Vue app...');
+            console.log('📝 Registering global components with Vue app (development mode)...');
             const result = await this.componentLoader.registerGlobalComponents(vueApp);
             
-            // 컴포넌트 스타일 로드
-            await this.loadComponentStyles();
+            // 컴포넌트 스타일은 이제 base.css에 통합되어 있음
             
             return result;
         } catch (error) {
@@ -252,23 +267,22 @@ class VueCompatibleRouter {
     }
 
     async loadComponentStyles() {
-        // 컴포넌트 CSS가 이미 로드되었는지 확인
-        if (document.getElementById('components-styles')) {
-            return;
-        }
+        // 컴포넌트 CSS는 이제 base.css에 통합되어 있으므로 별도 로딩 불필요
+        console.log('🎨 Component styles already integrated in base.css');
+        return;
+    }
 
-        try {
-            const response = await fetch(`${this.config.basePath}/components/components.css`);
-            if (response.ok) {
-                const css = await response.text();
-                const style = document.createElement('style');
-                style.id = 'components-styles';
-                style.textContent = css;
-                document.head.appendChild(style);
-                console.log('🎨 Component styles loaded');
+    registerInlineComponents(vueApp, component) {
+        // 프로덕션 빌드에 인라인으로 포함된 컴포넌트들을 등록
+        if (!vueApp || !component) return;
+        
+        if (component.registerInlineComponents && typeof component.registerInlineComponents === 'function') {
+            try {
+                component.registerInlineComponents(vueApp);
+                console.log('📦 Inline components registered for route:', component._routeName);
+            } catch (error) {
+                console.warn('Failed to register inline components:', error);
             }
-        } catch (error) {
-            console.warn('Failed to load component styles:', error);
         }
     }
 
@@ -554,7 +568,8 @@ class VueCompatibleRouter {
                         headerSubtitle: script.headerSubtitle
                     };
                 },
-                _routeName: routeName
+                _routeName: routeName,
+                _hasInlineComponents: Boolean(script.registerInlineComponents)
             };
             
             return component;
@@ -750,6 +765,9 @@ class VueCompatibleRouter {
             // 글로벌 컴포넌트 등록
             await this.registerComponentsForVueApp(this.currentVueApp);
             
+            // 인라인 컴포넌트 등록 (프로덕션 빌드에 포함된 컴포넌트)
+            this.registerInlineComponents(this.currentVueApp, vueComponent);
+            
             this.currentVueApp.mount('#app');
             this.transitionInProgress = false;
         } else {
@@ -795,6 +813,9 @@ class VueCompatibleRouter {
 
         // 글로벌 컴포넌트 등록
         await this.registerComponentsForVueApp(newVueApp);
+        
+        // 인라인 컴포넌트 등록 (프로덕션 빌드에 포함된 컴포넌트)
+        this.registerInlineComponents(newVueApp, vueComponent);
         
         newVueApp.mount(`#${newPageContainer.id}`);
 
