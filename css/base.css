@@ -1,5 +1,9 @@
-@import url('language-switcher.css');
+/* ====================================
+   ViewLogic Base Styles
+   Vue 3 Compatible Router System
+   ==================================== */
 
+/* Reset and Base */
 * {
     margin: 0;
     padding: 0;
@@ -7,16 +11,52 @@
 }
 
 body {
-    font-family: Arial, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
     line-height: 1.6;
     color: #333;
-    background: #f4f4f4;
+    background: #f8f9fa;
+    padding-top: 60px;
 }
 
 #app {
     min-height: calc(100vh - 60px);
     padding: 20px;
     position: relative;
+    transition: opacity 0.3s ease-in;
+}
+
+#app.loading-state {
+    opacity: 0.7;
+}
+
+#app.loaded-state {
+    opacity: 1;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+/* ====================================
+   Page Transitions & Loading
+   ==================================== */
+.page-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    min-height: 100%;
+    background: #f8f9fa;
+}
+
+.page-container.page-entered {
+    opacity: 1;
+}
+
+.page-container.page-exiting {
+    display: none;
 }
 
 .loading {
@@ -32,43 +72,17 @@ body {
     opacity: 0;
 }
 
-#app {
-    transition: opacity 0.3s ease-in;
-}
-
-#app.loading-state {
-    opacity: 0.7;
-}
-
-#app.loaded-state {
-    opacity: 1;
-}
-
-/* 페이지 전환 효과를 위한 스타일 */
-.page-container {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    min-height: 100%;
-    background: #f4f4f4;
-}
-
-.page-container.page-entered {
-    opacity: 1;
-}
-
-.page-container.page-exiting {
-    display: none;
-}
-
+/* ====================================
+   Navigation
+   ==================================== */
 .main-nav {
-    background: #333;
+    background: #fff;
     padding: 15px 0;
     position: fixed;
     top: 0;
     width: 100%;
     z-index: 1000;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
 }
 
 .main-nav ul {
@@ -85,16 +99,18 @@ body {
 }
 
 .main-nav a {
-    color: white;
+    color: #333;
     text-decoration: none;
     padding: 10px 15px;
-    border-radius: 4px;
-    transition: background 0.3s;
+    border-radius: 6px;
+    transition: all 0.3s ease;
+    font-weight: 500;
 }
 
 .main-nav a:hover,
 .main-nav a.active {
-    background: #555;
+    background: #007bff;
+    color: white;
 }
 
 .main-nav button {
@@ -102,22 +118,26 @@ body {
     color: white;
     border: none;
     padding: 10px 15px;
-    border-radius: 4px;
+    border-radius: 6px;
     cursor: pointer;
     transition: background 0.3s;
+    font-weight: 500;
 }
 
 .main-nav button:hover {
     background: #0056b3;
 }
 
+/* ====================================
+   Page Layout Components
+   ==================================== */
 .error-page {
     text-align: center;
     padding: 50px 20px;
     background: white;
     margin: 20px;
-    border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
 }
 
 .error-page h1 {
@@ -128,7 +148,7 @@ body {
 .error-page a {
     color: #007bff;
     text-decoration: none;
-    font-weight: bold;
+    font-weight: 600;
 }
 
 .error-page a:hover {
@@ -146,6 +166,7 @@ body {
 .page-header h1 {
     font-size: 2.5rem;
     margin-bottom: 10px;
+    font-weight: 700;
 }
 
 .page-header .subtitle {
@@ -157,12 +178,6 @@ body {
     padding: 40px 0;
     background: white;
     min-height: 400px;
-}
-
-.container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 0 20px;
 }
 
 .page-footer {
@@ -302,8 +317,207 @@ body {
     border-radius: 2rem;
 }
 
-body {
-    padding-top: 60px;
+/* ====================================
+   Language Switcher Component
+   ==================================== */
+.language-switcher {
+    position: relative;
+    display: inline-block;
+    font-family: inherit;
+}
+
+.language-button {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.9rem;
+    color: #333;
+}
+
+.language-button:hover:not(:disabled) {
+    border-color: #007bff;
+    background-color: #f8f9fa;
+}
+
+.language-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.language-icon {
+    font-size: 1rem;
+}
+
+.language-text {
+    font-weight: 500;
+}
+
+.language-arrow {
+    font-size: 0.8rem;
+    transition: transform 0.2s ease;
+}
+
+.language-arrow-open {
+    transform: rotate(180deg);
+}
+
+.language-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+    margin-top: 0.25rem;
+    overflow: hidden;
+}
+
+.language-dropdown-option {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+    padding: 0.75rem;
+    background: none;
+    border: none;
+    text-align: left;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    font-size: 0.9rem;
+    color: #333;
+}
+
+.language-dropdown-option:hover:not(:disabled) {
+    background-color: #f8f9fa;
+}
+
+.language-dropdown-option:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.language-dropdown-option-active {
+    background-color: #e3f2fd;
+    color: #007bff;
+}
+
+.language-flag {
+    font-size: 1rem;
+}
+
+.language-name {
+    flex: 1;
+    font-weight: 500;
+}
+
+.language-check {
+    color: #28a745;
+    font-weight: bold;
+}
+
+.language-select {
+    padding: 0.5rem 0.75rem;
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    color: #333;
+    min-width: 120px;
+}
+
+.language-select:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.language-select:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.language-inline {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.language-option {
+    padding: 0.375rem 0.75rem;
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.875rem;
+    color: #333;
+    text-decoration: none;
+}
+
+.language-option:hover:not(:disabled) {
+    border-color: #007bff;
+    color: #007bff;
+}
+
+.language-option:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.language-option-active {
+    background-color: #007bff;
+    color: #fff;
+    border-color: #007bff;
+}
+
+.language-loading {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+}
+
+.language-spinner {
+    width: 1rem;
+    height: 1rem;
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid #007bff;
+    border-radius: 50%;
+    animation: language-spin 1s linear infinite;
+}
+
+@keyframes language-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.language-switcher-small .language-button,
+.language-switcher-small .language-select,
+.language-switcher-small .language-option {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.8rem;
+}
+
+.language-switcher-large .language-button,
+.language-switcher-large .language-select,
+.language-switcher-large .language-option {
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
 }
 
 /* 로딩 상태 관리 스타일 */
@@ -1099,7 +1313,42 @@ body {
 }
 
 /* ====================================
-   반응형 디자인
+   Dark Theme Support
+   ==================================== */
+@media (prefers-color-scheme: dark) {
+    .language-button,
+    .language-select,
+    .language-option,
+    .language-dropdown {
+        background: #2d3748;
+        color: #fff;
+        border-color: #4a5568;
+    }
+    
+    .language-button:hover:not(:disabled),
+    .language-select:focus,
+    .language-option:hover:not(:disabled) {
+        border-color: #63b3ed;
+        background-color: #3d4852;
+    }
+    
+    .language-dropdown-option:hover:not(:disabled) {
+        background-color: #3d4852;
+    }
+    
+    .language-dropdown-option-active {
+        background-color: #2c5aa0;
+        color: #63b3ed;
+    }
+    
+    .language-option-active {
+        background-color: #3182ce;
+        border-color: #3182ce;
+    }
+}
+
+/* ====================================
+   Responsive Design
    ==================================== */
 @media (max-width: 768px) {
     .main-nav ul {
@@ -1146,5 +1395,21 @@ body {
     .btn-block {
         width: 100%;
         justify-content: center;
+    }
+    
+    /* Language Switcher Mobile Styles */
+    .language-dropdown {
+        left: auto;
+        right: 0;
+        min-width: 150px;
+    }
+    
+    .language-inline {
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+    
+    .language-option {
+        text-align: center;
     }
 }
