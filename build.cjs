@@ -7,7 +7,6 @@ const fs = require('fs').promises;
 const path = require('path');
 const esbuild = require('esbuild');
 const crypto = require('crypto');
-const chokidar = require('chokidar');
 
 class ViewLogicBuilder {
     constructor(options = {}) {
@@ -17,7 +16,6 @@ class ViewLogicBuilder {
             version: '1.0.0',
             minify: options.minify !== undefined ? options.minify : true,
             cache: options.cache !== false,
-            watch: options.watch || false,
             parallel: options.parallel !== false,
             sourceMaps: options.sourceMaps || false
         };
@@ -1056,54 +1054,6 @@ if (typeof window !== 'undefined') {
         }
     }
     
-    async startWatch() {
-        if (!this.config.watch) return;
-        
-        this.log('Watch 모드 시작...', 'info');
-        
-        const watcher = chokidar.watch([
-            path.join(this.config.srcPath, '**/*.{js,html,css}'),
-            path.join(this.config.srcPath, 'layouts/*.html')
-        ], {
-            ignored: /(^|[\/\\])\../, // 숨김 파일 무시
-            persistent: true,
-            ignoreInitial: true
-        });
-        
-        let buildTimeout;
-        
-        const debouncedBuild = () => {
-            clearTimeout(buildTimeout);
-            buildTimeout = setTimeout(async () => {
-                this.log('파일 변경 감지, 재빌드 시작...', 'info');
-                await this.build();
-            }, 500); // 500ms 디바운스
-        };
-        
-        watcher
-            .on('change', (filePath) => {
-                this.log(`파일 변경: ${path.relative(__dirname, filePath)}`, 'info');
-                debouncedBuild();
-            })
-            .on('add', (filePath) => {
-                this.log(`파일 추가: ${path.relative(__dirname, filePath)}`, 'info');
-                debouncedBuild();
-            })
-            .on('unlink', (filePath) => {
-                this.log(`파일 삭제: ${path.relative(__dirname, filePath)}`, 'info');
-                debouncedBuild();
-            })
-            .on('error', (error) => {
-                this.log(`Watch 오류: ${error.message}`, 'error');
-            });
-        
-        this.log('Watch 모드 활성화 완료 (Ctrl+C로 종료)', 'success');
-        
-        // 초기 빌드
-        await this.build();
-        
-        return watcher;
-    }
     
     printReport() {
         const duration = Date.now() - this.stats.startTime;
@@ -1172,35 +1122,15 @@ async function main() {
         minify: !args.includes('--no-minify'),
         cache: !args.includes('--no-cache'),
         parallel: !args.includes('--no-parallel'),
-        sourceMaps: args.includes('--source-maps'),
-        watch: args.includes('--watch') || args.includes('-w')
+        sourceMaps: args.includes('--source-maps')
     };
     
     const builder = new ViewLogicBuilder(options);
     
     switch (command) {
         case 'build':
-            if (options.watch) {
-                const watcher = await builder.startWatch();
-                // Ctrl+C 처리
-                process.on('SIGINT', () => {
-                    console.log('\n🛑 Watch 모드 종료');
-                    watcher.close();
-                    process.exit(0);
-                });
-            } else {
-                const success = await builder.build();
-                process.exit(success ? 0 : 1);
-            }
-            break;
-            
-        case 'watch':
-            const watcher = await builder.startWatch();
-            process.on('SIGINT', () => {
-                console.log('\n🛑 Watch 모드 종료');
-                watcher.close();
-                process.exit(0);
-            });
+            const success = await builder.build();
+            process.exit(success ? 0 : 1);
             break;
             
         case 'clean':
@@ -1210,18 +1140,15 @@ async function main() {
             
         case 'help':
         default:
-            console.log('🏗️ ViewLogic 빌드 시스템 v2.0\n');
+            console.log('🏗️ ViewLogic 빌드 시스템 v1.0\n');
             console.log('사용법:');
             console.log('  node build.cjs build                  # 빌드');
-            console.log('  node build.cjs build --watch          # Watch 모드로 빌드');
-            console.log('  node build.cjs watch                  # Watch 모드 시작');
             console.log('  node build.cjs clean                  # 빌드 파일 정리');
             console.log('\n옵션:');
             console.log('  --no-minify                          # 압축 비활성화');
             console.log('  --no-cache                           # 캐싱 비활성화');
             console.log('  --no-parallel                        # 병렬 빌드 비활성화');
             console.log('  --source-maps                        # Source map 생성');
-            console.log('  --watch, -w                          # Watch 모드');
             break;
     }
 }
