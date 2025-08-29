@@ -6,6 +6,8 @@
 const fs = require('fs').promises;
 const path = require('path');
 const esbuild = require('esbuild');
+const crypto = require('crypto');
+const chokidar = require('chokidar');
 
 class ViewLogicBuilder {
     constructor(options = {}) {
@@ -13,7 +15,11 @@ class ViewLogicBuilder {
             srcPath: path.join(__dirname, 'src'),
             routesPath: path.join(__dirname, 'routes'),
             version: '1.0.0',
-            minify: options.minify !== undefined ? options.minify : true  // 기본값: true
+            minify: options.minify !== undefined ? options.minify : true,
+            cache: options.cache !== false,
+            watch: options.watch || false,
+            parallel: options.parallel !== false,
+            sourceMaps: options.sourceMaps || false
         };
         
         this.stats = {
@@ -21,6 +27,23 @@ class ViewLogicBuilder {
             routesBuilt: 0,
             routesFailed: 0,
             errors: []
+        };
+        
+        this.cache = new Map();
+        this.cacheFile = path.join(__dirname, '.build-cache.json');
+        
+        // 트리셰이킹 통계
+        this.treeShakingStats = {
+            totalComponents: 0,
+            usedComponents: 0,
+            unusedComponents: [],
+            savedBytes: 0,
+            css: {
+                totalRules: 0,
+                usedRules: 0,
+                unusedRules: [],
+                savedBytes: 0
+            }
         };
     }
     
@@ -51,13 +74,114 @@ class ViewLogicBuilder {
             .trim();
     }
     
+    async loadCache() {
+        if (!this.config.cache) return;
+        
+        try {
+            const cacheData = await fs.readFile(this.cacheFile, 'utf-8');
+            const cache = JSON.parse(cacheData);
+            this.cache = new Map(Object.entries(cache));
+            this.log(`캐시 로드 완료: ${this.cache.size}개 항목`);
+        } catch (error) {
+            this.log('캐시 파일 없음, 새로 생성');
+        }
+    }
+    
+    async saveCache() {
+        if (!this.config.cache) return;
+        
+        try {
+            const cacheData = Object.fromEntries(this.cache);
+            await fs.writeFile(this.cacheFile, JSON.stringify(cacheData, null, 2));
+            this.log(`캐시 저장 완료: ${this.cache.size}개 항목`);
+        } catch (error) {
+            this.log(`캐시 저장 실패: ${error.message}`, 'error');
+        }
+    }
+    
+    getFileHash(content) {
+        return crypto.createHash('md5').update(content).digest('hex');
+    }
+    
+    async shouldRebuildRoute(route) {
+        if (!this.config.cache) return true;
+        
+        // 빌드된 파일이 존재하는지 확인
+        const outputPath = path.join(this.config.routesPath, `${route}.js`);
+        try {
+            await fs.access(outputPath);
+        } catch (error) {
+            // 빌드된 파일이 없으면 반드시 재빌드
+            this.log(`${route} 빌드 파일 없음, 재빌드 필요`, 'warn');
+            return true;
+        }
+        
+        const files = [
+            path.join(this.config.srcPath, 'views', `${route}.html`),
+            path.join(this.config.srcPath, 'logic', `${route}.js`),
+            path.join(this.config.srcPath, 'styles', `${route}.css`)
+        ];
+        
+        const cacheKey = `route_${route}`;
+        const currentHashes = {};
+        
+        for (const file of files) {
+            try {
+                const content = await fs.readFile(file, 'utf-8');
+                currentHashes[file] = this.getFileHash(content);
+            } catch (error) {
+                // 파일이 없으면 빈 해시
+                currentHashes[file] = '';
+            }
+        }
+        
+        const cachedHashes = this.cache.get(cacheKey);
+        if (!cachedHashes) {
+            this.cache.set(cacheKey, currentHashes);
+            return true;
+        }
+        
+        // 해시 비교
+        for (const [file, hash] of Object.entries(currentHashes)) {
+            if (cachedHashes[file] !== hash) {
+                this.cache.set(cacheKey, currentHashes);
+                return true;
+            }
+        }
+        
+        return false;
+    }
+    
+    async buildRoutesParallel(routes) {
+        if (!this.config.parallel) {
+            // 순차 빌드
+            for (const route of routes) {
+                await this.buildRoute(route);
+            }
+            return;
+        }
+        
+        // 병렬 빌드 (배치 처리)
+        const batchSize = 5;
+        for (let i = 0; i < routes.length; i += batchSize) {
+            const batch = routes.slice(i, i + batchSize);
+            await Promise.all(batch.map(route => this.buildRoute(route)));
+        }
+    }
+    
     async build() {
         this.log('ViewLogic 빌드 시작...', 'info');
         
         try {
+            // 캐시 로드
+            await this.loadCache();
+            
             // 1단계: 디렉토리 준비
             await this.ensureDirectory(this.config.routesPath);
-            await this.cleanDirectory(this.config.routesPath);
+            // 캐시 모드가 아닐 때만 디렉토리 클리어
+            if (!this.config.cache) {
+                await this.cleanDirectory(this.config.routesPath);
+            }
             
             // 2단계: 라우트 발견
             const routes = await this.discoverRoutes();
@@ -68,18 +192,32 @@ class ViewLogicBuilder {
             
             this.log(`${routes.length}개 라우트 발견: ${routes.join(', ')}`, 'info');
 
-            // 3단계: 컴포넌트 시스템 파일 생성
+            // 3단계: CSS 사용량 분석 (트리셰이킹용)
+            this.log('CSS 사용량 분석 시작...', 'info');
+            this.cssUsageAnalysis = await this.analyzeCssUsage();
+            this.log(`CSS 분석 완료: 클래스 ${this.cssUsageAnalysis.usedClasses.size}개, ID ${this.cssUsageAnalysis.usedIds.size}개, 태그 ${this.cssUsageAnalysis.usedTags.size}개`, 'info');
+            
+            // 4단계: 컴포넌트 시스템 파일 생성
             await this.generateComponentsFile();
             
-            // 4단계: 각 라우트 빌드
-            for (const route of routes) {
-                await this.buildRoute(route);
+            // 빌드된 파일 무결성 검사
+            await this.validateBuildFiles(routes);
+            
+            // 5단계: 오래된 파일 정리 (캐시 모드에서만)
+            if (this.config.cache) {
+                await this.cleanOldFiles(routes);
             }
             
-            // 5단계: 매니페스트 생성
+            // 6단계: 각 라우트 빌드 (병렬/순차)
+            await this.buildRoutesParallel(routes);
+            
+            // 7단계: 매니페스트 생성
             await this.generateManifest(routes);
             
-            // 6단계: 결과 보고
+            // 8단계: 캐시 저장
+            await this.saveCache();
+            
+            // 9단계: 결과 보고
             this.printReport();
             
             return this.stats.routesFailed === 0;
@@ -92,21 +230,27 @@ class ViewLogicBuilder {
     
     async minifyJavaScript(code) {
         try {
-            const result = await esbuild.transform(code, {
-                minify: true,
+            const options = {
+                minify: this.config.minify,
                 target: 'es2015',
                 format: 'esm',
-                // Vue 호환성을 위한 설정
-                keepNames: true,  // 함수명 유지
-                treeShaking: false,  // Vue 메소드 보호
+                keepNames: true,
+                treeShaking: false,
                 minifyWhitespace: true,
-                minifyIdentifiers: false,  // 변수명 유지 (Vue data 보호)
+                minifyIdentifiers: false,
                 minifySyntax: true
-            });
-            return result.code;
+            };
+            
+            // Source map 지원
+            if (this.config.sourceMaps) {
+                options.sourcemap = true;
+            }
+            
+            const result = await esbuild.transform(code, options);
+            return { code: result.code, map: result.map };
         } catch (error) {
             this.log(`JavaScript 압축 실패, 원본 사용: ${error.message}`, 'warn');
-            return code;  // 실패 시 원본 반환
+            return { code, map: null };
         }
     }
     
@@ -171,13 +315,25 @@ class ViewLogicBuilder {
                 }
             }
             
+            // 캐시 확인
+            if (!await this.shouldRebuildRoute(routeName)) {
+                this.log(`${routeName} 캐시됨, 스킵`, 'info');
+                this.stats.routesBuilt++; // 캐시된 라우트도 성공으로 카운트
+                return;
+            }
+            
             // 최종 파일 생성
             try {
                 const finalContent = await this.generateRouteFile(routeName, logicContent, viewContent, styleContent);
                 
                 // 파일 쓰기
                 const outputPath = path.join(this.config.routesPath, `${routeName}.js`);
-                await fs.writeFile(outputPath, finalContent);
+                await fs.writeFile(outputPath, finalContent.code);
+                
+                // Source map 저장
+                if (this.config.sourceMaps && finalContent.map) {
+                    await fs.writeFile(`${outputPath}.map`, finalContent.map);
+                }
                 
                 // 생성된 파일 검증
                 const writtenContent = await fs.readFile(outputPath, 'utf8');
@@ -217,9 +373,26 @@ class ViewLogicBuilder {
     async generateRouteFile(routeName, logicContent, viewContent, styleContent) {
         const lines = [];
         
-        // 스타일 추가 (압축 후 JSON.stringify로 자동 이스케이핑)
+        // 스타일 추가 (CSS 트리셰이킹 적용 후 압축)
         if (styleContent.trim()) {
-            const minifiedStyle = this.minifyCSS(styleContent);
+            let processedStyle = styleContent;
+            
+            // CSS 트리셰이킹 적용
+            if (this.cssUsageAnalysis) {
+                const result = this.treeshakeCss(
+                    styleContent, 
+                    this.cssUsageAnalysis.usedClasses, 
+                    this.cssUsageAnalysis.usedIds, 
+                    this.cssUsageAnalysis.usedTags
+                );
+                processedStyle = result.css;
+                
+                if (result.removedRules.length > 0) {
+                    this.log(`  - CSS 트리셰이킹: ${result.removedRules.length}개 규칙 제거`, 'info');
+                }
+            }
+            
+            const minifiedStyle = this.minifyCSS(processedStyle);
             lines.push(`const STYLE_ID = 'route-style-${routeName}';`);
             lines.push(`const STYLE_CONTENT = ${JSON.stringify(minifiedStyle)};`);
             lines.push(`if (typeof document !== "undefined" && !document.getElementById(STYLE_ID)) {`);
@@ -259,12 +432,19 @@ class ViewLogicBuilder {
         
         const fullCode = lines.join('\n');
         
-        // JavaScript 코드 압축 (프로덕션 모드에서만)
-        if (process.env.NODE_ENV === 'production' || this.config.minify) {
-            return await this.minifyJavaScript(fullCode);
+        // JavaScript 코드 압축
+        if (this.config.minify) {
+            const result = await this.minifyJavaScript(fullCode);
+            return {
+                code: result.code,
+                map: result.map
+            };
         }
         
-        return fullCode;
+        return {
+            code: fullCode,
+            map: null
+        };
     }
     
     async createFallback(routeName, originalError = '알 수 없는 오류') {
@@ -361,12 +541,317 @@ export default component;`;
             const files = await fs.readdir(dirPath);
             await Promise.all(
                 files
-                    .filter(file => file.endsWith('.js'))
+                    .filter(file => file.endsWith('.js') || file.endsWith('.map'))
                     .map(file => fs.unlink(path.join(dirPath, file)).catch(() => {}))
             );
+            // manifest.json도 삭제
+            await fs.unlink(path.join(dirPath, 'manifest.json')).catch(() => {});
         } catch (error) {
             // 정리 실패는 무시
         }
+    }
+    
+    async cleanOldFiles(routes) {
+        try {
+            const files = await fs.readdir(this.config.routesPath);
+            const validFiles = new Set([
+                ...routes.map(route => `${route}.js`),
+                ...routes.map(route => `${route}.js.map`),
+                '_components.js',
+                'manifest.json'
+            ]);
+            
+            const filesToDelete = files.filter(file => 
+                (file.endsWith('.js') || file.endsWith('.map') || file === 'manifest.json') && 
+                !validFiles.has(file)
+            );
+            
+            if (filesToDelete.length > 0) {
+                await Promise.all(
+                    filesToDelete.map(file => 
+                        fs.unlink(path.join(this.config.routesPath, file)).catch(() => {})
+                    )
+                );
+                this.log(`${filesToDelete.length}개 오래된 파일 삭제됨`, 'info');
+            }
+        } catch (error) {
+            // 정리 실패는 무시
+        }
+    }
+    
+    async validateBuildFiles(routes) {
+        if (!this.config.cache) return;
+        
+        const missingFiles = [];
+        
+        // routes 폴더에 모든 빌드 파일이 존재하는지 확인
+        for (const route of routes) {
+            const outputPath = path.join(this.config.routesPath, `${route}.js`);
+            try {
+                await fs.access(outputPath);
+            } catch (error) {
+                missingFiles.push(route);
+            }
+        }
+        
+        // _components.js 파일 확인
+        const componentsPath = path.join(this.config.routesPath, '_components.js');
+        try {
+            await fs.access(componentsPath);
+        } catch (error) {
+            this.log('_components.js 파일 없음, 재생성 예정', 'warn');
+            await this.generateComponentsFile();
+        }
+        
+        if (missingFiles.length > 0) {
+            this.log(`${missingFiles.length}개 빌드 파일 누락: ${missingFiles.join(', ')}`, 'warn');
+            
+            // 누락된 파일들의 캐시를 무효화
+            for (const route of missingFiles) {
+                this.cache.delete(`route_${route}`);
+            }
+        }
+    }
+    
+    // CSS 사용량 분석
+    async analyzeCssUsage() {
+        const usedClasses = new Set();
+        const usedIds = new Set();
+        const usedTags = new Set(['html', 'body', 'div', 'span', 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'a', 'button', 'input', 'form', 'ul', 'li', 'img', 'nav', 'header', 'footer', 'main', 'section']);
+        
+        // 모든 라우트의 HTML 템플릿에서 클래스와 ID 추출
+        const routes = await this.discoverRoutes();
+        
+        for (const route of routes) {
+            try {
+                const viewPath = path.join(this.config.srcPath, 'views', `${route}.html`);
+                const viewContent = await fs.readFile(viewPath, 'utf-8');
+                
+                // 클래스 추출 (class="..." 또는 :class="...")
+                const classMatches = viewContent.match(/(?:class|:class)=["']([^"']*)["']/g);
+                if (classMatches) {
+                    classMatches.forEach(match => {
+                        const classes = match.replace(/(?:class|:class)=["']([^"']*)(["'])/, '$1')
+                            .split(/\s+/)
+                            .filter(cls => cls.trim() && !cls.includes('{') && !cls.includes('}'));
+                        classes.forEach(cls => usedClasses.add(cls.trim()));
+                    });
+                }
+                
+                // ID 추출
+                const idMatches = viewContent.match(/id=["']([^"']*)["']/g);
+                if (idMatches) {
+                    idMatches.forEach(match => {
+                        const id = match.replace(/id=["']([^"']*)(["'])/, '$1');
+                        if (id.trim() && !id.includes('{') && !id.includes('}')) {
+                            usedIds.add(id.trim());
+                        }
+                    });
+                }
+                
+                // 태그명 추출
+                const tagMatches = viewContent.match(/<\/?([a-zA-Z][a-zA-Z0-9-]*)/g);
+                if (tagMatches) {
+                    tagMatches.forEach(match => {
+                        const tag = match.replace(/[<>/]/g, '');
+                        if (tag && !tag.includes('{')) {
+                            usedTags.add(tag.toLowerCase());
+                        }
+                    });
+                }
+                
+            } catch (error) {
+                this.log(`CSS 분석 중 오류 (${route}): ${error.message}`, 'warn');
+            }
+        }
+        
+        // 레이아웃에서도 클래스 추출
+        try {
+            const layoutPath = path.join(this.config.srcPath, 'layouts', 'default.html');
+            const layoutContent = await fs.readFile(layoutPath, 'utf-8');
+            
+            const classMatches = layoutContent.match(/(?:class|:class)=["']([^"']*)["']/g);
+            if (classMatches) {
+                classMatches.forEach(match => {
+                    const classes = match.replace(/(?:class|:class)=["']([^"']*)(["'])/, '$1')
+                        .split(/\s+/)
+                        .filter(cls => cls.trim() && !cls.includes('{'));
+                    classes.forEach(cls => usedClasses.add(cls.trim()));
+                });
+            }
+            
+            const idMatches = layoutContent.match(/id=["']([^"']*)["']/g);
+            if (idMatches) {
+                idMatches.forEach(match => {
+                    const id = match.replace(/id=["']([^"']*)(["'])/, '$1');
+                    if (id.trim() && !id.includes('{')) {
+                        usedIds.add(id.trim());
+                    }
+                });
+            }
+        } catch (error) {
+            this.log(`레이아웃 CSS 분석 중 오류: ${error.message}`, 'warn');
+        }
+        
+        return { usedClasses, usedIds, usedTags };
+    }
+    
+    // CSS 트리셰이킹 처리
+    treeshakeCss(css, usedClasses, usedIds, usedTags) {
+        if (!css || !css.trim()) return { css: '', removedRules: [] };
+        
+        const originalSize = css.length;
+        const removedRules = [];
+        let processedCss = '';
+        
+        // CSS 규칙을 분석하고 필터링
+        const cssRules = css.split('}').filter(rule => rule.trim());
+        
+        for (let rule of cssRules) {
+            rule = rule.trim();
+            if (!rule) continue;
+            
+            const ruleWithBrace = rule + '}';
+            const selectorPart = rule.split('{')[0];
+            if (!selectorPart) {
+                processedCss += ruleWithBrace + '\n';
+                continue;
+            }
+            
+            const selectors = selectorPart.split(',')
+                .map(s => s.trim())
+                .filter(s => s);
+            
+            let keepRule = false;
+            
+            for (const selector of selectors) {
+                const cleanSelector = selector.replace(/:hover|:focus|:active|:visited|::before|::after|:first-child|:last-child|:nth-child\([^)]*\)|@media[^{]*|@keyframes[^{]*/g, '').trim();
+                
+                // 클래스 선택자 확인
+                if (cleanSelector.includes('.')) {
+                    const classes = cleanSelector.match(/\.[a-zA-Z_-][a-zA-Z0-9_-]*/g);
+                    if (classes) {
+                        for (const cls of classes) {
+                            const className = cls.substring(1);
+                            if (usedClasses.has(className)) {
+                                keepRule = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+                
+                // ID 선택자 확인
+                if (!keepRule && cleanSelector.includes('#')) {
+                    const ids = cleanSelector.match(/#[a-zA-Z_-][a-zA-Z0-9_-]*/g);
+                    if (ids) {
+                        for (const id of ids) {
+                            const idName = id.substring(1);
+                            if (usedIds.has(idName)) {
+                                keepRule = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+                
+                // 태그 선택자 확인
+                if (!keepRule) {
+                    const tagMatch = cleanSelector.match(/^[a-zA-Z][a-zA-Z0-9-]*/);
+                    if (tagMatch) {
+                        const tagName = tagMatch[0].toLowerCase();
+                        if (usedTags.has(tagName)) {
+                            keepRule = true;
+                        }
+                    }
+                }
+                
+                // 미디어 쿼리나 키프레임은 보존
+                if (!keepRule && (selector.includes('@media') || selector.includes('@keyframes') || selector.includes('@-') || selector.includes('*') || selector === 'html' || selector === 'body')) {
+                    keepRule = true;
+                }
+                
+                if (keepRule) break;
+            }
+            
+            if (keepRule) {
+                processedCss += ruleWithBrace + '\n';
+                this.treeShakingStats.css.usedRules++;
+            } else {
+                removedRules.push(selectorPart.trim());
+                this.treeShakingStats.css.unusedRules.push(selectorPart.trim());
+            }
+            
+            this.treeShakingStats.css.totalRules++;
+        }
+        
+        const finalSize = processedCss.length;
+        this.treeShakingStats.css.savedBytes += (originalSize - finalSize);
+        
+        return {
+            css: processedCss.trim(),
+            removedRules
+        };
+    }
+    
+    async analyzeComponentUsage() {
+        const componentsUsage = new Set();
+        
+        // 모든 라우트의 템플릿과 스타일에서 컴포넌트 사용량 분석
+        const routes = await this.discoverRoutes();
+        
+        for (const route of routes) {
+            const files = [
+                path.join(this.config.srcPath, 'views', `${route}.html`),
+                path.join(this.config.srcPath, 'logic', `${route}.js`),
+                path.join(this.config.srcPath, 'styles', `${route}.css`)
+            ];
+            
+            for (const file of files) {
+                try {
+                    const content = await fs.readFile(file, 'utf8');
+                    
+                    // HTML에서 컴포넌트 태그 찾기
+                    const componentTags = content.match(/<([A-Z][a-zA-Z0-9-]*)/g);
+                    if (componentTags) {
+                        componentTags.forEach(tag => {
+                            const componentName = tag.substring(1).replace(/-/g, ''); // '<' 제거 및 kebab-case 처리
+                            if (componentName.match(/^[A-Z]/)) { // 컴포넌트는 대문자로 시작
+                                componentsUsage.add(componentName);
+                            }
+                        });
+                    }
+                    
+                    // JavaScript에서 import 문 찾기
+                    const importMatches = content.match(/import\s+{[^}]*}\s+from\s+['"]\.\.\/components\/([^'"]+)['"]/g);
+                    if (importMatches) {
+                        importMatches.forEach(match => {
+                            const componentMatch = match.match(/from\s+['"]\.\.\/components\/([^'"]+)['"]/);
+                            if (componentMatch) {
+                                const componentName = componentMatch[1].replace('.js', '');
+                                componentsUsage.add(componentName);
+                            }
+                        });
+                    }
+                    
+                    // Vue 컴포넌트 사용 패턴 찾기 (components: { ... })
+                    const componentUsageMatch = content.match(/components:\s*{([^}]*)}/g);
+                    if (componentUsageMatch) {
+                        componentUsageMatch.forEach(match => {
+                            const components = match.match(/([A-Z][a-zA-Z0-9]*)/g);
+                            if (components) {
+                                components.forEach(comp => componentsUsage.add(comp));
+                            }
+                        });
+                    }
+                    
+                } catch (error) {
+                    // 파일이 없어도 무시
+                }
+            }
+        }
+        
+        return componentsUsage;
     }
     
     async discoverRoutes() {
@@ -389,11 +874,21 @@ export default component;`;
         try {
             this.log('통합 컴포넌트 시스템 파일 생성 중...', 'info');
             
+            // 컴포넌트 사용량 분석 (트리셰이킹)
+            const usedComponents = await this.analyzeComponentUsage();
+            
             // src/components 디렉토리의 모든 컴포넌트 파일 읽기
             const componentsDir = path.join(this.config.srcPath, 'components');
             const componentFiles = await fs.readdir(componentsDir);
             const componentImports = [];
             const componentRegistrations = [];
+            let totalSize = 0;
+            let usedSize = 0;
+            
+            // 트리셰이킹 통계 초기화
+            this.treeShakingStats.totalComponents = 0;
+            this.treeShakingStats.usedComponents = 0;
+            this.treeShakingStats.unusedComponents = [];
             
             // 각 컴포넌트 파일 처리
             for (const file of componentFiles) {
@@ -404,27 +899,46 @@ export default component;`;
                     try {
                         // 컴포넌트 파일 읽기
                         const componentContent = await fs.readFile(componentPath, 'utf8');
+                        totalSize += componentContent.length;
+                        this.treeShakingStats.totalComponents++;
                         
-                        // export default를 찾아서 컴포넌트 객체 추출
-                        const componentCode = componentContent
-                            .replace(/export\s+default\s+/, '')
-                            .replace(/;\s*$/, '');
-                        
-                        // 컴포넌트를 components 객체에 추가
-                        componentImports.push(`
+                        // 트리셰이킹: 사용되는 컴포넌트만 포함
+                        if (usedComponents.has(componentName)) {
+                            // export default를 찾아서 컴포넌트 객체 추출
+                            const componentCode = componentContent
+                                .replace(/export\s+default\s+/, '')
+                                .replace(/;\s*$/, '');
+                            
+                            // 컴포넌트를 components 객체에 추가
+                            componentImports.push(`
 // ${componentName} 컴포넌트
 const ${componentName} = ${componentCode};
 `);
-                        
-                        componentRegistrations.push(`        '${componentName}': ${componentName}`);
-                        
-                        this.log(`  - ${componentName} 컴포넌트 로드됨`, 'info');
+                            
+                            componentRegistrations.push(`        '${componentName}': ${componentName}`);
+                            
+                            this.log(`  - ${componentName} 컴포넌트 로드됨`, 'info');
+                            this.treeShakingStats.usedComponents++;
+                            usedSize += componentContent.length;
+                        } else {
+                            this.log(`  - ${componentName} 컴포넌트 스킵 (사용되지 않음)`, 'warn');
+                            this.treeShakingStats.unusedComponents.push(componentName);
+                        }
                         
                     } catch (err) {
                         this.log(`  - ${componentName} 컴포넌트 로드 실패: ${err.message}`, 'warn');
                     }
                 }
             }
+            
+            // 트리셰이킹 통계 계산
+            this.treeShakingStats.savedBytes = totalSize - usedSize;
+            
+            // 트리셰이킹 결과 출력
+            const savedKB = (this.treeShakingStats.savedBytes / 1024).toFixed(1);
+            const reductionPercent = totalSize > 0 ? ((this.treeShakingStats.savedBytes / totalSize) * 100).toFixed(1) : 0;
+            
+            this.log(`트리셰이킹 결과: ${this.treeShakingStats.usedComponents}/${this.treeShakingStats.totalComponents} 컴포넌트 사용, ${savedKB}KB 절약 (${reductionPercent}%)`, 'success');
             
             const componentsContent = `/**
  * ViewLogic 컴포넌트 레지스트리
@@ -496,12 +1010,14 @@ if (typeof window !== 'undefined') {
             // _components.js 파일 생성 (압축 옵션 적용)
             let finalComponentsContent = componentsContent;
             
-            if (process.env.NODE_ENV === 'production' || this.config.minify) {
+            if (this.config.minify) {
                 try {
-                    finalComponentsContent = await this.minifyJavaScript(componentsContent);
+                    const result = await this.minifyJavaScript(componentsContent);
+                    finalComponentsContent = result.code;
                     this.log('_components.js 파일 압축 완료', 'info');
                 } catch (error) {
                     this.log(`_components.js 압축 실패, 원본 사용: ${error.message}`, 'warn');
+                    finalComponentsContent = componentsContent;
                 }
             }
             
@@ -540,17 +1056,103 @@ if (typeof window !== 'undefined') {
         }
     }
     
+    async startWatch() {
+        if (!this.config.watch) return;
+        
+        this.log('Watch 모드 시작...', 'info');
+        
+        const watcher = chokidar.watch([
+            path.join(this.config.srcPath, '**/*.{js,html,css}'),
+            path.join(this.config.srcPath, 'layouts/*.html')
+        ], {
+            ignored: /(^|[\/\\])\../, // 숨김 파일 무시
+            persistent: true,
+            ignoreInitial: true
+        });
+        
+        let buildTimeout;
+        
+        const debouncedBuild = () => {
+            clearTimeout(buildTimeout);
+            buildTimeout = setTimeout(async () => {
+                this.log('파일 변경 감지, 재빌드 시작...', 'info');
+                await this.build();
+            }, 500); // 500ms 디바운스
+        };
+        
+        watcher
+            .on('change', (filePath) => {
+                this.log(`파일 변경: ${path.relative(__dirname, filePath)}`, 'info');
+                debouncedBuild();
+            })
+            .on('add', (filePath) => {
+                this.log(`파일 추가: ${path.relative(__dirname, filePath)}`, 'info');
+                debouncedBuild();
+            })
+            .on('unlink', (filePath) => {
+                this.log(`파일 삭제: ${path.relative(__dirname, filePath)}`, 'info');
+                debouncedBuild();
+            })
+            .on('error', (error) => {
+                this.log(`Watch 오류: ${error.message}`, 'error');
+            });
+        
+        this.log('Watch 모드 활성화 완료 (Ctrl+C로 종료)', 'success');
+        
+        // 초기 빌드
+        await this.build();
+        
+        return watcher;
+    }
+    
     printReport() {
         const duration = Date.now() - this.stats.startTime;
         const totalRoutes = this.stats.routesBuilt + this.stats.routesFailed;
+        const cacheHits = this.cache.size;
         
         console.log('\n' + '='.repeat(50));
-        console.log('🏗️ ViewLogic 빌드 시스템 v1.0 리포트');
+        console.log('🏗️ ViewLogic 빌드 시스템 v2.0 리포트');
         console.log('='.repeat(50));
         console.log(`⏱️ 소요시간: ${duration}ms`);
         console.log(`📊 총 라우트: ${totalRoutes}`);
         console.log(`✅ 성공: ${this.stats.routesBuilt}`);
         console.log(`❌ 실패: ${this.stats.routesFailed}`);
+        
+        if (this.config.cache && cacheHits > 0) {
+            console.log(`🗋 캐시: ${cacheHits}개 항목`);
+        }
+        
+        if (this.config.parallel) {
+            console.log(`🚀 병렬 빌드: 활성화`);
+        }
+        
+        if (this.config.sourceMaps) {
+            console.log(`🗺️ Source Maps: 생성됨`);
+        }
+        
+        // 트리셰이킹 통계 출력
+        if (this.treeShakingStats.totalComponents > 0) {
+            const savedKB = (this.treeShakingStats.savedBytes / 1024).toFixed(1);
+            const reductionPercent = this.treeShakingStats.totalComponents > 0 ? 
+                ((this.treeShakingStats.unusedComponents.length / this.treeShakingStats.totalComponents) * 100).toFixed(1) : 0;
+            console.log(`🌳 컴포넌트 트리셰이킹: ${this.treeShakingStats.usedComponents}/${this.treeShakingStats.totalComponents} 사용, ${savedKB}KB 절약`);
+            if (this.treeShakingStats.unusedComponents.length > 0) {
+                console.log(`   미사용 컴포넌트: ${this.treeShakingStats.unusedComponents.join(', ')}`);
+            }
+        }
+        
+        // CSS 트리셰이킹 통계 출력
+        if (this.treeShakingStats.css.totalRules > 0) {
+            const cssSavedKB = (this.treeShakingStats.css.savedBytes / 1024).toFixed(1);
+            const cssReductionPercent = this.treeShakingStats.css.totalRules > 0 ? 
+                ((this.treeShakingStats.css.unusedRules.length / this.treeShakingStats.css.totalRules) * 100).toFixed(1) : 0;
+            console.log(`🎨 CSS 트리셰이킹: ${this.treeShakingStats.css.usedRules}/${this.treeShakingStats.css.totalRules} 규칙 사용, ${cssSavedKB}KB 절약 (${cssReductionPercent}% 감소)`);
+            if (this.treeShakingStats.css.unusedRules.length > 0 && this.treeShakingStats.css.unusedRules.length <= 10) {
+                console.log(`   미사용 선택자: ${this.treeShakingStats.css.unusedRules.join(', ')}`);
+            } else if (this.treeShakingStats.css.unusedRules.length > 10) {
+                console.log(`   미사용 선택자: ${this.treeShakingStats.css.unusedRules.slice(0, 10).join(', ')} 외 ${this.treeShakingStats.css.unusedRules.length - 10}개`);
+            }
+        }
         
         if (this.stats.errors.length > 0) {
             console.log(`💥 오류: ${this.stats.errors.length}개`);
@@ -564,15 +1166,41 @@ if (typeof window !== 'undefined') {
 async function main() {
     const args = process.argv.slice(2);
     const command = args[0] || 'help';
-    const noDev = args.includes('--no-dev') || args.includes('-n');
     
-    // 기본적으로 압축 활성화, --no-dev 플래그로 비활성화 가능
-    const builder = new ViewLogicBuilder({ minify: !noDev });
+    // 플래그 처리
+    const options = {
+        minify: !args.includes('--no-minify'),
+        cache: !args.includes('--no-cache'),
+        parallel: !args.includes('--no-parallel'),
+        sourceMaps: args.includes('--source-maps'),
+        watch: args.includes('--watch') || args.includes('-w')
+    };
+    
+    const builder = new ViewLogicBuilder(options);
     
     switch (command) {
         case 'build':
-            const success = await builder.build();
-            process.exit(success ? 0 : 1);
+            if (options.watch) {
+                const watcher = await builder.startWatch();
+                // Ctrl+C 처리
+                process.on('SIGINT', () => {
+                    console.log('\n🛑 Watch 모드 종료');
+                    watcher.close();
+                    process.exit(0);
+                });
+            } else {
+                const success = await builder.build();
+                process.exit(success ? 0 : 1);
+            }
+            break;
+            
+        case 'watch':
+            const watcher = await builder.startWatch();
+            process.on('SIGINT', () => {
+                console.log('\n🛑 Watch 모드 종료');
+                watcher.close();
+                process.exit(0);
+            });
             break;
             
         case 'clean':
@@ -582,11 +1210,18 @@ async function main() {
             
         case 'help':
         default:
-            console.log('🏗️ ViewLogic 빌드 시스템 v1.0\n');
+            console.log('🏗️ ViewLogic 빌드 시스템 v2.0\n');
             console.log('사용법:');
-            console.log('  node build.cjs build              # 빌드 (기본: 압축 활성화)');
-            console.log('  node build.cjs build --no-dev     # 개발 빌드 (압축 비활성화)');
-            console.log('  node build.cjs clean              # 빌드 파일 정리');
+            console.log('  node build.cjs build                  # 빌드');
+            console.log('  node build.cjs build --watch          # Watch 모드로 빌드');
+            console.log('  node build.cjs watch                  # Watch 모드 시작');
+            console.log('  node build.cjs clean                  # 빌드 파일 정리');
+            console.log('\n옵션:');
+            console.log('  --no-minify                          # 압축 비활성화');
+            console.log('  --no-cache                           # 캐싱 비활성화');
+            console.log('  --no-parallel                        # 병렬 빌드 비활성화');
+            console.log('  --source-maps                        # Source map 생성');
+            console.log('  --watch, -w                          # Watch 모드');
             break;
     }
 }
