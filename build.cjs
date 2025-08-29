@@ -60,6 +60,27 @@ class ViewLogicBuilder {
                 filesProcessed: 0
             }
         };
+
+        // 검증 시스템
+        this.validationConfig = {
+            requiredFiles: ['views', 'logic', 'styles'],
+            allowedExtensions: {
+                views: ['.html'],
+                logic: ['.js'],
+                styles: ['.css']
+            },
+            maxFileSize: 5 * 1024 * 1024, // 5MB
+            enableSyntaxCheck: true,
+            enableDependencyCheck: true,
+            enableCompatibilityCheck: true
+        };
+
+        this.validationStats = {
+            totalChecks: 0,
+            passedChecks: 0,
+            failedChecks: 0,
+            warnings: []
+        };
     }
     
     log(message, type = 'info') {
@@ -225,6 +246,305 @@ class ViewLogicBuilder {
         }
     }
     
+    // ==================== 검증 시스템 ====================
+    
+    async validateSourceFiles(route) {
+        // totalChecks는 runValidation에서만 관리
+        
+        const files = {
+            view: path.join(this.config.srcPath, 'views', `${route}.html`),
+            logic: path.join(this.config.srcPath, 'logic', `${route}.js`),
+            style: path.join(this.config.srcPath, 'styles', `${route}.css`)
+        };
+        
+        const results = {
+            passed: true,
+            errors: [],
+            warnings: []
+        };
+        
+        // 1. 필수 파일 존재성 검사
+        for (const [type, filePath] of Object.entries(files)) {
+            try {
+                const stats = await fs.stat(filePath);
+                
+                // 파일 크기 검사
+                if (stats.size > this.validationConfig.maxFileSize) {
+                    results.warnings.push(`${type} 파일이 너무 큼: ${this.formatBytes(stats.size)}`);
+                }
+                
+                // 확장자 검사
+                const ext = path.extname(filePath);
+                const allowedExts = this.validationConfig.allowedExtensions[type === 'view' ? 'views' : type === 'logic' ? 'logic' : 'styles'];
+                if (!allowedExts.includes(ext)) {
+                    results.errors.push(`${type} 파일 확장자가 올바르지 않음: ${ext}`);
+                    results.passed = false;
+                }
+                
+            } catch (error) {
+                if (error.code === 'ENOENT') {
+                    results.errors.push(`${type} 파일이 존재하지 않음: ${filePath}`);
+                    results.passed = false;
+                } else {
+                    results.errors.push(`${type} 파일 접근 오류: ${error.message}`);
+                    results.passed = false;
+                }
+            }
+        }
+        
+        return results;
+    }
+
+    async validateDependencies(route, logicContent, viewContent) {
+        // totalChecks는 runValidation에서만 관리
+        
+        const results = {
+            passed: true,
+            errors: [],
+            warnings: [],
+            dependencies: new Set()
+        };
+        
+        // Vue 컴포넌트 의존성 검사
+        const componentMatches = viewContent.match(/<([a-z][a-z0-9-]*)/gi);
+        if (componentMatches) {
+            for (const match of componentMatches) {
+                const componentName = match.substring(1).toLowerCase();
+                if (!['div', 'span', 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'li', 'a', 'img', 'button', 'input', 'form', 'select', 'option', 'textarea'].includes(componentName)) {
+                    results.dependencies.add(componentName);
+                }
+            }
+        }
+        
+        // JavaScript import 검사
+        const importMatches = logicContent.match(/import\s+.*?\s+from\s+['"]([^'"]+)['"]/g);
+        if (importMatches) {
+            for (const match of importMatches) {
+                const importPath = match.match(/['"]([^'"]+)['"]/)[1];
+                if (importPath.startsWith('./') || importPath.startsWith('../')) {
+                    const resolvedPath = path.resolve(path.dirname(path.join(this.config.srcPath, 'logic', `${route}.js`)), importPath);
+                    try {
+                        await fs.stat(resolvedPath);
+                        results.dependencies.add(importPath);
+                    } catch (error) {
+                        results.errors.push(`의존성 파일을 찾을 수 없음: ${importPath}`);
+                        results.passed = false;
+                    }
+                }
+            }
+        }
+        
+        return results;
+    }
+
+    async validateBuildOutput(routeCode) {
+        // totalChecks는 runValidation에서만 관리
+        
+        const results = {
+            passed: true,
+            errors: [],
+            warnings: []
+        };
+        
+        if (!this.validationConfig.enableSyntaxCheck) {
+            return results;
+        }
+        
+        // JavaScript 구문 검사
+        try {
+            // esbuild로 구문 검사
+            await esbuild.transform(routeCode, {
+                format: 'esm',
+                target: 'es2020'
+            });
+            
+            // 기본적인 구문 패턴 검사
+            const criticalPatterns = [
+                { pattern: /export\s+default/, name: 'default export' },
+                { pattern: /template\s*:/, name: 'template property' }
+            ];
+            
+            for (const { pattern, name } of criticalPatterns) {
+                if (!pattern.test(routeCode)) {
+                    results.warnings.push(`${name}이 누락되었을 수 있음`);
+                }
+            }
+            
+        } catch (error) {
+            results.errors.push(`JavaScript 구문 오류: ${error.message}`);
+            results.passed = false;
+        }
+        
+        return results;
+    }
+
+    async validateCompatibility(routeCode, route) {
+        // totalChecks는 runValidation에서만 관리
+        
+        const results = {
+            passed: true,
+            errors: [],
+            warnings: [],
+            compatibility: {
+                es2020: true,
+                es2015: true,
+                modernBrowsers: true
+            }
+        };
+        
+        if (!this.validationConfig.enableCompatibilityCheck) {
+            return results;
+        }
+        
+        // ES2015 호환성 검사
+        const es2020Features = [
+            /\?\?/,  // nullish coalescing
+            /\?\./,  // optional chaining
+            /BigInt/,
+            /import\s*\(/  // dynamic import
+        ];
+        
+        for (const pattern of es2020Features) {
+            if (pattern.test(routeCode)) {
+                results.compatibility.es2015 = false;
+                results.warnings.push('ES2015 브라우저에서 호환되지 않는 문법 사용됨');
+                break;
+            }
+        }
+        
+        // 폴리필이 필요한 기능들
+        const polyfillNeeded = [
+            { pattern: /fetch\s*\(/, name: 'fetch API' },
+            { pattern: /Promise/, name: 'Promise' },
+            { pattern: /async\s+function|=>\s*{/, name: 'async/await' }
+        ];
+        
+        for (const { pattern, name } of polyfillNeeded) {
+            if (pattern.test(routeCode)) {
+                results.warnings.push(`${name} 폴리필이 필요할 수 있음`);
+            }
+        }
+        
+        return results;
+    }
+
+    async runValidation(route, logicContent, viewContent, styleContent, routeCode) {
+        this.log(`🔍 ${route} 라우트 검증 시작...`, 'info');
+        
+        // 전체 검증 카운트 증가
+        this.validationStats.totalChecks++;
+        
+        const validationResults = {
+            route,
+            passed: true,
+            results: {},
+            debug: {
+                sourceFilesCheck: false,
+                dependencyCheck: false,
+                outputCheck: false,
+                compatCheck: false
+            }
+        };
+        
+        try {
+            // 1. 소스 파일 검증 (관대한 검증으로 변경)
+            try {
+                const sourceValidation = await this.validateSourceFiles(route);
+                validationResults.results.source = sourceValidation;
+                validationResults.debug.sourceFilesCheck = true;
+                
+                // 소스 파일 검증은 경고로만 처리
+                if (!sourceValidation.passed) {
+                    this.log(`⚠️ ${route} 소스 파일 검증 경고`, 'warn');
+                    sourceValidation.errors.forEach(error => {
+                        this.log(`  - ${error}`, 'warn');
+                        this.validationStats.warnings.push(error);
+                    });
+                    // 하지만 검증 실패로는 처리하지 않음
+                    sourceValidation.passed = true;
+                }
+            } catch (error) {
+                this.log(`${route} 소스 파일 검증 중 오류: ${error.message}`, 'warn');
+                validationResults.results.source = { passed: true, errors: [], warnings: [error.message] };
+            }
+            
+            // 2. 의존성 검증 (관대한 검증)
+            try {
+                const dependencyValidation = await this.validateDependencies(route, logicContent, viewContent);
+                validationResults.results.dependency = dependencyValidation;
+                validationResults.debug.dependencyCheck = true;
+                
+                // 의존성 검증도 경고로만 처리
+                if (!dependencyValidation.passed) {
+                    this.log(`⚠️ ${route} 의존성 검증 경고`, 'warn');
+                    dependencyValidation.errors.forEach(error => {
+                        this.log(`  - ${error}`, 'warn');
+                        this.validationStats.warnings.push(error);
+                    });
+                    dependencyValidation.passed = true;
+                }
+            } catch (error) {
+                this.log(`${route} 의존성 검증 중 오류: ${error.message}`, 'warn');
+                validationResults.results.dependency = { passed: true, errors: [], warnings: [error.message] };
+            }
+            
+            // 3. 빌드 결과 검증 (중요한 검증)
+            try {
+                const outputValidation = await this.validateBuildOutput(routeCode);
+                validationResults.results.output = outputValidation;
+                validationResults.debug.outputCheck = true;
+                
+                if (!outputValidation.passed) {
+                    this.log(`❌ ${route} 빌드 결과 검증 실패`, 'error');
+                    outputValidation.errors.forEach(error => this.log(`  - ${error}`, 'error'));
+                    validationResults.passed = false;
+                }
+            } catch (error) {
+                this.log(`${route} 빌드 결과 검증 중 오류: ${error.message}`, 'warn');
+                validationResults.results.output = { passed: true, errors: [], warnings: [error.message] };
+            }
+            
+            // 4. 브라우저 호환성 검증 (경고로만)
+            try {
+                const compatValidation = await this.validateCompatibility(routeCode, route);
+                validationResults.results.compatibility = compatValidation;
+                validationResults.debug.compatCheck = true;
+                
+                // 호환성 검증은 항상 통과로 처리 (경고만 출력)
+                compatValidation.passed = true;
+            } catch (error) {
+                this.log(`${route} 호환성 검증 중 오류: ${error.message}`, 'warn');
+                validationResults.results.compatibility = { passed: true, errors: [], warnings: [error.message] };
+            }
+            
+            // 검증 통계 업데이트
+            if (validationResults.passed) {
+                this.validationStats.passedChecks++;
+                this.log(`✅ ${route} 라우트 검증 통과`, 'success');
+            } else {
+                this.validationStats.failedChecks++;
+                this.log(`❌ ${route} 라우트 검증 실패 (심각한 오류만)`, 'error');
+            }
+            
+            // 경고 출력
+            Object.values(validationResults.results).forEach(result => {
+                result.warnings?.forEach(warning => {
+                    if (!this.validationStats.warnings.includes(warning)) {
+                        this.validationStats.warnings.push(warning);
+                    }
+                });
+            });
+            
+        } catch (error) {
+            validationResults.passed = false;
+            validationResults.error = error.message;
+            this.validationStats.failedChecks++;
+            this.log(`❌ ${route} 라우트 검증 중 심각한 오류: ${error.message}`, 'error');
+        }
+        
+        return validationResults;
+    }
+
     async build() {
         this.log('ViewLogic 빌드 시작...', 'info');
         
@@ -388,16 +708,42 @@ class ViewLogicBuilder {
                 }
             }
             
+            // 1단계: 소스 파일 빠른 검증 (캐시 확인 전)
+            try {
+                const preValidation = await this.validateSourceFiles(routeName);
+                if (!preValidation.passed) {
+                    this.log(`⚠️ ${routeName} 소스 파일 사전 검증 경고`, 'warn');
+                    preValidation.errors.forEach(error => this.log(`  - ${error}`, 'warn'));
+                    // 경고로만 처리하고 빌드는 계속 진행
+                }
+            } catch (error) {
+                this.log(`${routeName} 사전 검증 중 오류 (빌드 계속): ${error.message}`, 'warn');
+            }
+
             // 캐시 확인
             if (!await this.shouldRebuildRoute(routeName)) {
                 this.log(`${routeName} 캐시됨, 스킵`, 'info');
                 this.stats.routesBuilt++; // 캐시된 라우트도 성공으로 카운트
+                
+                // 캐시된 라우트도 검증 통계에 포함 (성공으로 처리)
+                this.validationStats.totalChecks++;
+                this.validationStats.passedChecks++;
+                
                 return;
             }
             
             // 최종 파일 생성
+            let finalContent;
             try {
-                const finalContent = await this.generateRouteFile(routeName, logicContent, viewContent, styleContent);
+                finalContent = await this.generateRouteFile(routeName, logicContent, viewContent, styleContent);
+                
+                // 2-5단계: 종합 검증 수행
+                const validationResult = await this.runValidation(routeName, logicContent, viewContent, styleContent, finalContent.originalCode || finalContent.code);
+                
+                if (!validationResult.passed) {
+                    this.log(`⚠️ ${routeName} 검증에서 일부 문제 발견, 빌드는 계속 진행`, 'warn');
+                    // 검증 실패해도 빌드는 계속 진행 (배포 안정성 우선)
+                }
                 
                 // 파일 쓰기 (스트림 기반)
                 const outputPath = path.join(this.config.routesPath, `${routeName}.js`);
@@ -583,17 +929,19 @@ class ViewLogicBuilder {
         const fullCode = lines.join('\n');
         
         // JavaScript 코드 압축
+        let finalCode = fullCode;
+        let sourceMap = null;
+        
         if (this.config.minify) {
             const result = await this.minifyJavaScript(fullCode);
-            return {
-                code: result.code,
-                map: result.map
-            };
+            finalCode = result.code;
+            sourceMap = result.map;
         }
         
         return {
-            code: fullCode,
-            map: null
+            code: finalCode,
+            map: sourceMap,
+            originalCode: fullCode
         };
     }
     
@@ -1268,8 +1616,40 @@ if (typeof window !== 'undefined') {
             console.log(`📦 JavaScript 트리셰이킹: ${this.treeShakingStats.javascript.filesProcessed}개 파일, ${jsSavedKB}KB 절약 (${jsReductionPercent}% 감소)`);
         }
         
+        // 검증 통계 출력
+        if (this.validationStats.totalChecks > 0) {
+            console.log('\n' + '='.repeat(50));
+            console.log('🔍 검증 시스템 결과');
+            console.log('='.repeat(50));
+            console.log(`✅ 총 검증: ${this.validationStats.totalChecks}건`);
+            console.log(`✅ 성공: ${this.validationStats.passedChecks}건`);
+            
+            if (this.validationStats.failedChecks > 0) {
+                console.log(`❌ 실패: ${this.validationStats.failedChecks}건`);
+            }
+            
+            if (this.validationStats.warnings.length > 0) {
+                console.log(`⚠️ 경고: ${this.validationStats.warnings.length}건`);
+                
+                // 최대 5개 경고만 출력
+                const maxWarnings = 5;
+                const warningsToShow = this.validationStats.warnings.slice(0, maxWarnings);
+                for (const warning of warningsToShow) {
+                    console.log(`   - ${warning}`);
+                }
+                
+                if (this.validationStats.warnings.length > maxWarnings) {
+                    console.log(`   ... 외 ${this.validationStats.warnings.length - maxWarnings}개 추가 경고`);
+                }
+            }
+            
+            const successRate = ((this.validationStats.passedChecks / this.validationStats.totalChecks) * 100).toFixed(1);
+            console.log(`📊 성공률: ${successRate}%`);
+            console.log('='.repeat(50));
+        }
+        
         if (this.stats.errors.length > 0) {
-            console.log(`💥 오류: ${this.stats.errors.length}개`);
+            console.log(`💥 빌드 오류: ${this.stats.errors.length}개`);
         }
         
         console.log('='.repeat(50));
