@@ -7,6 +7,8 @@ const fs = require('fs').promises;
 const path = require('path');
 const esbuild = require('esbuild');
 const crypto = require('crypto');
+const { createReadStream, createWriteStream } = require('fs');
+const { pipeline } = require('stream/promises');
 
 class ViewLogicBuilder {
     constructor(options = {}) {
@@ -17,7 +19,8 @@ class ViewLogicBuilder {
             minify: options.minify !== undefined ? options.minify : true,
             cache: options.cache !== false,
             parallel: options.parallel !== false,
-            sourceMaps: options.sourceMaps || false
+            sourceMaps: options.sourceMaps || false,
+            analyzer: options.analyzer || false
         };
         
         this.stats = {
@@ -25,6 +28,14 @@ class ViewLogicBuilder {
             routesBuilt: 0,
             routesFailed: 0,
             errors: []
+        };
+        
+        // 메모리 사용량 추적
+        this.memoryStats = {
+            initialMemory: this.getMemoryUsage(),
+            peakMemory: this.getMemoryUsage(),
+            currentMemory: this.getMemoryUsage(),
+            gcCount: 0
         };
         
         this.cache = new Map();
@@ -58,6 +69,47 @@ class ViewLogicBuilder {
         if (type === 'error') {
             this.stats.errors.push(message);
         }
+        
+        // 메모리 사용량 추적
+        this.trackMemoryUsage();
+    }
+    
+    getMemoryUsage() {
+        const used = process.memoryUsage();
+        return {
+            rss: used.rss,
+            heapUsed: used.heapUsed,
+            heapTotal: used.heapTotal,
+            external: used.external,
+            arrayBuffers: used.arrayBuffers || 0
+        };
+    }
+    
+    trackMemoryUsage() {
+        const current = this.getMemoryUsage();
+        this.memoryStats.currentMemory = current;
+        
+        // 피크 메모리 업데이트
+        if (current.heapUsed > this.memoryStats.peakMemory.heapUsed) {
+            this.memoryStats.peakMemory = current;
+        }
+    }
+    
+    async forceGarbageCollection() {
+        if (global.gc) {
+            global.gc();
+            this.memoryStats.gcCount++;
+            this.trackMemoryUsage();
+            this.log(`가비지 컬렉션 실행 (${this.memoryStats.gcCount}회차)`, 'info');
+        }
+    }
+    
+    formatBytes(bytes) {
+        if (bytes === 0) return '0 B';
+        const k = 1024;
+        const sizes = ['B', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
     }
     
     // CSS 압축 유틸리티
@@ -215,6 +267,9 @@ class ViewLogicBuilder {
             // 6단계: 각 라우트 빌드 (병렬/순차)
             await this.buildRoutesParallel(routes);
             
+            // 메모리 정리
+            await this.optimizeMemoryUsage();
+            
             // 7단계: 매니페스트 생성
             await this.generateManifest(routes);
             
@@ -223,6 +278,11 @@ class ViewLogicBuilder {
             
             // 9단계: 결과 보고
             this.printReport();
+            
+            // 10단계: 번들 분석기 실행 (옵션)
+            if (this.config.analyzer) {
+                await this.runBundleAnalyzer();
+            }
             
             return this.stats.routesFailed === 0;
             
@@ -339,9 +399,9 @@ class ViewLogicBuilder {
             try {
                 const finalContent = await this.generateRouteFile(routeName, logicContent, viewContent, styleContent);
                 
-                // 파일 쓰기
+                // 파일 쓰기 (스트림 기반)
                 const outputPath = path.join(this.config.routesPath, `${routeName}.js`);
-                await fs.writeFile(outputPath, finalContent.code);
+                await this.writeFileStreamed(outputPath, finalContent.code);
                 
                 // Source map 저장
                 if (this.config.sourceMaps && finalContent.map) {
@@ -362,6 +422,12 @@ class ViewLogicBuilder {
             this.stats.routesBuilt++;
             this.log(`${routeName} 빌드 완료 ✓`, 'success');
             
+            // 메모리 사용량이 높으면 가비지 컬렉션 실행
+            const currentMemory = this.getMemoryUsage();
+            if (currentMemory.heapUsed > 100 * 1024 * 1024) { // 100MB 이상
+                await this.forceGarbageCollection();
+            }
+            
         } catch (error) {
             this.stats.routesFailed++;
             this.log(`${routeName} 빌드 실패: ${error.message}`, 'error');
@@ -374,6 +440,13 @@ class ViewLogicBuilder {
     
     async readFile(filePath, defaultContent = null) {
         try {
+            const stats = await fs.stat(filePath);
+            
+            // 대용량 파일 (1MB 이상)은 스트림으로 처리
+            if (stats.size > 1024 * 1024) {
+                return await this.readLargeFile(filePath);
+            }
+            
             return await fs.readFile(filePath, 'utf8');
         } catch (error) {
             if (defaultContent !== null) {
@@ -381,6 +454,70 @@ class ViewLogicBuilder {
             }
             throw error;
         }
+    }
+    
+    async readLargeFile(filePath) {
+        return new Promise((resolve, reject) => {
+            const chunks = [];
+            let totalSize = 0;
+            
+            const readStream = createReadStream(filePath, { 
+                encoding: 'utf8',
+                highWaterMark: 64 * 1024 // 64KB 청크
+            });
+            
+            readStream.on('data', (chunk) => {
+                chunks.push(chunk);
+                totalSize += chunk.length;
+                
+                // 메모리 사용량 체크 (10MB 제한)
+                if (totalSize > 10 * 1024 * 1024) {
+                    readStream.destroy();
+                    reject(new Error(`파일이 너무 큼: ${filePath} (10MB 제한)`));
+                }
+            });
+            
+            readStream.on('end', () => {
+                const content = chunks.join('');
+                chunks.length = 0; // 메모리 해제
+                resolve(content);
+            });
+            
+            readStream.on('error', reject);
+        });
+    }
+    
+    async writeFileStreamed(filePath, content) {
+        const contentSize = Buffer.byteLength(content, 'utf8');
+        
+        // 대용량 콘텐츠는 스트림으로 처리
+        if (contentSize > 1024 * 1024) {
+            return await this.writeLargeFile(filePath, content);
+        }
+        
+        return await fs.writeFile(filePath, content, 'utf8');
+    }
+    
+    async writeLargeFile(filePath, content) {
+        const { Readable } = require('stream');
+        const chunkSize = 64 * 1024; // 64KB 청크
+        
+        const readable = new Readable({
+            read() {
+                const chunk = content.slice(0, chunkSize);
+                if (chunk.length === 0) {
+                    this.push(null);
+                } else {
+                    content = content.slice(chunkSize);
+                    this.push(chunk);
+                }
+            }
+        });
+        
+        const writeStream = createWriteStream(filePath, { encoding: 'utf8' });
+        
+        await pipeline(readable, writeStream);
+        this.log(`대용량 파일 스트림 쓰기 완료: ${path.basename(filePath)}`, 'info');
     }
     
     async generateRouteFile(routeName, logicContent, viewContent, styleContent) {
@@ -1136,6 +1273,123 @@ if (typeof window !== 'undefined') {
         }
         
         console.log('='.repeat(50));
+        
+        // 메모리 사용량 리포트
+        this.printMemoryReport();
+    }
+    
+    printMemoryReport() {
+        const initialMB = this.memoryStats.initialMemory.heapUsed / 1024 / 1024;
+        const peakMB = this.memoryStats.peakMemory.heapUsed / 1024 / 1024;
+        const currentMB = this.memoryStats.currentMemory.heapUsed / 1024 / 1024;
+        
+        console.log('\n' + '='.repeat(50));
+        console.log('🧠 메모리 사용량 리포트');
+        console.log('='.repeat(50));
+        console.log(`📈 초기 메모리: ${initialMB.toFixed(1)}MB`);
+        console.log(`⬆️ 최대 메모리: ${peakMB.toFixed(1)}MB`);
+        console.log(`📊 현재 메모리: ${currentMB.toFixed(1)}MB`);
+        
+        if (this.memoryStats.gcCount > 0) {
+            console.log(`🗑️ 가비지 컬렉션: ${this.memoryStats.gcCount}회 실행`);
+        }
+        
+        const memoryIncrease = currentMB - initialMB;
+        if (memoryIncrease > 0) {
+            console.log(`📈 메모리 증가량: +${memoryIncrease.toFixed(1)}MB`);
+        } else {
+            console.log(`📉 메모리 절약량: ${Math.abs(memoryIncrease).toFixed(1)}MB`);
+        }
+        console.log('='.repeat(50));
+    }
+    
+    async optimizeMemoryUsage() {
+        this.log('메모리 최적화 실행 중...', 'info');
+        
+        try {
+            // 1. 캐시 정리
+            await this.optimizeCache();
+            
+            // 2. 트리셰이킹 통계 정리
+            this.optimizeTreeShakingStats();
+            
+            // 3. 강제 가비지 컬렉션
+            await this.forceGarbageCollection();
+            
+            // 4. 메모리 사용량 체크
+            const memoryUsage = this.getMemoryUsage();
+            const memoryMB = memoryUsage.heapUsed / 1024 / 1024;
+            
+            if (memoryMB > 200) { // 200MB 이상이면 경고
+                this.log(`높은 메모리 사용량 감지: ${memoryMB.toFixed(1)}MB`, 'warn');
+            }
+            
+            this.log('메모리 최적화 완료', 'success');
+            
+        } catch (error) {
+            this.log(`메모리 최적화 실패: ${error.message}`, 'warn');
+        }
+    }
+    
+    async optimizeCache() {
+        const originalSize = this.cache.size;
+        
+        // 오래된 캐시 항목 정리 (1시간 이상)
+        const oneHourAgo = Date.now() - (60 * 60 * 1000);
+        let removedCount = 0;
+        
+        for (const [key, value] of this.cache.entries()) {
+            if (value.timestamp && value.timestamp < oneHourAgo) {
+                this.cache.delete(key);
+                removedCount++;
+            }
+        }
+        
+        if (removedCount > 0) {
+            this.log(`캐시 정리: ${removedCount}개 항목 제거`, 'info');
+        }
+        
+        // 캐시 크기가 1000개를 초과하면 오래된 것부터 제거
+        if (this.cache.size > 1000) {
+            const entries = Array.from(this.cache.entries())
+                .sort((a, b) => (a[1].timestamp || 0) - (b[1].timestamp || 0))
+                .slice(0, this.cache.size - 500); // 500개만 유지
+            
+            for (const [key] of entries) {
+                this.cache.delete(key);
+            }
+            
+            this.log(`캐시 크기 조정: ${originalSize} → ${this.cache.size}개`, 'info');
+        }
+    }
+    
+    optimizeTreeShakingStats() {
+        // 큰 배열들의 크기 제한
+        if (this.treeShakingStats.unusedComponents.length > 100) {
+            this.treeShakingStats.unusedComponents = this.treeShakingStats.unusedComponents.slice(0, 50);
+        }
+        
+        if (this.treeShakingStats.css.unusedRules.length > 1000) {
+            this.treeShakingStats.css.unusedRules = this.treeShakingStats.css.unusedRules.slice(0, 500);
+        }
+    }
+    
+    async runBundleAnalyzer() {
+        this.log('번들 분석기 실행 중...', 'info');
+        
+        try {
+            const BundleAnalyzer = require('./bundle-analyzer.cjs');
+            const analyzer = new BundleAnalyzer({
+                routesPath: this.config.routesPath,
+                srcPath: this.config.srcPath
+            });
+            
+            await analyzer.analyze();
+            this.log('번들 분석 완료!', 'success');
+            
+        } catch (error) {
+            this.log(`번들 분석 실패: ${error.message}`, 'warn');
+        }
     }
     
     // ======================================
@@ -1364,7 +1618,8 @@ async function main() {
         parallel: !args.includes('--no-parallel'),
         sourceMaps: args.includes('--source-maps'),
         workerThreads: !args.includes('--no-workers'),
-        maxWorkers: parseInt(args.find(arg => arg.startsWith('--max-workers='))?.split('=')[1]) || undefined
+        maxWorkers: parseInt(args.find(arg => arg.startsWith('--max-workers='))?.split('=')[1]) || undefined,
+        analyzer: args.includes('--analyze')
     };
     
     const builder = new ViewLogicBuilder(options);
@@ -1380,11 +1635,21 @@ async function main() {
             console.log('✅ 정리 완료');
             break;
             
+        case 'analyze':
+            const BundleAnalyzer = require('./bundle-analyzer.cjs');
+            const analyzer = new BundleAnalyzer({
+                routesPath: builder.config.routesPath,
+                srcPath: builder.config.srcPath
+            });
+            await analyzer.analyze();
+            break;
+            
         case 'help':
         default:
             console.log('🏗️ ViewLogic 빌드 시스템 v1.0\n');
             console.log('사용법:');
             console.log('  node build.cjs build                  # 빌드');
+            console.log('  node build.cjs analyze                # 번들 분석 리포트 생성');
             console.log('  node build.cjs clean                  # 빌드 파일 정리');
             console.log('\n옵션:');
             console.log('  --no-minify                          # 압축 비활성화');
@@ -1393,6 +1658,7 @@ async function main() {
             console.log('  --no-workers                         # 워커 스레드 비활성화');
             console.log('  --max-workers=N                      # 최대 워커 수 설정');
             console.log('  --source-maps                        # Source map 생성');
+            console.log('  --analyze                            # 번들 분석 리포트 생성');
             break;
     }
 }
