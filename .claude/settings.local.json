@@ -17,7 +17,10 @@
       "Bash(npm run build:*)",
       "Bash(git commit:*)",
       "Bash(echo:*)",
-      "Bash(del \"js\\i18n.prod.js\")"
+      "Bash(del \"js\\i18n.prod.js\")",
+      "WebFetch(domain:127.0.0.1)",
+      "Bash(cmd.exe:*)",
+      "Bash(dir:*)"
     ],
     "deny": [],
     "ask": [],

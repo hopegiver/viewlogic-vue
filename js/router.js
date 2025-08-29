@@ -14,7 +14,7 @@ class ViewLogicRouter {
             preloadRoutes: options.preloadRoutes || [], // 프리로드할 라우트들
             preloadDelay: options.preloadDelay || 1000, // 프리로드 시작 지연 시간 (밀리초)
             preloadInterval: options.preloadInterval || 500, // 프리로드 간격 (밀리초)
-            showLoadingProgress: options.showLoadingProgress !== false, // 로딩 프로그레스 바 표시
+            showLoadingProgress: options.showLoadingProgress === true, // 로딩 프로그레스 바 표시
             loadingMinDuration: options.loadingMinDuration || 300, // 최소 로딩 시간 (UX 개선)
             enableErrorReporting: options.enableErrorReporting !== false, // 에러 리포팅 활성화
             useComponents: options.useComponents !== false, // 컴포넌트 시스템 사용 여부
@@ -331,8 +331,8 @@ class ViewLogicRouter {
 
     async loadUnifiedComponents() {
         try {
-            // 통합 components.js 파일 로드
-            const componentsPath = `${this.config.routesPath}/components.js`;
+            // 통합 _components.js 파일 로드 (성능 최적화된 통합 컴포넌트)
+            const componentsPath = `${this.config.routesPath}/_components.js`;
             console.log(`📦 Loading unified components from: ${componentsPath}`);
             
             // 브라우저에서 상대 경로 import를 위해 현재 origin 추가

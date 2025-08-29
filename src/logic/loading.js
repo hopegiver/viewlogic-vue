@@ -1,5 +1,6 @@
 export default {
     name: 'LoadingComponent',
+    layout: 'default',
     data() {
         return {
             loadingText: '로딩 중...',

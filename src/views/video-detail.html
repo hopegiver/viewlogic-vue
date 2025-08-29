@@ -1,0 +1,178 @@
+<div class="video-detail-page">
+    <div class="video-detail-container">
+        <!-- 메인 콘텐츠 영역 -->
+        <div class="video-main-content">
+            <!-- 비디오 플레이어 -->
+            <div class="video-player-wrapper">
+                <div class="video-player" id="videoPlayer">
+                    <video :src="currentVideo.videoUrl" controls autoplay>
+                        <source :src="currentVideo.videoUrl" type="video/mp4">
+                        브라우저가 비디오 태그를 지원하지 않습니다.
+                    </video>
+                </div>
+            </div>
+
+            <!-- 비디오 정보 -->
+            <div class="video-info-section">
+                <h1 class="video-title">{{ currentVideo.title }}</h1>
+                <div class="video-stats">
+                    <div class="stats-left">
+                        <span class="view-count">조회수 {{ formatViews(currentVideo.views) }}회</span>
+                        <span class="dot">•</span>
+                        <span class="upload-date">{{ currentVideo.uploadedAt }}</span>
+                    </div>
+                    <div class="stats-right">
+                        <button @click="likeVideo" class="action-btn" :class="{ active: isLiked }">
+                            <span class="icon">👍</span>
+                            <span>{{ formatNumber(currentVideo.likes) }}</span>
+                        </button>
+                        <button @click="dislikeVideo" class="action-btn" :class="{ active: isDisliked }">
+                            <span class="icon">👎</span>
+                        </button>
+                        <button @click="shareVideo" class="action-btn">
+                            <span class="icon">🔗</span>
+                            <span>공유</span>
+                        </button>
+                        <button @click="saveVideo" class="action-btn" :class="{ active: isSaved }">
+                            <span class="icon">📌</span>
+                            <span>저장</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 채널 정보 -->
+            <div class="channel-info-section">
+                <div class="channel-header">
+                    <div class="channel-avatar">
+                        <img :src="currentVideo.channelAvatar" :alt="currentVideo.channel">
+                    </div>
+                    <div class="channel-details">
+                        <h3 class="channel-name">{{ currentVideo.channel }}</h3>
+                        <p class="subscriber-count">구독자 {{ formatNumber(currentVideo.subscribers) }}명</p>
+                    </div>
+                    <button @click="toggleSubscribe" class="subscribe-btn" :class="{ subscribed: isSubscribed }">
+                        {{ isSubscribed ? '구독중' : '구독' }}
+                    </button>
+                </div>
+                <div class="video-description">
+                    <p v-if="!showFullDescription">
+                        {{ truncatedDescription }}
+                    </p>
+                    <p v-html="currentVideo.description" v-else></p>
+                    <button @click="toggleDescription" class="show-more-btn" v-if="currentVideo.description && currentVideo.description.length > 200">
+                        {{ showFullDescription ? '간략히' : '더보기' }}
+                    </button>
+                </div>
+            </div>
+
+            <!-- 댓글 섹션 -->
+            <div class="comments-section">
+                <div class="comments-header">
+                    <h3>댓글 {{ formatNumber(currentVideo.commentCount) }}개</h3>
+                    <div class="comment-sort">
+                        <select v-model="commentSort" @change="sortComments">
+                            <option value="top">인기 댓글순</option>
+                            <option value="newest">최신순</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- 댓글 작성 -->
+                <div class="comment-form" v-if="isLoggedIn">
+                    <div class="user-avatar">
+                        <img :src="currentUser.avatar" :alt="currentUser.name">
+                    </div>
+                    <div class="comment-input-wrapper">
+                        <textarea 
+                            v-model="newComment" 
+                            @focus="showCommentButtons = true"
+                            placeholder="댓글 추가..."
+                            rows="1">
+                        </textarea>
+                        <div class="comment-actions" v-if="showCommentButtons">
+                            <button @click="cancelComment" class="cancel-btn">취소</button>
+                            <button @click="submitComment" class="submit-btn" :disabled="!newComment.trim()">댓글</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 댓글 목록 -->
+                <div class="comments-list">
+                    <div v-for="comment in comments" :key="comment.id" class="comment-item">
+                        <div class="comment-avatar">
+                            <img :src="comment.userAvatar" :alt="comment.userName">
+                        </div>
+                        <div class="comment-content">
+                            <div class="comment-header">
+                                <span class="comment-author">{{ comment.userName }}</span>
+                                <span class="comment-date">{{ comment.createdAt }}</span>
+                            </div>
+                            <p class="comment-text">{{ comment.text }}</p>
+                            <div class="comment-actions">
+                                <button @click="likeComment(comment.id)" class="like-btn" :class="{ liked: comment.isLiked }">
+                                    <span class="icon">👍</span>
+                                    <span v-if="comment.likes > 0">{{ comment.likes }}</span>
+                                </button>
+                                <button @click="dislikeComment(comment.id)" class="dislike-btn">
+                                    <span class="icon">👎</span>
+                                </button>
+                                <button @click="replyToComment(comment.id)" class="reply-btn">답글</button>
+                            </div>
+
+                            <!-- 답글 -->
+                            <div v-if="comment.replies && comment.replies.length > 0" class="replies">
+                                <button @click="toggleReplies(comment.id)" class="show-replies-btn">
+                                    {{ comment.showReplies ? '답글 숨기기' : `답글 ${comment.replies.length}개 보기` }}
+                                </button>
+                                <div v-if="comment.showReplies" class="replies-list">
+                                    <div v-for="reply in comment.replies" :key="reply.id" class="reply-item">
+                                        <div class="comment-avatar">
+                                            <img :src="reply.userAvatar" :alt="reply.userName">
+                                        </div>
+                                        <div class="comment-content">
+                                            <div class="comment-header">
+                                                <span class="comment-author">{{ reply.userName }}</span>
+                                                <span class="comment-date">{{ reply.createdAt }}</span>
+                                            </div>
+                                            <p class="comment-text">{{ reply.text }}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 더보기 버튼 -->
+                <button v-if="hasMoreComments" @click="loadMoreComments" class="load-more-comments">
+                    댓글 더보기
+                </button>
+            </div>
+        </div>
+
+        <!-- 사이드바 - 관련 동영상 -->
+        <aside class="video-sidebar">
+            <div class="sidebar-header">
+                <h3>관련 동영상</h3>
+            </div>
+            <div class="related-videos">
+                <div v-for="video in relatedVideos" :key="video.id" class="related-video-item" @click="playVideo(video.id)">
+                    <div class="related-thumbnail">
+                        <img :src="video.thumbnail" :alt="video.title">
+                        <span class="duration">{{ video.duration }}</span>
+                    </div>
+                    <div class="related-info">
+                        <h4 class="related-title">{{ video.title }}</h4>
+                        <p class="related-channel">{{ video.channel }}</p>
+                        <div class="related-meta">
+                            <span>조회수 {{ formatViews(video.views) }}회</span>
+                            <span class="dot">•</span>
+                            <span>{{ video.uploadedAt }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+    </div>
+</div>

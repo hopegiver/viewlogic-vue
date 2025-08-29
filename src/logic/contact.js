@@ -1,5 +1,6 @@
 export default {
     name: 'Contact',
+    layout: 'default',
     data() {
         return {
             contactInfo: [

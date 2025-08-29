@@ -273,7 +273,7 @@ body {
     list-style: none;
     margin: 0;
     padding: 0;
-    gap: var(--space-lg);
+    gap: var(--space-xs);
 }
 
 .nav-links a {
@@ -290,6 +290,75 @@ body {
 .nav-links a.active {
     background: var(--color-primary);
     color: var(--color-white);
+}
+
+/* Dropdown Menu Styles */
+.nav-links .has-dropdown {
+    position: relative;
+}
+
+.nav-links .dropdown-toggle {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+}
+
+.nav-links .dropdown-toggle::after {
+    content: '▼';
+    margin-left: 5px;
+    font-size: 0.7em;
+    transition: transform var(--transition-base);
+}
+
+.nav-links .has-dropdown:hover .dropdown-toggle::after {
+    transform: rotate(180deg);
+}
+
+.nav-links .dropdown-menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    background: var(--color-white);
+    box-shadow: var(--shadow-lg);
+    border-radius: var(--border-radius-md);
+    padding: var(--space-sm);
+    min-width: 180px;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: all var(--transition-base);
+    list-style: none;
+    z-index: var(--z-dropdown);
+    margin-top: var(--space-sm);
+    display: flex;
+    flex-direction: column;
+}
+
+.nav-links .has-dropdown:hover .dropdown-menu {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.nav-links .dropdown-menu li {
+    margin: 0;
+    display: block;
+    width: 100%;
+}
+
+.nav-links .dropdown-menu a {
+    display: block;
+    padding: var(--space-sm) var(--space-md);
+    color: var(--color-text);
+    text-decoration: none;
+    border-radius: var(--border-radius-sm);
+    transition: background var(--transition-fast);
+}
+
+.nav-links .dropdown-menu a:hover,
+.nav-links .dropdown-menu a.active {
+    background: var(--color-primary-light);
+    color: var(--color-primary);
 }
 
 /* Auth Section - Right */
@@ -386,6 +455,27 @@ body {
         display: block;
         padding: var(--space-md);
         border-radius: var(--border-radius-md);
+    }
+    
+    /* Mobile dropdown adjustments */
+    .nav-links .has-dropdown .dropdown-menu {
+        position: static;
+        opacity: 1;
+        visibility: visible;
+        transform: none;
+        box-shadow: none;
+        background: transparent;
+        padding-left: var(--space-lg);
+        margin-top: 0;
+    }
+    
+    .nav-links .dropdown-toggle::after {
+        display: none;
+    }
+    
+    .nav-links .dropdown-menu a {
+        padding-left: var(--space-xl);
+        font-size: var(--font-size-sm);
     }
     
     .nav-auth {
@@ -915,6 +1005,66 @@ body {
     50% {
         opacity: 1;
     }
+}
+
+/* ====================================
+   장바구니 위젯 스타일
+   ==================================== */
+.nav-utils {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.cart-widget {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--color-primary);
+    color: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.cart-widget:hover {
+    background: var(--color-primary-hover);
+    transform: scale(1.05);
+}
+
+.cart-icon {
+    font-size: 1.2rem;
+}
+
+.cart-count {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background: var(--color-danger);
+    color: white;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: bold;
+    animation: cartBounce 0.5s ease-in-out;
+}
+
+@keyframes cartBounce {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+}
+
+.nav-auth {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
 }
 
 /* 스켈레톤 로딩 */

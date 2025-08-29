@@ -1,1363 +1,601 @@
-#!/usr/bin/env node
-
 /**
- * ViewLogic Advanced Builder System
- * 고급 빌드 시스템으로 소스 파일들을 프로덕션 최적화된 라우트로 변환
+ * ViewLogic 빌드 시스템 v1.0
+ * 가장 기본적인 기능부터 차근차근 구현
  */
 
 const fs = require('fs').promises;
 const path = require('path');
-const crypto = require('crypto');
+const esbuild = require('esbuild');
 
 class ViewLogicBuilder {
     constructor(options = {}) {
         this.config = {
-            srcPath: options.srcPath || './src',
-            routesPath: options.routesPath || './routes',
-            minify: options.minify || true,
-            sourceMap: options.sourceMap || false,
-            watch: options.watch || false,
-            verbose: options.verbose || false,
-            generateManifest: options.generateManifest !== false,
-            validateSources: options.validateSources !== false,
-            optimizeAssets: options.optimizeAssets !== false
+            srcPath: path.join(__dirname, 'src'),
+            routesPath: path.join(__dirname, 'routes'),
+            version: '1.0.0',
+            minify: options.minify !== undefined ? options.minify : true  // 기본값: true
         };
         
         this.stats = {
-            startTime: null,
-            endTime: null,
-            totalRoutes: 0,
-            successRoutes: 0,
-            failedRoutes: 0,
-            warnings: [],
+            startTime: Date.now(),
+            routesBuilt: 0,
+            routesFailed: 0,
             errors: []
         };
-        
-        this.fileHashes = new Map(); // 파일 변경 감지용
-        this.buildCache = new Map();  // 빌드 캐시
     }
-
+    
+    log(message, type = 'info') {
+        const icons = { error: '❌', warn: '⚠️', success: '✅', info: 'ℹ️' };
+        console.log(`${icons[type] || icons.info} ${message}`);
+        
+        if (type === 'error') {
+            this.stats.errors.push(message);
+        }
+    }
+    
+    // CSS 압축 유틸리티
+    minifyCSS(css) {
+        return css
+            .replace(/\/\*[^*]*\*+(?:[^/*][^*]*\*+)*\//g, '')  // 주석 제거
+            .replace(/\s+/g, ' ')                              // 연속 공백을 하나로
+            .replace(/\s*([{}:;,])\s*/g, '$1')                 // 구분자 주변 공백 제거
+            .trim();
+    }
+    
+    // HTML 압축 유틸리티 (Vue 템플릿 보호)
+    minifyHTML(html) {
+        return html
+            .replace(/<!--[\s\S]*?-->/g, '')                   // HTML 주석 제거
+            .replace(/>\s+</g, '><')                           // 태그 사이 공백 제거
+            .replace(/\s+/g, ' ')                              // 연속 공백을 하나로
+            .trim();
+    }
+    
     async build() {
-        this.stats.startTime = Date.now();
-        this.log('🚀 ViewLogic 고급 빌드 시작...', 'info');
+        this.log('ViewLogic 빌드 시작...', 'info');
         
         try {
-            // 빌드 전 검증
-            await this.validateEnvironment();
-            
-            // 빌드 디렉토리 준비
-            await this.prepareBuildDirectory();
-            
-            // 소스 스캔 및 검증
-            const routes = await this.scanAndValidateRoutes();
-            
-            if (routes.length === 0) {
-                this.log('📭 빌드할 라우트가 없습니다.', 'warn');
-                return this.generateBuildReport(false);
-            }
-            
-            this.stats.totalRoutes = routes.length;
-            this.log(`📦 ${routes.length}개 라우트 발견: ${routes.join(', ')}`, 'info');
-            
-            // 병렬 빌드 실행
-            await this.buildRoutesInParallel(routes);
-            
-            // 빌드 후 처리
-            await this.postBuild();
-            
-            return this.generateBuildReport(true);
-            
-        } catch (error) {
-            this.stats.errors.push(error.message);
-            this.log(`❌ 빌드 실패: ${error.message}`, 'error');
-            return this.generateBuildReport(false);
-        } finally {
-            this.stats.endTime = Date.now();
-        }
-    }
-
-    async validateEnvironment() {
-        const requiredDirs = ['src', 'src/logic', 'src/views'];
-        const optionalDirs = ['src/components'];
-        
-        for (const dir of requiredDirs) {
-            if (!await this.exists(dir)) {
-                throw new Error(`필수 디렉토리가 없습니다: ${dir}`);
-            }
-        }
-        
-        // 컴포넌트 디렉토리 확인
-        for (const dir of optionalDirs) {
-            if (await this.exists(dir)) {
-                this.log(`✅ 컴포넌트 디렉토리 발견: ${dir}`, 'verbose');
-            }
-        }
-        
-        // Node.js 버전 확인
-        const nodeVersion = process.version.match(/v(\d+)/)[1];
-        if (parseInt(nodeVersion) < 14) {
-            this.log('⚠️ Node.js 14 이상을 권장합니다.', 'warn');
-        }
-        
-        this.log('✅ 환경 검증 완료', 'verbose');
-    }
-
-    async prepareBuildDirectory() {
-        await this.ensureDirectory(this.config.routesPath);
-        
-        if (!this.config.watch) {
+            // 1단계: 디렉토리 준비
+            await this.ensureDirectory(this.config.routesPath);
             await this.cleanDirectory(this.config.routesPath);
-        }
-        
-        this.log(`📁 빌드 디렉토리 준비 완료: ${path.resolve(this.config.routesPath)}`, 'verbose');
-    }
-
-    async scanAndValidateRoutes() {
-        const routes = [];
-        const logicPath = path.resolve(this.config.srcPath, 'logic');
-        
-        try {
-            const files = await fs.readdir(logicPath);
             
-            for (const file of files) {
-                if (!file.endsWith('.js')) continue;
-                
-                const routeName = path.basename(file, '.js');
-                
-                if (this.config.validateSources) {
-                    const isValid = await this.validateRouteFiles(routeName);
-                    if (!isValid) {
-                        this.stats.warnings.push(`라우트 '${routeName}' 파일 검증 실패`);
-                        this.log(`⚠️ 라우트 '${routeName}' 파일이 불완전합니다.`, 'warn');
-                        continue;
-                    }
-                }
-                
-                routes.push(routeName);
+            // 2단계: 라우트 발견
+            const routes = await this.discoverRoutes();
+            if (routes.length === 0) {
+                this.log('빌드할 라우트가 없습니다.', 'warn');
+                return false;
             }
-        } catch (error) {
-            throw new Error(`라우트 스캔 실패: ${error.message}`);
-        }
-        
-        return routes.sort(); // 정렬로 일관성 보장
-    }
+            
+            this.log(`${routes.length}개 라우트 발견: ${routes.join(', ')}`, 'info');
 
-    async validateRouteFiles(routeName) {
-        const files = {
-            logic: path.join(this.config.srcPath, 'logic', `${routeName}.js`),
-            view: path.join(this.config.srcPath, 'views', `${routeName}.html`),
-            style: path.join(this.config.srcPath, 'styles', `${routeName}.css`)
-        };
-        
-        // 로직 파일은 필수
-        if (!await this.exists(files.logic)) {
+            // 3단계: 컴포넌트 시스템 파일 생성
+            await this.generateComponentsFile();
+            
+            // 4단계: 각 라우트 빌드
+            for (const route of routes) {
+                await this.buildRoute(route);
+            }
+            
+            // 5단계: 매니페스트 생성
+            await this.generateManifest(routes);
+            
+            // 6단계: 결과 보고
+            this.printReport();
+            
+            return this.stats.routesFailed === 0;
+            
+        } catch (error) {
+            this.log(`빌드 실패: ${error.message}`, 'error');
             return false;
         }
-        
-        // 뷰 파일은 권장
-        if (!await this.exists(files.view)) {
-            this.log(`⚠️ 뷰 파일 없음: ${files.view}`, 'warn');
-        }
-        
-        // 로직 파일 구문 검증
+    }
+    
+    async minifyJavaScript(code) {
         try {
-            const content = await fs.readFile(files.logic, 'utf8');
-            if (!content.includes('export default')) {
-                this.log(`⚠️ '${routeName}' 로직 파일에 default export가 없습니다.`, 'warn');
-            }
+            const result = await esbuild.transform(code, {
+                minify: true,
+                target: 'es2015',
+                format: 'esm',
+                // Vue 호환성을 위한 설정
+                keepNames: true,  // 함수명 유지
+                treeShaking: false,  // Vue 메소드 보호
+                minifyWhitespace: true,
+                minifyIdentifiers: false,  // 변수명 유지 (Vue data 보호)
+                minifySyntax: true
+            });
+            return result.code;
         } catch (error) {
-            this.log(`⚠️ '${routeName}' 로직 파일 읽기 실패: ${error.message}`, 'warn');
-            return false;
-        }
-        
-        return true;
-    }
-
-    async buildRoutesInParallel(routes) {
-        const concurrency = Math.min(routes.length, 4); // 최대 4개 동시 빌드
-        const chunks = this.chunkArray(routes, concurrency);
-        
-        for (const chunk of chunks) {
-            const promises = chunk.map(route => this.buildRouteWithCache(route));
-            await Promise.all(promises);
+            this.log(`JavaScript 압축 실패, 원본 사용: ${error.message}`, 'warn');
+            return code;  // 실패 시 원본 반환
         }
     }
-
-    async buildRouteWithCache(routeName) {
-        const cacheKey = await this.generateRouteHash(routeName);
-        
-        // 캐시된 빌드가 있고 소스가 변경되지 않았으면 스킵
-        if (this.buildCache.has(cacheKey) && !await this.hasRouteChanged(routeName)) {
-            this.log(`📋 캐시된 빌드 사용: ${routeName}`, 'verbose');
-            this.stats.successRoutes++;
-            return { success: true, route: routeName, cached: true };
-        }
-        
-        try {
-            const result = await this.buildRoute(routeName);
-            
-            if (result.success) {
-                this.buildCache.set(cacheKey, result);
-                this.stats.successRoutes++;
-            } else {
-                this.stats.failedRoutes++;
-                this.stats.errors.push(`${routeName}: ${result.error}`);
-            }
-            
-            return result;
-        } catch (error) {
-            this.stats.failedRoutes++;
-            this.stats.errors.push(`${routeName}: ${error.message}`);
-            return { success: false, route: routeName, error: error.message };
-        }
-    }
-
+    
     async buildRoute(routeName) {
-        this.log(`🔨 라우트 빌드 시작: ${routeName}`, 'verbose');
-        
-        const startTime = Date.now();
-        
         try {
-            // 소스 파일들 로드
-            const sources = await this.loadRouteSources(routeName);
+            this.log(`${routeName} 빌드 중...`, 'info');
             
-            // 라우트 조합 및 최적화
-            const builtRoute = await this.combineAndOptimizeRoute(routeName, sources);
-            
-            // 파일 저장
-            await this.saveRoute(routeName, builtRoute);
-            
-            const buildTime = Date.now() - startTime;
-            this.log(`  ✓ ${routeName} 빌드 완료 (${buildTime}ms)`, 'info');
-            
-            return { 
-                success: true, 
-                route: routeName, 
-                buildTime,
-                size: builtRoute.length 
+            // 파일 경로 검증
+            const paths = {
+                logic: path.join(this.config.srcPath, 'logic', `${routeName}.js`),
+                view: path.join(this.config.srcPath, 'views', `${routeName}.html`),
+                style: path.join(this.config.srcPath, 'styles', `${routeName}.css`)
             };
-        } catch (error) {
-            this.log(`  ✗ ${routeName} 빌드 실패: ${error.message}`, 'error');
-            return { success: false, route: routeName, error: error.message };
-        }
-    }
-
-    async loadRouteSources(routeName) {
-        const sources = {};
-        
-        // 병렬 로딩으로 성능 향상 (컴포넌트는 제외)
-        const [template, logic, style, layout] = await Promise.all([
-            this.loadTemplate(routeName).catch(() => null),
-            this.loadLogic(routeName),
-            this.loadStyle(routeName).catch(() => ''),
-            this.loadLayoutForRoute(routeName).catch(() => null)
-        ]);
-        
-        return { template, logic, style, layout };
-    }
-
-    filterUsedComponents(template, allComponents) {
-        if (!template || !allComponents || allComponents.length === 0) {
-            return [];
-        }
-
-        const usedComponents = [];
-        
-        for (const componentInfo of allComponents) {
-            const componentName = componentInfo.name;
             
-            // 다양한 패턴으로 컴포넌트 사용 감지
-            const patterns = [
-                // 자체 닫는 태그: <ComponentName />
-                new RegExp(`<${componentName}\\s*\/?>`, 'gi'),
-                // 여는/닫는 태그 쌍: <ComponentName> ... </ComponentName>
-                new RegExp(`<${componentName}[\\s>]`, 'gi'),
-                // 케밥 케이스: <component-name>
-                new RegExp(`<${this.camelToKebab(componentName)}[\\s>\/]`, 'gi'),
-                // Vue 동적 컴포넌트: :is="ComponentName"
-                new RegExp(`:is=["']${componentName}["']`, 'gi'),
-                // Vue 동적 컴포넌트 변수: :is="componentVariable"에서 componentVariable이 ComponentName을 참조
-                new RegExp(`component.*=.*["']${componentName}["']`, 'gi')
-            ];
+            // 단계별 오류 처리
+            let logicContent, viewContent, styleContent;
             
-            // 패턴 중 하나라도 매치되면 컴포넌트 사용으로 간주
-            const isUsed = patterns.some(pattern => pattern.test(template));
-            
-            if (isUsed) {
-                usedComponents.push(componentInfo);
-                this.log(`  📦 컴포넌트 포함: ${componentName}`, 'verbose');
-            } else {
-                this.log(`  📋 컴포넌트 제외: ${componentName}`, 'verbose');
-            }
-        }
-        
-        this.log(`📊 ${allComponents.length}개 중 ${usedComponents.length}개 컴포넌트 포함`, 'info');
-        
-        return usedComponents;
-    }
-
-    // 카멜케이스를 케밥케이스로 변환 (예: ButtonComponent -> button-component)
-    camelToKebab(str) {
-        return str.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase();
-    }
-
-    async loadTemplate(routeName) {
-        const templatePath = path.resolve(this.config.srcPath, 'views', `${routeName}.html`);
-        return await fs.readFile(templatePath, 'utf8');
-    }
-
-    async loadLogic(routeName) {
-        const logicPath = path.resolve(this.config.srcPath, 'logic', `${routeName}.js`);
-        const absolutePath = 'file://' + logicPath.replace(/\\/g, '/');
-        
-        // 캐시 무효화
-        delete require.cache[require.resolve(logicPath)];
-        
-        try {
-            const module = await import(absolutePath);
-            return module.default || {};
-        } catch (error) {
-            throw new Error(`로직 파일 로드 실패: ${error.message}`);
-        }
-    }
-
-    async loadStyle(routeName) {
-        const stylePath = path.resolve(this.config.srcPath, 'styles', `${routeName}.css`);
-        return await fs.readFile(stylePath, 'utf8');
-    }
-
-    async loadLayoutForRoute(routeName) {
-        // 로직에서 레이아웃 정보 확인
-        try {
-            const logic = await this.loadLogic(routeName);
-            const layoutName = logic.layout || 'default';
-            return await this.loadLayout(layoutName);
-        } catch (error) {
-            return null;
-        }
-    }
-
-    async loadLayout(layoutName) {
-        const layoutPath = path.resolve(this.config.srcPath, 'layouts', `${layoutName}.html`);
-        return await fs.readFile(layoutPath, 'utf8');
-    }
-
-    async loadComponents() {
-        const componentsPath = path.resolve(this.config.srcPath, 'components');
-        
-        if (!await this.exists(componentsPath)) {
-            return [];
-        }
-
-        const components = [];
-        const files = await fs.readdir(componentsPath);
-        
-        for (const file of files) {
-            if (!file.endsWith('.js')) continue;
-            
-            const componentName = path.basename(file, '.js');
-            
-            // 특별한 파일들은 스킵
-            if (['ComponentLoader', 'components'].includes(componentName)) {
-                continue;
+            try {
+                logicContent = await this.readFile(paths.logic);
+            } catch (error) {
+                this.log(`${routeName} 로직 파일 읽기 실패: ${error.message}`, 'warn');
+                throw new Error(`로직 파일 필수: ${paths.logic}`);
             }
             
             try {
-                const componentPath = path.join(componentsPath, file);
-                const absolutePath = 'file://' + componentPath.replace(/\\/g, '/');
-                
-                // 캐시 무효화
-                delete require.cache[require.resolve(componentPath)];
-                
-                const module = await import(absolutePath);
-                const component = module.default || {};
-                
-                components.push({
-                    name: componentName,
-                    component: component,
-                    source: await fs.readFile(componentPath, 'utf8')
-                });
-                
-                this.log(`  📦 컴포넌트 로드: ${componentName}`, 'verbose');
+                viewContent = await this.readFile(paths.view, '<div>기본 뷰</div>');
             } catch (error) {
-                this.log(`⚠️ 컴포넌트 '${componentName}' 로드 실패: ${error.message}`, 'warn');
-            }
-        }
-        
-        return components;
-    }
-
-    async combineAndOptimizeRoute(routeName, sources) {
-        const { template, logic, style, layout } = sources;
-        
-        // 컴포넌트 데이터 생성 (컴포넌트 제외)
-        const componentData = {
-            ...logic,
-            _routeName: routeName,
-            _isBuilt: true,
-            _buildTime: new Date().toISOString(),
-            _buildVersion: this.getBuildVersion()
-        };
-
-        // 레이아웃과 템플릿 병합
-        let finalTemplate = template || `<div class="error">템플릿을 찾을 수 없습니다: ${routeName}</div>`;
-        if (layout && template) {
-            finalTemplate = this.mergeLayoutWithTemplate(layout, template);
-        }
-
-        // 코드 생성 (컴포넌트 없이 가벼운 라우트)
-        const output = this.generateLightweightRouteCode(routeName, componentData, finalTemplate, style);
-        
-        return this.config.minify ? this.minifyCode(output) : output;
-    }
-
-    generateLightweightRouteCode(routeName, componentData, template, style) {
-        const lines = [];
-        
-        // 헤더 코멘트
-        lines.push(`/**`);
-        lines.push(` * ViewLogic 경량 라우트: ${routeName}`);
-        lines.push(` * 빌드 시간: ${componentData._buildTime}`);
-        lines.push(` * 빌드 버전: ${componentData._buildVersion}`);
-        lines.push(` * 컴포넌트: 통합 components.js 사용`);
-        lines.push(` */`);
-        lines.push('');
-        
-        // 스타일 자동 적용 (최적화된 방식)
-        if (style && style.trim()) {
-            lines.push('// 스타일 자동 적용');
-            lines.push(`const STYLE_ID = 'route-style-${routeName}';`);
-            lines.push(`const STYLE_CONTENT = \`${this.escapeTemplate(style)}\`;`);
-            lines.push('');
-            lines.push('if (typeof document !== "undefined" && !document.getElementById(STYLE_ID)) {');
-            lines.push('    const styleElement = document.createElement("style");');
-            lines.push('    styleElement.id = STYLE_ID;');
-            lines.push('    styleElement.textContent = STYLE_CONTENT;');
-            lines.push('    document.head.appendChild(styleElement);');
-            lines.push('}');
-            lines.push('');
-        }
-
-        // Vue 컴포넌트 정의 (가벼운 버전)
-        lines.push('const component = {');
-        
-        for (const [key, value] of Object.entries(componentData)) {
-            if (key === 'template') continue; // 템플릿은 별도 처리
-            
-            if (typeof value === 'function') {
-                const funcStr = value.toString();
-                // 함수 이름이 중복되지 않도록 처리
-                if (funcStr.startsWith(`${key}(`)) {
-                    lines.push(`    ${funcStr},`);
-                } else {
-                    lines.push(`    ${key}: ${funcStr},`);
-                }
-            } else if (key === 'methods' && typeof value === 'object' && value !== null) {
-                lines.push(`    methods: {`);
-                for (const [methodKey, methodValue] of Object.entries(value)) {
-                    if (typeof methodValue === 'function') {
-                        const funcStr = methodValue.toString();
-                        // 함수 이름이 중복되지 않도록 처리하고, async 함수 처리
-                        if (funcStr.startsWith(`${methodKey}(`)) {
-                            // 함수 이름이 이미 있는 경우 (예: handleAction() { ... })
-                            lines.push(`        ${funcStr},`);
-                        } else if (funcStr.startsWith(`async ${methodKey}(`)) {
-                            // async 함수인 경우 (예: async handleAction() { ... })
-                            lines.push(`        ${funcStr},`);
-                        } else {
-                            // 일반적인 경우 (예: function() { ... } 또는 () => { ... })
-                            lines.push(`        ${methodKey}: ${funcStr},`);
-                        }
-                    }
-                }
-                lines.push('    },');
-            } else if (key === 'computed' && typeof value === 'object' && value !== null) {
-                lines.push(`    computed: {`);
-                for (const [computedKey, computedValue] of Object.entries(value)) {
-                    if (typeof computedValue === 'function') {
-                        const funcStr = computedValue.toString();
-                        // 함수 이름이 중복되지 않도록 처리
-                        if (funcStr.startsWith(`${computedKey}(`)) {
-                            lines.push(`        ${funcStr},`);
-                        } else {
-                            lines.push(`        ${computedKey}: ${funcStr},`);
-                        }
-                    }
-                }
-                lines.push('    },');
-            } else if (key === 'watch' && typeof value === 'object' && value !== null) {
-                lines.push(`    watch: {`);
-                for (const [watchKey, watchValue] of Object.entries(value)) {
-                    if (typeof watchValue === 'function') {
-                        const funcStr = watchValue.toString();
-                        // 함수 이름이 중복되지 않도록 처리
-                        if (funcStr.startsWith(`${watchKey}(`)) {
-                            lines.push(`        ${funcStr},`);
-                        } else {
-                            lines.push(`        ${watchKey}: ${funcStr},`);
-                        }
-                    } else if (typeof watchValue === 'object' && watchValue !== null) {
-                        lines.push(`        ${watchKey}: ${JSON.stringify(watchValue)},`);
-                    }
-                }
-                lines.push('    },');
-            } else {
-                lines.push(`    ${key}: ${JSON.stringify(value)},`);
-            }
-        }
-        
-        lines.push('};');
-        lines.push('');
-        
-        // 템플릿 설정
-        lines.push(`component.template = \`${this.escapeTemplate(template)}\`;`);
-        lines.push('');
-        
-        // Export
-        lines.push('export default component;');
-        
-        return lines.join('\n');
-    }
-
-    generateOptimizedCode(routeName, componentData, template, style, components = []) {
-        const lines = [];
-        
-        // 헤더 코멘트
-        lines.push(`/**`);
-        lines.push(` * ViewLogic 빌드된 라우트: ${routeName}`);
-        lines.push(` * 빌드 시간: ${componentData._buildTime}`);
-        lines.push(` * 빌드 버전: ${componentData._buildVersion}`);
-        if (components.length > 0) {
-            lines.push(` * 포함된 컴포넌트: ${components.map(c => c.name).join(', ')}`);
-        }
-        lines.push(` */`);
-        lines.push('');
-        
-        // 인라인 컴포넌트들 (독립적으로 동작)
-        if (components && components.length > 0) {
-            lines.push('// 인라인 컴포넌트들');
-            components.forEach(comp => {
-                lines.push(`// Component: ${comp.name}`);
-                lines.push(`const ${comp.name}Component = ${this.serializeVueComponent(comp.component)};`);
-            });
-            lines.push('');
-            
-            // 컴포넌트 등록 함수
-            lines.push('// 컴포넌트 자동 등록 함수');
-            lines.push('const registerInlineComponents = (vueApp) => {');
-            lines.push('    if (!vueApp || typeof vueApp.component !== "function") return;');
-            components.forEach(comp => {
-                lines.push(`    vueApp.component('${comp.name}', ${comp.name}Component);`);
-            });
-            lines.push('};');
-            lines.push('');
-        }
-
-        // 스타일 자동 적용 (최적화된 방식)
-        if (style && style.trim()) {
-            lines.push('// 스타일 자동 적용');
-            lines.push(`const STYLE_ID = 'route-style-${routeName}';`);
-            lines.push(`const STYLE_CONTENT = \`${this.escapeTemplate(style)}\`;`);
-            lines.push('');
-            lines.push('if (typeof document !== \'undefined\' && !document.getElementById(STYLE_ID)) {');
-            lines.push('    const styleElement = document.createElement(\'style\');');
-            lines.push('    styleElement.id = STYLE_ID;');
-            lines.push('    styleElement.textContent = STYLE_CONTENT;');
-            lines.push('    document.head.appendChild(styleElement);');
-            lines.push('}');
-            lines.push('');
-        }
-
-        // Vue 컴포넌트 정의 (최적화된 직렬화)
-        lines.push('const component = {');
-        
-        for (const [key, value] of Object.entries(componentData)) {
-            if (key === 'template') continue; // 템플릿은 별도 처리
-            
-            if (typeof value === 'function') {
-                const funcStr = value.toString();
-                // 함수 이름이 중복되지 않도록 처리
-                if (funcStr.startsWith(`${key}(`)) {
-                    lines.push(`    ${funcStr},`);
-                } else {
-                    lines.push(`    ${key}: ${funcStr},`);
-                }
-            } else if (key === 'methods' && typeof value === 'object' && value !== null) {
-                lines.push(`    methods: {`);
-                for (const [methodKey, methodValue] of Object.entries(value)) {
-                    if (typeof methodValue === 'function') {
-                        const funcStr = methodValue.toString();
-                        // 함수 이름이 중복되지 않도록 처리하고, async 함수 처리
-                        if (funcStr.startsWith(`${methodKey}(`)) {
-                            // 함수 이름이 이미 있는 경우 (예: handleAction() { ... })
-                            lines.push(`        ${funcStr},`);
-                        } else if (funcStr.startsWith(`async ${methodKey}(`)) {
-                            // async 함수인 경우 (예: async handleAction() { ... })
-                            lines.push(`        ${funcStr},`);
-                        } else {
-                            // 일반적인 경우 (예: function() { ... } 또는 () => { ... })
-                            lines.push(`        ${methodKey}: ${funcStr},`);
-                        }
-                    }
-                }
-                lines.push('    },');
-            } else if (key === 'computed' && typeof value === 'object' && value !== null) {
-                lines.push(`    computed: {`);
-                for (const [computedKey, computedValue] of Object.entries(value)) {
-                    if (typeof computedValue === 'function') {
-                        const funcStr = computedValue.toString();
-                        // 함수 이름이 중복되지 않도록 처리
-                        if (funcStr.startsWith(`${computedKey}(`)) {
-                            lines.push(`        ${funcStr},`);
-                        } else {
-                            lines.push(`        ${computedKey}: ${funcStr},`);
-                        }
-                    }
-                }
-                lines.push('    },');
-            } else if (key === 'watch' && typeof value === 'object' && value !== null) {
-                lines.push(`    watch: {`);
-                for (const [watchKey, watchValue] of Object.entries(value)) {
-                    if (typeof watchValue === 'function') {
-                        const funcStr = watchValue.toString();
-                        // 함수 이름이 중복되지 않도록 처리
-                        if (funcStr.startsWith(`${watchKey}(`)) {
-                            lines.push(`        ${funcStr},`);
-                        } else {
-                            lines.push(`        ${watchKey}: ${funcStr},`);
-                        }
-                    } else if (typeof watchValue === 'object' && watchValue !== null) {
-                        lines.push(`        ${watchKey}: ${JSON.stringify(watchValue)},`);
-                    }
-                }
-                lines.push('    },');
-            } else {
-                lines.push(`    ${key}: ${JSON.stringify(value)},`);
-            }
-        }
-        
-        lines.push('};');
-        lines.push('');
-        
-        // 템플릿 설정
-        lines.push(`component.template = \`${this.escapeTemplate(template)}\`;`);
-        lines.push('');
-        
-        // 컴포넌트 등록 함수 추가
-        if (components && components.length > 0) {
-            lines.push('// 빌드된 컴포넌트 등록 메서드 추가');
-            lines.push('component.registerInlineComponents = registerInlineComponents;');
-            lines.push('');
-        }
-        
-        // Export
-        lines.push('export default component;');
-        
-        return lines.join('\n');
-    }
-
-    mergeLayoutWithTemplate(layout, template) {
-        // 다양한 slot 패턴 지원
-        const slotPatterns = [
-            { pattern: /{{ content }}/s, replacement: template },
-            { pattern: /(<div class="main-content">).*?(<\/div>\s*<\/main>)/s, replacement: `$1${template}$2` }
-        ];
-        
-        for (const { pattern, replacement } of slotPatterns) {
-            if (pattern.test(layout)) {
-                return layout.replace(pattern, replacement);
-            }
-        }
-        
-        // 기본 fallback
-        return `${layout}\n${template}`;
-    }
-
-    escapeTemplate(str) {
-        if (!str) return '';
-        return str
-            .replace(/\\/g, '\\\\')
-            .replace(/`/g, '\\`')
-            .replace(/\$/g, '\\$')
-            .replace(/\r\n/g, '\\n')
-            .replace(/\n/g, '\\n')
-            .replace(/\r/g, '\\r');
-    }
-
-    serializeVueComponent(component) {
-        if (!component) return '{}';
-        
-        const lines = ['{'];
-        
-        for (const [key, value] of Object.entries(component)) {
-            if (typeof value === 'function') {
-                // 함수는 toString()으로 직렬화
-                lines.push(`    ${value.toString()},`);
-            } else if (key === 'methods' && typeof value === 'object' && value !== null) {
-                // methods 객체 처리
-                lines.push(`    methods: {`);
-                for (const [methodKey, methodValue] of Object.entries(value)) {
-                    if (typeof methodValue === 'function') {
-                        const funcStr = methodValue.toString();
-                        // 함수 이름이 중복되지 않도록 처리, async 함수 고려
-                        if (funcStr.startsWith(`${methodKey}(`) || funcStr.startsWith(`async ${methodKey}(`)) {
-                            lines.push(`        ${funcStr},`);
-                        } else {
-                            lines.push(`        ${methodKey}: ${funcStr},`);
-                        }
-                    }
-                }
-                lines.push('    },');
-            } else if (key === 'computed' && typeof value === 'object' && value !== null) {
-                // computed 객체 처리
-                lines.push(`    computed: {`);
-                for (const [computedKey, computedValue] of Object.entries(value)) {
-                    if (typeof computedValue === 'function') {
-                        const funcStr = computedValue.toString();
-                        // 함수 이름이 중복되지 않도록 처리
-                        if (funcStr.startsWith(`${computedKey}(`)) {
-                            lines.push(`        ${funcStr},`);
-                        } else {
-                            lines.push(`        ${computedKey}: ${funcStr},`);
-                        }
-                    }
-                }
-                lines.push('    },');
-            } else if (key === 'watch' && typeof value === 'object' && value !== null) {
-                // watch 객체 처리
-                lines.push(`    watch: {`);
-                for (const [watchKey, watchValue] of Object.entries(value)) {
-                    if (typeof watchValue === 'function') {
-                        const funcStr = watchValue.toString();
-                        // 함수 이름이 중복되지 않도록 처리
-                        if (funcStr.startsWith(`${watchKey}(`)) {
-                            lines.push(`        ${funcStr},`);
-                        } else {
-                            lines.push(`        ${watchKey}: ${funcStr},`);
-                        }
-                    } else if (typeof watchValue === 'object' && watchValue !== null) {
-                        // watch 객체 내의 handler, deep, immediate 등 처리
-                        lines.push(`        ${watchKey}: {`);
-                        for (const [propKey, propValue] of Object.entries(watchValue)) {
-                            if (propKey === 'handler' && typeof propValue === 'function') {
-                                const handlerStr = propValue.toString();
-                                // handler 함수는 이름이 중복되지 않도록 처리
-                                if (handlerStr.startsWith('handler(')) {
-                                    lines.push(`            ${handlerStr},`);
-                                } else {
-                                    lines.push(`            handler: ${handlerStr},`);
-                                }
-                            } else {
-                                lines.push(`            ${propKey}: ${JSON.stringify(propValue)},`);
-                            }
-                        }
-                        lines.push(`        },`);
-                    }
-                }
-                lines.push('    },');
-            } else if (typeof value === 'object' && value !== null) {
-                // props 객체는 특별 처리 (함수 기본값 지원)
-                if (key === 'props') {
-                    lines.push(`    props: {`);
-                    for (const [propKey, propValue] of Object.entries(value)) {
-                        if (typeof propValue === 'object' && propValue !== null) {
-                            lines.push(`        ${propKey}: {`);
-                            for (const [propAttr, propAttrValue] of Object.entries(propValue)) {
-                                if (propAttr === 'default' && typeof propAttrValue === 'function') {
-                                    // 함수 기본값은 toString()으로 직렬화
-                                    lines.push(`            ${propAttr}: ${propAttrValue.toString()},`);
-                                } else if (propAttr === 'type') {
-                                    // type 속성은 특별 처리 (생성자 함수)
-                                    if (Array.isArray(propAttrValue)) {
-                                        const typeNames = propAttrValue.map(t => t.name || 'Object').join(', ');
-                                        lines.push(`            ${propAttr}: [${propAttrValue.map(t => t.name || 'Object').join(', ')}],`);
-                                    } else if (typeof propAttrValue === 'function') {
-                                        lines.push(`            ${propAttr}: ${propAttrValue.name},`);
-                                    } else {
-                                        lines.push(`            ${propAttr}: ${JSON.stringify(propAttrValue)},`);
-                                    }
-                                } else if (propAttr === 'validator' && typeof propAttrValue === 'function') {
-                                    // validator 함수도 직렬화
-                                    lines.push(`            ${propAttr}: ${propAttrValue.toString()},`);
-                                } else {
-                                    lines.push(`            ${propAttr}: ${JSON.stringify(propAttrValue)},`);
-                                }
-                            }
-                            lines.push(`        },`);
-                        } else {
-                            lines.push(`        ${propKey}: ${JSON.stringify(propValue)},`);
-                        }
-                    }
-                    lines.push('    },');
-                } else {
-                    // 일반 객체는 JSON.stringify 사용
-                    lines.push(`    ${key}: ${JSON.stringify(value)},`);
-                }
-            } else {
-                // 원시 타입
-                lines.push(`    ${key}: ${JSON.stringify(value)},`);
-            }
-        }
-        
-        lines.push('}');
-        return lines.join('\n');
-    }
-
-    minifyCode(code) {
-        return code
-            .replace(/\/\*[\s\S]*?\*\//g, '') // 블록 주석 제거
-            .replace(/\/\/.*$/gm, '')         // 라인 주석 제거  
-            .replace(/^\s+/gm, '')            // 행 시작 공백 제거
-            .replace(/\s*\n\s*/g, '\n')       // 빈 줄 정리
-            .replace(/\s*{\s*/g, '{')         // 중괄호 정리
-            .replace(/\s*}\s*/g, '}')
-            .replace(/\s*;\s*/g, ';')         // 세미콜론 정리
-            .trim();
-    }
-
-    async saveRoute(routeName, content) {
-        const filePath = path.resolve(this.config.routesPath, `${routeName}.js`);
-        await fs.writeFile(filePath, content, 'utf8');
-        
-        if (this.config.sourceMap) {
-            await this.generateSourceMap(routeName, content);
-        }
-    }
-
-    async generateSourceMap(routeName, content) {
-        // 간단한 소스맵 생성
-        const sourceMap = {
-            version: 3,
-            file: `${routeName}.js`,
-            sourceRoot: "",
-            sources: [
-                `../src/logic/${routeName}.js`,
-                `../src/views/${routeName}.html`,
-                `../src/styles/${routeName}.css`
-            ],
-            names: [],
-            mappings: "AAAA" // 기본 매핑
-        };
-        
-        const sourceMapPath = path.resolve(this.config.routesPath, `${routeName}.js.map`);
-        await fs.writeFile(sourceMapPath, JSON.stringify(sourceMap, null, 2));
-    }
-
-    async postBuild() {
-        // 통합 컴포넌트 파일 생성
-        await this.generateUnifiedComponents();
-        
-        // Core 파일들 압축
-        await this.buildCoreAssets();
-        
-        if (this.config.generateManifest) {
-            await this.generateManifest();
-        }
-        
-        if (this.config.optimizeAssets) {
-            await this.optimizeAssets();
-        }
-    }
-
-    async generateUnifiedComponents() {
-        this.log('🔧 통합 컴포넌트 파일 생성 중...', 'info');
-        
-        try {
-            const allComponents = await this.loadComponents();
-            
-            if (allComponents.length === 0) {
-                this.log('📦 컴포넌트가 없어 components.js를 생성하지 않습니다.', 'verbose');
-                return;
+                this.log(`${routeName} 뷰 파일 읽기 실패, 기본값 사용: ${error.message}`, 'warn');
+                viewContent = '<div>기본 뷰</div>';
             }
             
-            const componentsCode = this.generateUnifiedComponentsCode(allComponents);
-            const componentsPath = path.resolve(this.config.routesPath, 'components.js');
+            try {
+                styleContent = await this.readFile(paths.style, '');
+            } catch (error) {
+                this.log(`${routeName} 스타일 파일 읽기 실패, 기본값 사용: ${error.message}`, 'warn');
+                styleContent = '';
+            }
             
-            await fs.writeFile(componentsPath, componentsCode, 'utf8');
+            // logicContent에서 직접 layout 속성 체크
+            let layoutName = 'default'; // 기본값
             
-            this.log(`✅ 통합 컴포넌트 파일 생성 완료: ${allComponents.length}개 컴포넌트`, 'info');
+            // layout 속성 추출 (문자열 패턴 매칭)
+            const layoutMatch = logicContent.match(/layout:\s*['"`]([^'"`]*)['"`]/);
+            const layoutNullMatch = logicContent.match(/layout:\s*null/);
+            
+            if (layoutNullMatch) {
+                layoutName = null;
+                this.log(`${routeName} 레이아웃 사용 안함 (layout: null)`, 'info');
+            } else if (layoutMatch) {
+                layoutName = layoutMatch[1];
+            }
+                
+            if (layoutName) {
+                try {
+                    const layoutPath = path.join(this.config.srcPath, 'layouts', `${layoutName}.html`);
+                    const layoutContent = await this.readFile(layoutPath);
+                    // 레이아웃의 {{ content }} 부분을 실제 뷰 콘텐츠로 대체
+                    viewContent = layoutContent.replace(/\{\{\s*content\s*\}\}/g, viewContent);
+                    this.log(`${routeName} 레이아웃 '${layoutName}' 적용 완료`, 'info');
+                } catch (error) {
+                    this.log(`${routeName} 레이아웃 '${layoutName}' 로드 실패, 뷰만 사용: ${error.message}`, 'warn');
+                }
+            }
+            
+            // 최종 파일 생성
+            try {
+                const finalContent = await this.generateRouteFile(routeName, logicContent, viewContent, styleContent);
+                
+                // 파일 쓰기
+                const outputPath = path.join(this.config.routesPath, `${routeName}.js`);
+                await fs.writeFile(outputPath, finalContent);
+                
+                // 생성된 파일 검증
+                const writtenContent = await fs.readFile(outputPath, 'utf8');
+                if (writtenContent.length < 100) {
+                    throw new Error('생성된 파일이 너무 작음 (손상된 것으로 추정)');
+                }
+                
+            } catch (error) {
+                this.log(`${routeName} 파일 생성 실패: ${error.message}`, 'error');
+                throw error;
+            }
+            
+            this.stats.routesBuilt++;
+            this.log(`${routeName} 빌드 완료 ✓`, 'success');
             
         } catch (error) {
-            this.log(`❌ 통합 컴포넌트 파일 생성 실패: ${error.message}`, 'error');
+            this.stats.routesFailed++;
+            this.log(`${routeName} 빌드 실패: ${error.message}`, 'error');
+            this.log(`${routeName} 상세 오류: ${error.stack}`, 'error');
+            
+            // 폴백 생성
+            await this.createFallback(routeName, error.message);
+        }
+    }
+    
+    async readFile(filePath, defaultContent = null) {
+        try {
+            return await fs.readFile(filePath, 'utf8');
+        } catch (error) {
+            if (defaultContent !== null) {
+                return defaultContent;
+            }
             throw error;
         }
     }
-
-    generateUnifiedComponentsCode(components) {
+    
+    async generateRouteFile(routeName, logicContent, viewContent, styleContent) {
         const lines = [];
         
-        // 헤더 코멘트
-        lines.push('/**');
-        lines.push(' * ViewLogic 통합 컴포넌트 시스템');
-        lines.push(` * 빌드 시간: ${new Date().toISOString()}`);
-        lines.push(` * 빌드 버전: ${this.getBuildVersion()}`);
-        lines.push(` * 포함된 컴포넌트: ${components.map(c => c.name).join(', ')}`);
-        lines.push(' */');
-        lines.push('');
-        
-        // 개별 컴포넌트 정의
-        components.forEach(comp => {
-            lines.push(`// Component: ${comp.name}`);
-            lines.push(`const ${comp.name}Component = ${this.serializeVueComponent(comp.component)};`);
+        // 스타일 추가 (압축 후 JSON.stringify로 자동 이스케이핑)
+        if (styleContent.trim()) {
+            const minifiedStyle = this.minifyCSS(styleContent);
+            lines.push(`const STYLE_ID = 'route-style-${routeName}';`);
+            lines.push(`const STYLE_CONTENT = ${JSON.stringify(minifiedStyle)};`);
+            lines.push(`if (typeof document !== "undefined" && !document.getElementById(STYLE_ID)) {`);
+            lines.push(`  const styleEl = document.createElement("style");`);
+            lines.push(`  styleEl.id = STYLE_ID;`);
+            lines.push(`  styleEl.textContent = STYLE_CONTENT;`);
+            lines.push(`  document.head.appendChild(styleEl);`);
+            lines.push(`}`);
             lines.push('');
-        });
-        
-        // 컴포넌트 등록 함수
-        lines.push('// 글로벌 컴포넌트 등록 함수');
-        lines.push('export function registerComponents(vueApp) {');
-        lines.push('    if (!vueApp || typeof vueApp.component !== "function") {');
-        lines.push('        console.warn("Invalid Vue app instance provided to registerComponents");');
-        lines.push('        return;');
-        lines.push('    }');
-        lines.push('');
-        components.forEach(comp => {
-            lines.push(`    vueApp.component('${comp.name}', ${comp.name}Component);`);
-        });
-        lines.push('');
-        lines.push('    console.log("📦 ViewLogic 컴포넌트 시스템 등록 완료:", [');
-        lines.push(`        ${components.map(c => `"${c.name}"`).join(', ')}`);
-        lines.push('    ]);');
-        lines.push('}');
-        lines.push('');
-        
-        // 컴포넌트 맵 export
-        lines.push('// 컴포넌트 맵');
-        lines.push('export const components = {');
-        components.forEach(comp => {
-            lines.push(`    ${comp.name}: ${comp.name}Component,`);
-        });
-        lines.push('};');
-        lines.push('');
-        
-        // 기본 export
-        lines.push('export default {');
-        lines.push('    registerComponents,');
-        lines.push('    components');
-        lines.push('};');
-        
-        return lines.join('\n');
-    }
-
-    async buildCoreAssets() {
-        this.log('🔧 Core 파일들 압축 중...', 'info');
-        
-        try {
-            // router.js 압축
-            await this.buildRouterJs();
-            
-            // base.css 압축
-            await this.buildBaseCss();
-            
-            // i18n.js 압축 (존재하는 경우)
-            await this.buildI18nJs();
-            
-            this.log('✅ Core 파일들 압축 완료', 'info');
-            
-        } catch (error) {
-            this.log(`❌ Core 파일 압축 실패: ${error.message}`, 'error');
-            this.stats.warnings.push(`Core assets build failed: ${error.message}`);
-        }
-    }
-
-    async buildRouterJs() {
-        const routerPath = path.resolve('./js/router.js');
-        const outputPath = path.resolve('./js/router.prod.js');
-        
-        if (await this.exists(routerPath)) {
-            const content = await fs.readFile(routerPath, 'utf8');
-            // 압축하지 않고 원본 내용 그대로 복사
-            await fs.writeFile(outputPath, content, 'utf8');
-            this.log('📦 router.prod.js 생성 완료 (압축 없음)', 'verbose');
-        } else {
-            this.log('⚠️ router.js 파일을 찾을 수 없습니다', 'warn');
-        }
-    }
-
-    async buildBaseCss() {
-        const cssPath = path.resolve('./css/base.css');
-        const outputPath = path.resolve('./css/base.prod.css');
-        
-        if (await this.exists(cssPath)) {
-            const content = await fs.readFile(cssPath, 'utf8');
-            // 압축하지 않고 원본 내용 그대로 복사
-            await fs.writeFile(outputPath, content, 'utf8');
-            this.log('📦 base.prod.css 생성 완료 (압축 없음)', 'verbose');
-        } else {
-            this.log('⚠️ base.css 파일을 찾을 수 없습니다', 'warn');
-        }
-    }
-
-    async buildI18nJs() {
-        const i18nPath = path.resolve('./js/i18n.js');
-        const outputPath = path.resolve('./js/i18n.prod.js');
-        
-        if (await this.exists(i18nPath)) {
-            const content = await fs.readFile(i18nPath, 'utf8');
-            // 압축하지 않고 원본 내용 그대로 복사
-            await fs.writeFile(outputPath, content, 'utf8');
-            this.log('📦 i18n.prod.js 생성 완료 (압축 없음)', 'verbose');
-        }
-    }
-
-    minifyJavaScript(code) {
-        // 문자열과 템플릿 리터럴 보호
-        const stringStore = [];
-        let tempCode = code;
-        
-        // 템플릿 리터럴 보호 (백틱 문자열)
-        tempCode = tempCode.replace(/`([^`\\]|\\.|\\`)*`/gs, (match) => {
-            const index = stringStore.length;
-            stringStore.push(match);
-            return `__STRING_${index}__`;
-        });
-        
-        // 일반 문자열 보호
-        tempCode = tempCode.replace(/'([^'\\]|\\.)*'/g, (match) => {
-            const index = stringStore.length;
-            stringStore.push(match);
-            return `__STRING_${index}__`;
-        });
-        
-        tempCode = tempCode.replace(/"([^"\\]|\\.)*"/g, (match) => {
-            const index = stringStore.length;
-            stringStore.push(match);
-            return `__STRING_${index}__`;
-        });
-        
-        // 정규식 보호
-        tempCode = tempCode.replace(/\/(?![*\/])([^\/\n\\]|\\.)+\/[gimuy]*/g, (match) => {
-            const index = stringStore.length;
-            stringStore.push(match);
-            return `__STRING_${index}__`;
-        });
-        
-        // 주석 제거
-        tempCode = tempCode.replace(/\/\*[\s\S]*?\*\//g, ''); // 블록 주석
-        tempCode = tempCode.replace(/\/\/.*$/gm, '');         // 라인 주석
-        
-        // 안전한 공백 정리
-        tempCode = tempCode.replace(/^\s+/gm, '');            // 행 시작 공백
-        tempCode = tempCode.replace(/\s*\n\s*/g, '\n');       // 줄바꿈 정리
-        tempCode = tempCode.replace(/\n+/g, '\n');            // 연속 줄바꿈
-        
-        // 연산자 주변 공백 제거 (안전하게)
-        tempCode = tempCode.replace(/\s*([{}();,])\s*/g, '$1');
-        tempCode = tempCode.replace(/\s*:\s*/g, ':');
-        tempCode = tempCode.replace(/\s*\?\s*/g, '?');
-        
-        // 여러 공백을 하나로
-        tempCode = tempCode.replace(/\s+/g, ' ');
-        tempCode = tempCode.replace(/\n\s*/g, '\n');
-        
-        // 문자열 복원
-        for (let i = stringStore.length - 1; i >= 0; i--) {
-            tempCode = tempCode.replace(`__STRING_${i}__`, stringStore[i]);
         }
         
-        return tempCode.trim();
-    }
-
-    minifyCSS(code) {
-        return code
-            .replace(/\/\*[\s\S]*?\*\//g, '') // 주석 제거
-            .replace(/\s*{\s*/g, '{')         // 중괄호 정리
-            .replace(/\s*}\s*/g, '}')
-            .replace(/\s*;\s*/g, ';')         // 세미콜론 정리
-            .replace(/\s*:\s*/g, ':')         // 콜론 정리
-            .replace(/\s*,\s*/g, ',')         // 콤마 정리
-            .replace(/\s*>\s*/g, '>')         // 자식 선택자 정리
-            .replace(/\s*\+\s*/g, '+')        // 인접 선택자 정리
-            .replace(/\s*~\s*/g, '~')         // 일반 선택자 정리
-            .replace(/\s*\[\s*/g, '[')        // 속성 선택자 정리
-            .replace(/\s*\]\s*/g, ']')
-            .replace(/\s*\(\s*/g, '(')        // 괄호 정리
-            .replace(/\s*\)\s*/g, ')')
-            .replace(/\s+/g, ' ')             // 여러 공백을 하나로
-            .replace(/\n\s*/g, '')            // 줄바꿈과 공백 제거
+        // src 로직 파일을 그대로 사용 (파싱하지 않음)
+        // export default를 제거하고 const component =로 변경
+        let componentCode = logicContent
+            .replace(/export\s+default\s+/, 'const component = ')
             .trim();
-    }
-
-    async generateManifest() {
-        const manifest = {
-            buildTime: new Date().toISOString(),
-            buildVersion: this.getBuildVersion(),
-            routes: [],
-            stats: {
-                totalRoutes: this.stats.totalRoutes,
-                successRoutes: this.stats.successRoutes,
-                failedRoutes: this.stats.failedRoutes,
-                buildDuration: this.stats.endTime - this.stats.startTime
-            }
-        };
-        
-        // 빌드된 라우트 정보 수집
-        const routesDir = path.resolve(this.config.routesPath);
-        const files = await fs.readdir(routesDir);
-        
-        for (const file of files) {
-            if (!file.endsWith('.js')) continue;
             
-            const filePath = path.join(routesDir, file);
-            const stats = await fs.stat(filePath);
+        // 빌드 메타데이터 추가
+        componentCode = componentCode.replace(
+            /};?\s*$/, 
+            `,
+  _routeName: "${routeName}",
+  _isBuilt: true,
+  _buildTime: "${new Date().toISOString()}",
+  _buildVersion: "${this.config.version}"
+};`
+        );
+        
+        lines.push(componentCode);
+        lines.push('');
+        
+        // 템플릿 추가 (압축 후 JSON.stringify로 자동 이스케이핑)
+        const minifiedTemplate = this.minifyHTML(viewContent);
+        lines.push(`component.template = ${JSON.stringify(minifiedTemplate)};`);
+        lines.push('');
+        lines.push('export default component;');
+        
+        const fullCode = lines.join('\n');
+        
+        // JavaScript 코드 압축 (프로덕션 모드에서만)
+        if (process.env.NODE_ENV === 'production' || this.config.minify) {
+            return await this.minifyJavaScript(fullCode);
+        }
+        
+        return fullCode;
+    }
+    
+    async createFallback(routeName, originalError = '알 수 없는 오류') {
+        const fallbackContent = `const component = {
+  data() { 
+    return {
+      errorMessage: '${originalError.replace(/'/g, "\\'")}',
+      routeName: '${routeName}',
+      buildTime: '${new Date().toISOString()}'
+    }; 
+  },
+  mounted() { 
+    console.warn(\`\${this.routeName} 라우트가 폴백 모드로 실행 중입니다.\`);
+    console.error('원인:', this.errorMessage);
+    
+    // 5초 후 자동으로 홈으로 리다이렉트 (선택사항)
+    if (this.routeName !== 'home' && this.routeName !== '404') {
+      setTimeout(() => {
+        if (window.router && window.router.navigateTo) {
+          console.log('폴백 페이지에서 홈으로 리다이렉트...');
+          window.router.navigateTo('home');
+        }
+      }, 5000);
+    }
+  },
+  methods: {
+    goHome() {
+      if (window.router && window.router.navigateTo) {
+        window.router.navigateTo('home');
+      }
+    },
+    retry() {
+      window.location.reload();
+    }
+  },
+  _routeName: "${routeName}",
+  _isBuilt: true,
+  _isFallback: true,
+  _buildTime: "${new Date().toISOString()}",
+  _buildVersion: "${this.config.version}",
+  _originalError: "${originalError.replace(/"/g, '\\"')}"
+};
+
+component.template = \`<div style="padding: 2rem; text-align: center; background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px; margin: 2rem;">
+  <h2 style="color: #856404; margin-bottom: 1rem;">⚠️ \${routeName} 페이지 로드 오류</h2>
+  <p style="color: #856404; margin-bottom: 1rem;">이 페이지는 빌드 중 오류가 발생하여 폴백 모드로 로드되었습니다.</p>
+  <details style="text-align: left; margin: 1rem 0; padding: 1rem; background: #f8f9fa; border-radius: 4px;">
+    <summary style="cursor: pointer; font-weight: bold;">오류 세부사항</summary>
+    <pre style="margin-top: 0.5rem; font-size: 0.85rem; color: #e74c3c;">{{ errorMessage }}</pre>
+  </details>
+  <div style="margin-top: 1.5rem;">
+    <button @click="goHome" style="margin-right: 1rem; padding: 0.5rem 1rem; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">홈으로 이동</button>
+    <button @click="retry" style="padding: 0.5rem 1rem; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer;">페이지 새로고침</button>
+  </div>
+  <p style="font-size: 0.8rem; color: #6c757d; margin-top: 1rem;">빌드 시간: {{ buildTime }}</p>
+</div>\`;
+
+export default component;`;
+
+        try {
+            const outputPath = path.join(this.config.routesPath, `${routeName}.js`);
+            await fs.writeFile(outputPath, fallbackContent);
+            this.log(`${routeName} 향상된 폴백 페이지 생성 완료`, 'warn');
+        } catch (error) {
+            this.log(`${routeName} 폴백 생성도 실패: ${error.message}`, 'error');
             
-            manifest.routes.push({
-                name: path.basename(file, '.js'),
-                file: file,
-                size: stats.size,
-                modified: stats.mtime.toISOString()
-            });
-        }
-        
-        const manifestPath = path.resolve(this.config.routesPath, 'manifest.json');
-        await fs.writeFile(manifestPath, JSON.stringify(manifest, null, 2));
-        
-        this.log(`📋 매니페스트 생성: ${manifestPath}`, 'verbose');
-    }
-
-    async optimizeAssets() {
-        // CSS 최적화, 이미지 압축 등의 추가 최적화 작업
-        this.log('🔧 에셋 최적화 완료', 'verbose');
-    }
-
-    generateBuildReport(success) {
-        const duration = this.stats.endTime - this.stats.startTime;
-        const report = {
-            success,
-            duration,
-            totalRoutes: this.stats.totalRoutes,
-            successRoutes: this.stats.successRoutes,
-            failedRoutes: this.stats.failedRoutes,
-            warnings: this.stats.warnings,
-            errors: this.stats.errors,
-            timestamp: new Date().toISOString()
-        };
-        
-        // 콘솔 출력
-        console.log('\n' + '='.repeat(50));
-        console.log('📊 빌드 리포트');
-        console.log('='.repeat(50));
-        console.log(`상태: ${success ? '✅ 성공' : '❌ 실패'}`);
-        console.log(`소요시간: ${duration}ms`);
-        console.log(`총 라우트: ${this.stats.totalRoutes}`);
-        console.log(`성공: ${this.stats.successRoutes}`);
-        console.log(`실패: ${this.stats.failedRoutes}`);
-        
-        if (this.stats.warnings.length > 0) {
-            console.log(`경고: ${this.stats.warnings.length}개`);
-        }
-        
-        if (this.stats.errors.length > 0) {
-            console.log('\n❌ 오류:');
-            this.stats.errors.forEach((error, i) => {
-                console.log(`${i + 1}. ${error}`);
-            });
-        }
-        
-        console.log('='.repeat(50));
-        
-        return report;
-    }
-
-    // 유틸리티 메서드들
-    getBuildVersion() {
-        return require('./package.json').version || '1.0.0';
-    }
-
-    async generateRouteHash(routeName) {
-        const files = [
-            path.join(this.config.srcPath, 'logic', `${routeName}.js`),
-            path.join(this.config.srcPath, 'views', `${routeName}.html`),
-            path.join(this.config.srcPath, 'styles', `${routeName}.css`)
-        ];
-        
-        let combined = routeName;
-        for (const file of files) {
-            if (await this.exists(file)) {
-                const content = await fs.readFile(file, 'utf8');
-                combined += content;
+            // 최소한의 응급 폴백
+            const emergencyContent = `export default { 
+  template: '<div>Emergency Fallback: ${routeName}</div>',
+  _routeName: "${routeName}", _isFallback: true 
+};`;
+            
+            try {
+                await fs.writeFile(outputPath, emergencyContent);
+                this.log(`${routeName} 응급 폴백 생성됨`, 'warn');
+            } catch (emergencyError) {
+                this.log(`${routeName} 응급 폴백도 실패: ${emergencyError.message}`, 'error');
             }
         }
-        
-        return crypto.createHash('md5').update(combined).digest('hex');
     }
-
-    async hasRouteChanged(routeName) {
-        const currentHash = await this.generateRouteHash(routeName);
-        const previousHash = this.fileHashes.get(routeName);
-        
-        if (currentHash !== previousHash) {
-            this.fileHashes.set(routeName, currentHash);
-            return true;
-        }
-        
-        return false;
-    }
-
-    chunkArray(array, chunkSize) {
-        const chunks = [];
-        for (let i = 0; i < array.length; i += chunkSize) {
-            chunks.push(array.slice(i, i + chunkSize));
-        }
-        return chunks;
-    }
-
-    log(message, level = 'info') {
-        const levels = { error: '❌', warn: '⚠️', info: 'ℹ️', verbose: '🔍' };
-        
-        if (level === 'verbose' && !this.config.verbose) return;
-        
-        console.log(`${levels[level] || 'ℹ️'} ${message}`);
-    }
-
+    
     async ensureDirectory(dirPath) {
         try {
-            await fs.access(dirPath);
-        } catch {
             await fs.mkdir(dirPath, { recursive: true });
+        } catch (error) {
+            if (error.code !== 'EEXIST') {
+                throw error;
+            }
         }
     }
-
+    
     async cleanDirectory(dirPath) {
         try {
-            if (await this.exists(dirPath)) {
-                const files = await fs.readdir(dirPath);
-                await Promise.all(
-                    files
-                        .filter(file => file.endsWith('.js') || file.endsWith('.json'))
-                        .map(file => fs.unlink(path.join(dirPath, file)))
-                );
-            }
-        } catch (error) {
-            this.log(`디렉토리 정리 중 오류: ${error.message}`, 'warn');
-        }
-    }
-
-    async exists(filePath) {
-        try {
-            await fs.access(filePath);
-            return true;
-        } catch {
-            return false;
-        }
-    }
-
-    // 정보 조회 메서드들
-    async getBuildInfo() {
-        const info = {
-            lastBuild: null,
-            routes: [],
-            environment: 'production',
-            config: this.config,
-            manifest: null
-        };
-
-        try {
-            if (await this.exists(this.config.routesPath)) {
-                const files = await fs.readdir(this.config.routesPath);
-                info.routes = files
+            const files = await fs.readdir(dirPath);
+            await Promise.all(
+                files
                     .filter(file => file.endsWith('.js'))
-                    .map(file => path.basename(file, '.js'));
+                    .map(file => fs.unlink(path.join(dirPath, file)).catch(() => {}))
+            );
+        } catch (error) {
+            // 정리 실패는 무시
+        }
+    }
+    
+    async discoverRoutes() {
+        try {
+            const logicDir = path.join(this.config.srcPath, 'logic');
+            const files = await fs.readdir(logicDir);
+            
+            return files
+                .filter(file => file.endsWith('.js'))
+                .map(file => path.basename(file, '.js'))
+                .sort();
                 
-                // 매니페스트 정보 로드
-                const manifestPath = path.join(this.config.routesPath, 'manifest.json');
-                if (await this.exists(manifestPath)) {
-                    const manifestContent = await fs.readFile(manifestPath, 'utf8');
-                    info.manifest = JSON.parse(manifestContent);
-                    info.lastBuild = info.manifest.buildTime;
+        } catch (error) {
+            this.log(`라우트 검색 실패: ${error.message}`, 'error');
+            return [];
+        }
+    }
+    
+    async generateComponentsFile() {
+        try {
+            this.log('통합 컴포넌트 시스템 파일 생성 중...', 'info');
+            
+            // src/components 디렉토리의 모든 컴포넌트 파일 읽기
+            const componentsDir = path.join(this.config.srcPath, 'components');
+            const componentFiles = await fs.readdir(componentsDir);
+            const componentImports = [];
+            const componentRegistrations = [];
+            
+            // 각 컴포넌트 파일 처리
+            for (const file of componentFiles) {
+                if (file.endsWith('.js') && file !== 'ComponentLoader.js') {
+                    const componentName = path.basename(file, '.js');
+                    const componentPath = path.join(componentsDir, file);
+                    
+                    try {
+                        // 컴포넌트 파일 읽기
+                        const componentContent = await fs.readFile(componentPath, 'utf8');
+                        
+                        // export default를 찾아서 컴포넌트 객체 추출
+                        const componentCode = componentContent
+                            .replace(/export\s+default\s+/, '')
+                            .replace(/;\s*$/, '');
+                        
+                        // 컴포넌트를 components 객체에 추가
+                        componentImports.push(`
+// ${componentName} 컴포넌트
+const ${componentName} = ${componentCode};
+`);
+                        
+                        componentRegistrations.push(`        '${componentName}': ${componentName}`);
+                        
+                        this.log(`  - ${componentName} 컴포넌트 로드됨`, 'info');
+                        
+                    } catch (err) {
+                        this.log(`  - ${componentName} 컴포넌트 로드 실패: ${err.message}`, 'warn');
+                    }
                 }
             }
-        } catch (error) {
-            this.log(`빌드 정보 조회 실패: ${error.message}`, 'warn');
+            
+            const componentsContent = `/**
+ * ViewLogic 컴포넌트 레지스트리
+ * 자동 생성됨 - 수정하지 마세요
+ * 빌드 시간: ${new Date().toISOString()}
+ */
+
+// ============================================
+// 컴포넌트 정의 
+// ============================================
+${componentImports.join('\n')}
+
+// ============================================
+// 모든 컴포넌트 매핑
+// ============================================
+const components = {
+${componentRegistrations.join(',\n')}
+};
+
+// ============================================
+// 컴포넌트 자동 등록 시스템
+// ============================================
+function registerComponents(app) {
+    console.log('✅ ViewLogic 컴포넌트 등록 중...');
+    
+    let registeredCount = 0;
+    
+    // 모든 컴포넌트를 Vue 앱에 등록
+    for (const [name, component] of Object.entries(components)) {
+        if (component && component.name) {
+            if (app && app.component) {
+                app.component(name, component);
+                registeredCount++;
+            }
         }
-
-        return info;
     }
+    
+    console.log(\`✅ \${registeredCount}개 컴포넌트 등록 완료\`);
+    
+    return {
+        success: true,
+        componentsRegistered: registeredCount
+    };
+}
 
-    async clean() {
-        this.log('🧹 빌드 파일 정리 중...', 'info');
+// ============================================
+// 익스포트
+// ============================================
+
+// ES6 모듈 익스포트
+export { registerComponents, components };
+
+// 기본 export
+export default {
+    registerComponents,
+    components
+};
+
+// 글로벌 노출 (브라우저 직접 로드용)
+if (typeof window !== 'undefined') {
+    window.registerComponents = registerComponents;
+    window.ViewLogicComponents = components;
+    
+    console.log('🚀 ViewLogic 컴포넌트 레지스트리 로드됨');
+    console.log(\`   컴포넌트 수: \${Object.keys(components).length}개\`);
+}
+`;
+            
+            // _components.js 파일 생성 (압축 옵션 적용)
+            let finalComponentsContent = componentsContent;
+            
+            if (process.env.NODE_ENV === 'production' || this.config.minify) {
+                try {
+                    finalComponentsContent = await this.minifyJavaScript(componentsContent);
+                    this.log('_components.js 파일 압축 완료', 'info');
+                } catch (error) {
+                    this.log(`_components.js 압축 실패, 원본 사용: ${error.message}`, 'warn');
+                }
+            }
+            
+            await fs.writeFile(
+                path.join(this.config.routesPath, '_components.js'),
+                finalComponentsContent
+            );
+            
+            this.log('통합 컴포넌트 시스템 파일 생성 완료', 'success');
+            
+        } catch (error) {
+            this.log(`컴포넌트 시스템 파일 생성 실패: ${error.message}`, 'warn');
+        }
+    }
+    
+    async generateManifest(routes) {
+        const manifest = {
+            buildTime: new Date().toISOString(),
+            buildVersion: this.config.version,
+            routes: routes,
+            hasComponentsFile: true,
+            stats: {
+                routesBuilt: this.stats.routesBuilt,
+                routesFailed: this.stats.routesFailed,
+                buildDuration: Date.now() - this.stats.startTime
+            }
+        };
         
         try {
-            await this.cleanDirectory(this.config.routesPath);
-            this.buildCache.clear();
-            this.fileHashes.clear();
-            this.log('✅ 빌드 파일 정리 완료', 'info');
+            await fs.writeFile(
+                path.join(this.config.routesPath, 'manifest.json'),
+                JSON.stringify(manifest, null, 2)
+            );
         } catch (error) {
-            this.log(`빌드 파일 정리 실패: ${error.message}`, 'error');
-            throw error;
+            this.log(`매니페스트 생성 실패: ${error.message}`, 'warn');
         }
+    }
+    
+    printReport() {
+        const duration = Date.now() - this.stats.startTime;
+        const totalRoutes = this.stats.routesBuilt + this.stats.routesFailed;
+        
+        console.log('\n' + '='.repeat(50));
+        console.log('🏗️ ViewLogic 빌드 시스템 v1.0 리포트');
+        console.log('='.repeat(50));
+        console.log(`⏱️ 소요시간: ${duration}ms`);
+        console.log(`📊 총 라우트: ${totalRoutes}`);
+        console.log(`✅ 성공: ${this.stats.routesBuilt}`);
+        console.log(`❌ 실패: ${this.stats.routesFailed}`);
+        
+        if (this.stats.errors.length > 0) {
+            console.log(`💥 오류: ${this.stats.errors.length}개`);
+        }
+        
+        console.log('='.repeat(50));
     }
 }
 
-// CLI 실행 부분
+// CLI 처리
 async function main() {
     const args = process.argv.slice(2);
-    const command = args[0];
+    const command = args[0] || 'help';
+    const noDev = args.includes('--no-dev') || args.includes('-n');
     
-    const options = {
-        srcPath: './src',
-        routesPath: './routes',
-        minify: args.includes('--minify'),
-        sourceMap: args.includes('--source-map'),
-        watch: args.includes('--watch'),
-        verbose: args.includes('--verbose'),
-        generateManifest: !args.includes('--no-manifest'),
-        validateSources: !args.includes('--no-validate'),
-        optimizeAssets: args.includes('--optimize')
-    };
+    // 기본적으로 압축 활성화, --no-dev 플래그로 비활성화 가능
+    const builder = new ViewLogicBuilder({ minify: !noDev });
     
-    const builder = new ViewLogicBuilder(options);
-
-    try {
-        switch (command) {
-            case 'build':
-                const result = await builder.build();
-                if (!result.success) {
-                    process.exit(1);
-                }
-                break;
-                
-            case 'clean':
-                await builder.clean();
-                break;
-                
-            case 'info':
-                const info = await builder.getBuildInfo();
-                console.log('📊 빌드 정보:');
-                console.log(`  마지막 빌드: ${info.lastBuild || '없음'}`);
-                console.log(`  빌드된 라우트: ${info.routes.join(', ') || '없음'}`);
-                console.log(`  환경: ${info.environment}`);
-                if (info.manifest) {
-                    console.log(`  빌드 버전: ${info.manifest.buildVersion}`);
-                    console.log(`  빌드 시간: ${info.manifest.stats.buildDuration}ms`);
-                }
-                break;
-                
-            default:
-                console.log('🔧 ViewLogic 고급 빌더');
-                console.log('');
-                console.log('사용법:');
-                console.log('  node build.cjs build [옵션]     # 빌드 실행');
-                console.log('  node build.cjs clean            # 빌드 파일 정리');
-                console.log('  node build.cjs info             # 빌드 정보 확인');
-                console.log('');
-                console.log('옵션:');
-                console.log('  --minify          # 코드 압축');
-                console.log('  --source-map      # 소스맵 생성');
-                console.log('  --verbose         # 상세 로그');
-                console.log('  --watch           # 파일 변경 감시');
-                console.log('  --no-manifest     # 매니페스트 생성 비활성화');
-                console.log('  --no-validate     # 소스 파일 검증 비활성화');
-                console.log('  --optimize        # 에셋 최적화');
-        }
-    } catch (error) {
-        console.error('❌ 실행 중 오류:', error.message);
-        process.exit(1);
+    switch (command) {
+        case 'build':
+            const success = await builder.build();
+            process.exit(success ? 0 : 1);
+            break;
+            
+        case 'clean':
+            await builder.cleanDirectory(builder.config.routesPath);
+            console.log('✅ 정리 완료');
+            break;
+            
+        case 'help':
+        default:
+            console.log('🏗️ ViewLogic 빌드 시스템 v1.0\n');
+            console.log('사용법:');
+            console.log('  node build.cjs build              # 빌드 (기본: 압축 활성화)');
+            console.log('  node build.cjs build --no-dev     # 개발 빌드 (압축 비활성화)');
+            console.log('  node build.cjs clean              # 빌드 파일 정리');
+            break;
     }
 }
 
-// 직접 실행된 경우에만 main 함수 호출
 if (require.main === module) {
-    main();
+    main().catch(error => {
+        console.error('❌ 빌드 시스템 오류:', error.message);
+        process.exit(1);
+    });
 }
 
 module.exports = ViewLogicBuilder;

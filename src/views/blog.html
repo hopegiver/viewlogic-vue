@@ -1,0 +1,188 @@
+<div class="blog-page">
+
+    <!-- 검색 및 필터 -->
+    <div class="blog-controls">
+        <div class="search-section">
+            <input 
+                type="text" 
+                class="search-input" 
+                v-model="searchQuery"
+                @input="searchPosts"
+                placeholder="포스트 검색..."
+            >
+            <button class="search-btn">🔍</button>
+        </div>
+
+        <div class="filter-section">
+            <div class="category-filters">
+                <button 
+                    v-for="category in categories" 
+                    :key="category.id"
+                    class="category-btn"
+                    :class="{ active: selectedCategory === category.id }"
+                    @click="filterByCategory(category.id)"
+                >
+                    {{ category.name }} ({{ category.count }})
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 메인 콘텐츠 -->
+    <div class="blog-content">
+        <!-- 사이드바 -->
+        <aside class="blog-sidebar">
+            <!-- 인기 태그 -->
+            <div class="sidebar-section">
+                <h3>인기 태그</h3>
+                <div class="tag-cloud">
+                    <span 
+                        v-for="tag in popularTags" 
+                        :key="tag.name"
+                        class="tag"
+                        :class="{ active: selectedTags.includes(tag.name) }"
+                        @click="toggleTag(tag.name)"
+                        :style="{ fontSize: getTagSize(tag.count) + 'px' }"
+                    >
+                        {{ tag.name }}
+                    </span>
+                </div>
+            </div>
+
+            <!-- 최근 포스트 -->
+            <div class="sidebar-section">
+                <h3>최근 포스트</h3>
+                <div class="recent-posts">
+                    <div 
+                        v-for="post in recentPosts" 
+                        :key="post.id"
+                        class="recent-post"
+                        @click="goToPost(post.id)"
+                    >
+                        <img :src="post.thumbnail" :alt="post.title" class="recent-thumbnail">
+                        <div class="recent-info">
+                            <h4>{{ post.title }}</h4>
+                            <p class="recent-date">{{ formatDate(post.date) }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 아카이브 -->
+            <div class="sidebar-section">
+                <h3>아카이브</h3>
+                <div class="archive-list">
+                    <div 
+                        v-for="archive in archives" 
+                        :key="archive.month"
+                        class="archive-item"
+                        @click="filterByMonth(archive.month)"
+                    >
+                        {{ archive.month }} ({{ archive.count }})
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- 포스트 목록 -->
+        <main class="blog-main">
+            <div class="blog-stats">
+                <p>총 {{ filteredPosts.length }}개의 포스트</p>
+                <div class="sort-options">
+                    <select v-model="sortBy" @change="sortPosts" class="sort-select">
+                        <option value="date-desc">최신순</option>
+                        <option value="date-asc">오래된순</option>
+                        <option value="views">조회수순</option>
+                        <option value="title">제목순</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- 포스트 그리드 -->
+            <div class="posts-grid">
+                <article 
+                    v-for="post in paginatedPosts" 
+                    :key="post.id"
+                    class="post-card"
+                    @click="goToPost(post.id)"
+                >
+                    <div class="post-thumbnail">
+                        <img :src="post.thumbnail" :alt="post.title">
+                        <div class="post-category">{{ getCategoryName(post.category) }}</div>
+                    </div>
+
+                    <div class="post-content">
+                        <div class="post-meta">
+                            <span class="post-date">{{ formatDate(post.date) }}</span>
+                            <span class="post-author">by {{ post.author }}</span>
+                            <span class="post-views">👁 {{ post.views }}</span>
+                            <span class="post-reading-time">⏱ {{ post.readingTime }}분</span>
+                        </div>
+
+                        <h2 class="post-title">{{ post.title }}</h2>
+                        <p class="post-excerpt">{{ post.excerpt }}</p>
+
+                        <div class="post-tags">
+                            <span 
+                                v-for="tag in post.tags" 
+                                :key="tag"
+                                class="post-tag"
+                                @click.stop="toggleTag(tag)"
+                            >
+                                #{{ tag }}
+                            </span>
+                        </div>
+
+                        <div class="post-footer">
+                            <button class="read-more-btn">더 읽기 →</button>
+                            <div class="post-actions">
+                                <button class="like-btn" @click.stop="toggleLike(post)" :class="{ liked: post.isLiked }">
+                                    ❤️ {{ post.likes }}
+                                </button>
+                                <button class="bookmark-btn" @click.stop="toggleBookmark(post)" :class="{ bookmarked: post.isBookmarked }">
+                                    📖
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </article>
+            </div>
+
+            <!-- 페이지네이션 -->
+            <div class="pagination" v-if="totalPages > 1">
+                <button 
+                    class="page-btn prev" 
+                    @click="changePage(currentPage - 1)"
+                    :disabled="currentPage === 1"
+                >
+                    ← 이전
+                </button>
+
+                <button 
+                    v-for="page in visiblePages" 
+                    :key="page"
+                    class="page-btn"
+                    :class="{ active: page === currentPage }"
+                    @click="changePage(page)"
+                >
+                    {{ page }}
+                </button>
+
+                <button 
+                    class="page-btn next" 
+                    @click="changePage(currentPage + 1)"
+                    :disabled="currentPage === totalPages"
+                >
+                    다음 →
+                </button>
+            </div>
+
+            <!-- 포스트가 없을 때 -->
+            <div v-if="filteredPosts.length === 0" class="no-posts">
+                <div class="no-posts-icon">📝</div>
+                <h3>포스트가 없습니다</h3>
+                <p>검색 조건을 변경하거나 다른 카테고리를 확인해보세요.</p>
+            </div>
+        </main>
+    </div>
+</div>

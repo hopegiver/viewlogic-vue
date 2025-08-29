@@ -1,0 +1,225 @@
+<div class="product-detail-page">
+    <!-- 브레드크럼 -->
+    <nav class="breadcrumb">
+        <a @click="navigateTo('home')">홈</a>
+        <span class="separator">›</span>
+        <a @click="navigateTo('products')">상품</a>
+        <span class="separator">›</span>
+        <span class="current">{{ product.name }}</span>
+    </nav>
+
+    <div class="product-detail-container">
+        <!-- 상품 이미지 섹션 -->
+        <div class="product-images">
+            <div class="main-image">
+                <img :src="selectedImage || product.image" :alt="product.name">
+                <span v-if="product.discount" class="discount-badge">{{ product.discount }}% OFF</span>
+            </div>
+            
+            <div class="thumbnail-images">
+                <div 
+                    v-for="(img, index) in product.images" 
+                    :key="index"
+                    class="thumbnail"
+                    :class="{ active: selectedImage === img }"
+                    @click="selectImage(img)"
+                >
+                    <img :src="img" :alt="product.name + ' ' + (index + 1)">
+                </div>
+            </div>
+        </div>
+
+        <!-- 상품 정보 섹션 -->
+        <div class="product-info-section">
+            <div class="product-header">
+                <h1 class="product-title">{{ product.name }}</h1>
+                <p class="product-subtitle">{{ product.brand }}</p>
+            </div>
+
+            <div class="product-rating-section">
+                <div class="rating">
+                    <span class="stars">
+                        <span v-for="star in 5" :key="star" class="star" :class="{ filled: star <= product.rating }">★</span>
+                    </span>
+                    <span class="rating-value">{{ product.rating }}</span>
+                    <span class="review-count">({{ product.reviewCount }}개 리뷰)</span>
+                </div>
+            </div>
+
+            <div class="product-price-section">
+                <div v-if="product.originalPrice" class="price-discount">
+                    <span class="discount-percent">{{ product.discount }}%</span>
+                    <span class="original-price">₩{{ formatPrice(product.originalPrice) }}</span>
+                </div>
+                <div class="current-price">₩{{ formatPrice(product.price) }}</div>
+                <div v-if="product.freeShipping" class="free-shipping">
+                    <span class="shipping-badge">무료배송</span>
+                </div>
+            </div>
+
+            <!-- 상품 옵션 -->
+            <div class="product-options">
+                <div v-if="product.colors" class="option-group">
+                    <label class="option-label">색상</label>
+                    <div class="color-options">
+                        <button 
+                            v-for="color in product.colors" 
+                            :key="color"
+                            class="color-option"
+                            :class="{ selected: selectedColor === color }"
+                            :style="{ backgroundColor: color }"
+                            @click="selectedColor = color"
+                            :title="color"
+                        ></button>
+                    </div>
+                </div>
+
+                <div v-if="product.sizes" class="option-group">
+                    <label class="option-label">사이즈</label>
+                    <div class="size-options">
+                        <button 
+                            v-for="size in product.sizes" 
+                            :key="size"
+                            class="size-option"
+                            :class="{ selected: selectedSize === size }"
+                            @click="selectedSize = size"
+                        >
+                            {{ size }}
+                        </button>
+                    </div>
+                </div>
+
+                <div class="option-group">
+                    <label class="option-label">수량</label>
+                    <div class="quantity-selector">
+                        <button class="qty-btn" @click="decreaseQuantity">-</button>
+                        <input type="number" v-model="quantity" min="1" max="99" class="qty-input">
+                        <button class="qty-btn" @click="increaseQuantity">+</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 구매 버튼 -->
+            <div class="purchase-actions">
+                <button class="btn-buy-now" @click="buyNow">바로 구매</button>
+                <button class="btn-add-cart" @click="addToCart">
+                    <span class="cart-icon">🛒</span> 장바구니
+                </button>
+                <button class="btn-wishlist" @click="toggleWishlist" :class="{ active: inWishlist }">
+                    <span class="heart-icon">{{ inWishlist ? '❤️' : '🤍' }}</span>
+                </button>
+            </div>
+
+            <!-- 상품 특징 -->
+            <div class="product-features">
+                <h3>상품 특징</h3>
+                <ul>
+                    <li v-for="feature in product.features" :key="feature">{{ feature }}</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- 상품 상세 정보 탭 -->
+    <div class="product-tabs">
+        <div class="tab-nav">
+            <button 
+                v-for="tab in tabs" 
+                :key="tab.id"
+                class="tab-button"
+                :class="{ active: activeTab === tab.id }"
+                @click="activeTab = tab.id"
+            >
+                {{ tab.label }}
+            </button>
+        </div>
+
+        <div class="tab-content">
+            <!-- 상품 설명 탭 -->
+            <div v-if="activeTab === 'description'" class="tab-pane">
+                <h3>상품 상세 설명</h3>
+                <div class="description-content" v-html="product.description"></div>
+            </div>
+
+            <!-- 상품 정보 탭 -->
+            <div v-if="activeTab === 'specs'" class="tab-pane">
+                <h3>상품 정보</h3>
+                <table class="specs-table">
+                    <tbody>
+                        <tr v-for="(value, key) in product.specifications" :key="key">
+                            <th>{{ key }}</th>
+                            <td>{{ value }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- 리뷰 탭 -->
+            <div v-if="activeTab === 'reviews'" class="tab-pane">
+                <h3>고객 리뷰 ({{ product.reviewCount }})</h3>
+                <div class="reviews-summary">
+                    <div class="rating-average">
+                        <div class="rating-number">{{ product.rating }}</div>
+                        <div class="stars">
+                            <span v-for="star in 5" :key="star" class="star" :class="{ filled: star <= product.rating }">★</span>
+                        </div>
+                    </div>
+                    <button class="btn-write-review" @click="writeReview">리뷰 작성</button>
+                </div>
+                <div class="reviews-list">
+                    <div v-for="review in reviews" :key="review.id" class="review-item">
+                        <div class="review-header">
+                            <span class="reviewer-name">{{ review.name }}</span>
+                            <span class="review-date">{{ review.date }}</span>
+                        </div>
+                        <div class="review-rating">
+                            <span v-for="star in 5" :key="star" class="star small" :class="{ filled: star <= review.rating }">★</span>
+                        </div>
+                        <div class="review-content">{{ review.content }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 배송/교환 탭 -->
+            <div v-if="activeTab === 'shipping'" class="tab-pane">
+                <h3>배송 및 교환/반품 안내</h3>
+                <div class="shipping-info">
+                    <h4>배송 정보</h4>
+                    <ul>
+                        <li>배송비: {{ product.freeShipping ? '무료' : '3,000원 (50,000원 이상 구매시 무료)' }}</li>
+                        <li>배송기간: 평균 2-3일 (주말/공휴일 제외)</li>
+                        <li>배송업체: CJ대한통운</li>
+                    </ul>
+                    
+                    <h4>교환/반품 안내</h4>
+                    <ul>
+                        <li>교환/반품 가능 기간: 수령 후 7일 이내</li>
+                        <li>교환/반품 불가: 제품 하자가 아닌 경우 개봉 후 반품 불가</li>
+                        <li>교환/반품 배송비: 구매자 부담 (단, 제품 하자시 무료)</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 관련 상품 -->
+    <div class="related-products">
+        <h2>함께 보면 좋은 상품</h2>
+        <div class="related-grid">
+            <div 
+                v-for="item in relatedProducts" 
+                :key="item.id"
+                class="related-item"
+                @click="goToProduct(item.id)"
+            >
+                <div class="related-image">
+                    <img :src="item.image" :alt="item.name">
+                </div>
+                <div class="related-info">
+                    <h4>{{ item.name }}</h4>
+                    <div class="related-price">₩{{ formatPrice(item.price) }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

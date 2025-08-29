@@ -1,4 +1,18 @@
-<nav class="main-nav">
+<nav class="main-nav" x-data="{ 
+    cartItemCount: (typeof getCookie !== 'undefined' ? getCookie('cartItemCount') : null) || 0,
+    mobileMenuOpen: false,
+    currentRoute: window.location.hash.slice(2) || 'home'
+}" x-init="
+    // 쿠키 변경 감지를 위한 이벤트 리스너
+    window.addEventListener('cartUpdated', () => {
+        cartItemCount = (typeof getCookie !== 'undefined' ? getCookie('cartItemCount') : null) || 0;
+    });
+    
+    // 라우트 변경 감지
+    window.addEventListener('hashchange', () => {
+        currentRoute = window.location.hash.slice(2) || 'home';
+    });
+">
     <div class="nav-container">
         <!-- 사이트 로고 -->
         <div class="nav-brand">
@@ -20,17 +34,36 @@
             <ul class="nav-links">
                 <li><a @click="navigateTo('home'); closeMobileMenu()" :class="{ active: currentRoute === 'home' }">Home</a></li>
                 <li><a @click="navigateTo('about'); closeMobileMenu()" :class="{ active: currentRoute === 'about' }">About</a></li>
+                <li class="has-dropdown">
+                    <a href="javascript:void(0)" class="dropdown-toggle">서비스</a>
+                    <ul class="dropdown-menu">
+                        <li><a @click="navigateTo('products'); closeMobileMenu()" :class="{ active: currentRoute === 'products' }">상품</a></li>
+                        <li><a @click="navigateTo('blog'); closeMobileMenu()" :class="{ active: currentRoute === 'blog' }">블로그</a></li>
+                        <li><a @click="navigateTo('videos'); closeMobileMenu()" :class="{ active: currentRoute === 'videos' }">동영상</a></li>
+                    </ul>
+                </li>
+                <li><a @click="navigateTo('components'); closeMobileMenu()" :class="{ active: currentRoute === 'components' }">컴포넌트</a></li>
                 <li><a @click="navigateTo('contact'); closeMobileMenu()" :class="{ active: currentRoute === 'contact' }">Contact</a></li>
             </ul>
         </div>
 
-        <!-- 오른쪽 로그인/회원가입 -->
-        <div class="nav-auth" :class="{ active: mobileMenuOpen }">
-            <a @click="navigateTo('login'); closeMobileMenu()" class="auth-link login-link">로그인</a>
-            <a @click="navigateTo('signup'); closeMobileMenu()" class="auth-link signup-link">회원가입</a>
+        <!-- 오른쪽 유틸리티 메뉴 -->
+        <div class="nav-utils" :class="{ active: mobileMenuOpen }">
+            <!-- 장바구니 -->
+            <div class="cart-widget" @click="navigateTo('cart'); closeMobileMenu()">
+                <span class="cart-icon">🛒</span>
+                <span class="cart-count" x-show="cartItemCount > 0" x-text="cartItemCount"></span>
+            </div>
+            
+            <!-- 로그인/회원가입 -->
+            <div class="nav-auth">
+                <a @click="navigateTo('login'); closeMobileMenu()" class="auth-link login-link">로그인</a>
+                <a @click="navigateTo('signup'); closeMobileMenu()" class="auth-link signup-link">회원가입</a>
+            </div>
         </div>
     </div>
 </nav>
+
 
 <header v-if="showHeader" class="page-header">
     <div class="container">

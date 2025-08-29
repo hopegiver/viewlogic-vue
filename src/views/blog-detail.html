@@ -1,0 +1,253 @@
+<div class="blog-detail-page">
+    <!-- 브레드크럼 -->
+    <nav class="breadcrumb">
+        <a @click="navigateTo('home')">홈</a>
+        <span class="separator">›</span>
+        <a @click="navigateTo('blog')">블로그</a>
+        <span class="separator">›</span>
+        <span class="current">{{ post.title }}</span>
+    </nav>
+
+    <!-- 포스트 헤더 -->
+    <header class="post-header">
+        <div class="post-category-badge">{{ getCategoryName(post.category) }}</div>
+        <h1 class="post-title">{{ post.title }}</h1>
+        
+        <div class="post-meta">
+            <div class="author-info">
+                <img :src="getAuthorAvatar(post.author)" :alt="post.author" class="author-avatar">
+                <div>
+                    <div class="author-name">{{ post.author }}</div>
+                    <div class="post-date">{{ formatDate(post.date) }}</div>
+                </div>
+            </div>
+            
+            <div class="post-stats">
+                <span class="stat-item">
+                    <span class="stat-icon">👁</span>
+                    <span>{{ post.views }}</span>
+                </span>
+                <span class="stat-item">
+                    <span class="stat-icon">⏱</span>
+                    <span>{{ post.readingTime }}분</span>
+                </span>
+                <span class="stat-item">
+                    <span class="stat-icon">❤️</span>
+                    <span>{{ post.likes }}</span>
+                </span>
+            </div>
+        </div>
+
+        <div class="post-actions">
+            <button class="action-btn like-btn" @click="toggleLike" :class="{ active: post.isLiked }">
+                ❤️ {{ post.likes }}
+            </button>
+            <button class="action-btn bookmark-btn" @click="toggleBookmark" :class="{ active: post.isBookmarked }">
+                📖 북마크
+            </button>
+            <button class="action-btn share-btn" @click="sharePost">
+                🔗 공유
+            </button>
+        </div>
+    </header>
+
+    <!-- 포스트 이미지 -->
+    <div class="post-image" v-if="post.thumbnail">
+        <img :src="post.thumbnail" :alt="post.title">
+    </div>
+
+    <!-- 메인 콘텐츠 -->
+    <div class="blog-detail-content">
+        <!-- 포스트 본문 -->
+        <main class="post-main">
+            <div class="post-content" v-html="post.content"></div>
+
+            <!-- 태그 -->
+            <div class="post-tags">
+                <h4>태그</h4>
+                <div class="tags-list">
+                    <span 
+                        v-for="tag in post.tags" 
+                        :key="tag"
+                        class="tag"
+                        @click="searchByTag(tag)"
+                    >
+                        #{{ tag }}
+                    </span>
+                </div>
+            </div>
+
+            <!-- 소셜 공유 -->
+            <div class="social-share">
+                <h4>이 포스트 공유하기</h4>
+                <div class="share-buttons">
+                    <button class="share-btn twitter" @click="shareOn('twitter')">
+                        🐦 Twitter
+                    </button>
+                    <button class="share-btn facebook" @click="shareOn('facebook')">
+                        📘 Facebook
+                    </button>
+                    <button class="share-btn linkedin" @click="shareOn('linkedin')">
+                        💼 LinkedIn
+                    </button>
+                    <button class="share-btn copy-link" @click="copyLink">
+                        🔗 링크 복사
+                    </button>
+                </div>
+            </div>
+
+            <!-- 작성자 정보 -->
+            <div class="author-bio">
+                <img :src="getAuthorAvatar(post.author)" :alt="post.author" class="author-avatar-large">
+                <div class="author-details">
+                    <h4>{{ post.author }}</h4>
+                    <p class="author-description">{{ getAuthorDescription(post.author) }}</p>
+                    <div class="author-links">
+                        <a href="#" class="author-link">포스트 더보기</a>
+                        <a href="#" class="author-link">GitHub</a>
+                        <a href="#" class="author-link">Twitter</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 댓글 섹션 -->
+            <div class="comments-section">
+                <h3>댓글 {{ comments.length }}개</h3>
+                
+                <!-- 댓글 작성 폼 -->
+                <div class="comment-form">
+                    <div class="form-group">
+                        <input type="text" v-model="newComment.name" placeholder="이름" class="comment-input">
+                        <input type="email" v-model="newComment.email" placeholder="이메일 (공개되지 않음)" class="comment-input">
+                    </div>
+                    <textarea 
+                        v-model="newComment.content" 
+                        placeholder="댓글을 작성해주세요..." 
+                        class="comment-textarea"
+                        rows="4"
+                    ></textarea>
+                    <button @click="submitComment" class="submit-comment-btn" :disabled="!canSubmitComment">
+                        댓글 작성
+                    </button>
+                </div>
+
+                <!-- 댓글 목록 -->
+                <div class="comments-list">
+                    <div v-for="comment in comments" :key="comment.id" class="comment-item">
+                        <img :src="getCommentAvatar(comment.name)" :alt="comment.name" class="comment-avatar">
+                        <div class="comment-content">
+                            <div class="comment-header">
+                                <span class="comment-author">{{ comment.name }}</span>
+                                <span class="comment-date">{{ formatDate(comment.date) }}</span>
+                            </div>
+                            <p class="comment-text">{{ comment.content }}</p>
+                            <div class="comment-actions">
+                                <button @click="likeComment(comment)" class="comment-action">
+                                    👍 {{ comment.likes }}
+                                </button>
+                                <button @click="replyToComment(comment)" class="comment-action">
+                                    💬 답글
+                                </button>
+                            </div>
+
+                            <!-- 답글 -->
+                            <div v-if="comment.replies && comment.replies.length > 0" class="replies">
+                                <div v-for="reply in comment.replies" :key="reply.id" class="reply-item">
+                                    <img :src="getCommentAvatar(reply.name)" :alt="reply.name" class="comment-avatar small">
+                                    <div class="reply-content">
+                                        <div class="comment-header">
+                                            <span class="comment-author">{{ reply.name }}</span>
+                                            <span class="comment-date">{{ formatDate(reply.date) }}</span>
+                                        </div>
+                                        <p class="comment-text">{{ reply.content }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- 사이드바 -->
+        <aside class="post-sidebar">
+            <!-- 목차 -->
+            <div class="sidebar-section toc" v-if="tableOfContents.length > 0">
+                <h4>목차</h4>
+                <ul class="toc-list">
+                    <li v-for="item in tableOfContents" :key="item.id" class="toc-item">
+                        <a @click="scrollToSection(item.id)" :class="`level-${item.level}`">
+                            {{ item.text }}
+                        </a>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- 관련 포스트 -->
+            <div class="sidebar-section">
+                <h4>관련 포스트</h4>
+                <div class="related-posts">
+                    <div 
+                        v-for="relatedPost in relatedPosts" 
+                        :key="relatedPost.id"
+                        class="related-post"
+                        @click="goToPost(relatedPost.id)"
+                    >
+                        <img :src="relatedPost.thumbnail" :alt="relatedPost.title" class="related-thumbnail">
+                        <div class="related-info">
+                            <h5>{{ relatedPost.title }}</h5>
+                            <p class="related-date">{{ formatDate(relatedPost.date) }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 인기 포스트 -->
+            <div class="sidebar-section">
+                <h4>인기 포스트</h4>
+                <div class="popular-posts">
+                    <div 
+                        v-for="popularPost in popularPosts" 
+                        :key="popularPost.id"
+                        class="popular-post"
+                        @click="goToPost(popularPost.id)"
+                    >
+                        <span class="popular-rank">{{ popularPost.rank }}</span>
+                        <div class="popular-info">
+                            <h5>{{ popularPost.title }}</h5>
+                            <p class="popular-views">👁 {{ popularPost.views }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 태그 클라우드 -->
+            <div class="sidebar-section">
+                <h4>관련 태그</h4>
+                <div class="tag-cloud">
+                    <span 
+                        v-for="tag in relatedTags" 
+                        :key="tag.name"
+                        class="tag"
+                        @click="searchByTag(tag.name)"
+                        :style="{ fontSize: getTagSize(tag.count) + 'px' }"
+                    >
+                        {{ tag.name }}
+                    </span>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <!-- 다음/이전 포스트 -->
+    <nav class="post-navigation">
+        <div class="nav-item prev" v-if="previousPost" @click="goToPost(previousPost.id)">
+            <div class="nav-label">← 이전 포스트</div>
+            <div class="nav-title">{{ previousPost.title }}</div>
+        </div>
+        <div class="nav-item next" v-if="nextPost" @click="goToPost(nextPost.id)">
+            <div class="nav-label">다음 포스트 →</div>
+            <div class="nav-title">{{ nextPost.title }}</div>
+        </div>
+    </nav>
+</div>

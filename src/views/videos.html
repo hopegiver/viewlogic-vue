@@ -1,0 +1,56 @@
+<div class="videos-page">
+    <div class="videos-container">
+        <!-- 필터 섹션 -->
+        <div class="video-filters">
+            <div class="filter-group">
+                <button @click="filterVideos('all')" :class="{ active: selectedCategory === 'all' }">전체</button>
+                <button @click="filterVideos('music')" :class="{ active: selectedCategory === 'music' }">음악</button>
+                <button @click="filterVideos('gaming')" :class="{ active: selectedCategory === 'gaming' }">게임</button>
+                <button @click="filterVideos('education')" :class="{ active: selectedCategory === 'education' }">교육</button>
+                <button @click="filterVideos('vlog')" :class="{ active: selectedCategory === 'vlog' }">브이로그</button>
+                <button @click="filterVideos('sports')" :class="{ active: selectedCategory === 'sports' }">스포츠</button>
+            </div>
+            <div class="sort-group">
+                <select v-model="sortBy" @change="sortVideos">
+                    <option value="latest">최신순</option>
+                    <option value="popular">인기순</option>
+                    <option value="views">조회수순</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- 비디오 그리드 -->
+        <div class="video-grid">
+            <div v-for="video in filteredVideos" :key="video.id" class="video-card" @click="viewVideo(video.id)">
+                <div class="video-thumbnail">
+                    <img :src="video.thumbnail" :alt="video.title">
+                    <span class="video-duration">{{ video.duration }}</span>
+                    <div class="video-overlay">
+                        <button class="play-btn">▶</button>
+                    </div>
+                </div>
+                <div class="video-info">
+                    <div class="video-avatar">
+                        <img :src="video.channelAvatar" :alt="video.channel">
+                    </div>
+                    <div class="video-details">
+                        <h3 class="video-title">{{ video.title }}</h3>
+                        <p class="video-channel">{{ video.channel }}</p>
+                        <div class="video-meta">
+                            <span>조회수 {{ formatViews(video.views) }}회</span>
+                            <span class="dot">•</span>
+                            <span>{{ video.uploadedAt }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 로드 더 버튼 -->
+        <div class="load-more-section" v-if="hasMoreVideos">
+            <button @click="loadMoreVideos" class="load-more-btn">
+                더 보기
+            </button>
+        </div>
+    </div>
+</div>

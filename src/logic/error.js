@@ -1,5 +1,6 @@
 export default {
     name: 'ErrorComponent',
+    layout: 'default',
     props: {
         errorCode: {
             type: [String, Number],

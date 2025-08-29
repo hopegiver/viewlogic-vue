@@ -1,0 +1,90 @@
+<div class="products-page">
+
+    <!-- 필터 및 정렬 -->
+    <div class="products-controls">
+        <div class="filter-section">
+            <select class="category-filter" v-model="selectedCategory" @change="filterProducts">
+                <option value="all">전체 카테고리</option>
+                <option value="electronics">전자제품</option>
+                <option value="clothing">의류</option>
+                <option value="books">도서</option>
+                <option value="food">식품</option>
+                <option value="sports">스포츠</option>
+            </select>
+            
+            <select class="sort-filter" v-model="sortBy" @change="sortProducts">
+                <option value="name">이름순</option>
+                <option value="price-asc">가격 낮은순</option>
+                <option value="price-desc">가격 높은순</option>
+                <option value="rating">평점순</option>
+            </select>
+        </div>
+        
+        <div class="search-section">
+            <input 
+                type="text" 
+                class="search-input" 
+                v-model="searchQuery"
+                @input="searchProducts"
+                placeholder="상품 검색..."
+            >
+        </div>
+    </div>
+
+    <!-- 상품 그리드 -->
+    <div class="products-grid">
+        <div 
+            v-for="product in filteredProducts" 
+            :key="product.id"
+            class="product-card"
+            @click="goToProductDetail(product.id)"
+        >
+            <div class="product-image">
+                <img :src="product.image" :alt="product.name">
+                <span v-if="product.discount" class="discount-badge">{{ product.discount }}% OFF</span>
+            </div>
+            
+            <div class="product-info">
+                <h3 class="product-name">{{ product.name }}</h3>
+                <p class="product-category">{{ getCategoryName(product.category) }}</p>
+                
+                <div class="product-rating">
+                    <span class="stars">
+                        <span v-for="star in 5" :key="star" class="star" :class="{ filled: star <= product.rating }">★</span>
+                    </span>
+                    <span class="rating-count">({{ product.reviewCount }})</span>
+                </div>
+                
+                <div class="product-price">
+                    <span v-if="product.originalPrice" class="original-price">₩{{ formatPrice(product.originalPrice) }}</span>
+                    <span class="current-price">₩{{ formatPrice(product.price) }}</span>
+                </div>
+                
+                <div class="product-badges">
+                    <span v-if="product.isNew" class="badge new">NEW</span>
+                    <span v-if="product.isBest" class="badge best">BEST</span>
+                    <span v-if="product.freeShipping" class="badge shipping">무료배송</span>
+                </div>
+            </div>
+            
+            <div class="product-actions">
+                <button class="btn-cart" @click.stop="addToCart(product)">
+                    <span class="cart-icon">🛒</span> 장바구니
+                </button>
+                <button class="btn-wishlist" @click.stop="toggleWishlist(product)" :class="{ active: product.inWishlist }">
+                    <span class="heart-icon">{{ product.inWishlist ? '❤️' : '🤍' }}</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 더보기 버튼 -->
+    <div v-if="hasMore" class="load-more">
+        <button class="btn-load-more" @click="loadMore">더 많은 상품 보기</button>
+    </div>
+
+    <!-- 상품이 없을 때 -->
+    <div v-if="filteredProducts.length === 0" class="no-products">
+        <p>검색 결과가 없습니다.</p>
+    </div>
+</div>

@@ -1,0 +1,215 @@
+<!-- 장바구니 페이지 헤더 -->
+<div class="cart-header">
+    <div class="breadcrumb">
+        <a @click="navigateTo('home')">홈</a>
+        <span class="breadcrumb-separator">></span>
+        <span class="breadcrumb-current">장바구니</span>
+    </div>
+    <h1 class="cart-title">장바구니</h1>
+    <p class="cart-subtitle">총 {{ cartItems.length }}개의 상품이 담겨있습니다</p>
+</div>
+
+<!-- 장바구니가 비어있을 때 -->
+<div v-if="cartItems.length === 0" class="empty-cart">
+    <div class="empty-cart-icon">🛒</div>
+    <h3>장바구니가 비어있습니다</h3>
+    <p>원하는 상품을 장바구니에 담아보세요!</p>
+    <button @click="navigateTo('products')" class="btn btn-primary">상품 둘러보기</button>
+</div>
+
+<!-- 장바구니 상품 목록 -->
+<div v-else class="cart-content">
+    <div class="cart-main">
+        <!-- 전체 선택 -->
+        <div class="cart-select-all">
+            <label class="checkbox-label">
+                <input 
+                    type="checkbox" 
+                    :checked="isAllSelected" 
+                    @change="toggleSelectAll"
+                    class="checkbox-input"
+                >
+                <span class="checkbox-custom"></span>
+                <span>전체 선택 ({{ selectedItems.length }}/{{ cartItems.length }})</span>
+            </label>
+            <button @click="removeSelectedItems" class="btn btn-text" :disabled="selectedItems.length === 0">
+                선택 삭제
+            </button>
+        </div>
+
+        <!-- 장바구니 아이템 목록 -->
+        <div class="cart-items">
+            <div 
+                v-for="item in cartItems" 
+                :key="getItemKey(item)"
+                class="cart-item"
+                :class="{ 'item-selected': selectedItems.includes(getItemKey(item)) }"
+            >
+                <!-- 선택 체크박스 -->
+                <div class="item-select">
+                    <label class="checkbox-label">
+                        <input 
+                            type="checkbox" 
+                            :checked="selectedItems.includes(getItemKey(item))"
+                            @change="toggleItemSelect(getItemKey(item))"
+                            class="checkbox-input"
+                        >
+                        <span class="checkbox-custom"></span>
+                    </label>
+                </div>
+
+                <!-- 상품 이미지 -->
+                <div class="item-image">
+                    <img :src="item.image" :alt="item.name" @click="goToProduct(item.id)">
+                </div>
+
+                <!-- 상품 정보 -->
+                <div class="item-info">
+                    <h3 class="item-name" @click="goToProduct(item.id)">{{ item.name }}</h3>
+                    <div class="item-options">
+                        <span v-if="item.color" class="option-tag">색상: {{ item.color }}</span>
+                        <span v-if="item.size" class="option-tag">사이즈: {{ item.size }}</span>
+                    </div>
+                    <div class="item-price">
+                        <span class="current-price">₩{{ formatPrice(item.price) }}</span>
+                        <span v-if="item.originalPrice && item.originalPrice > item.price" class="original-price">
+                            ₩{{ formatPrice(item.originalPrice) }}
+                        </span>
+                    </div>
+                </div>
+
+                <!-- 수량 조절 -->
+                <div class="item-quantity">
+                    <label class="quantity-label">수량</label>
+                    <div class="quantity-controls">
+                        <button @click="decreaseQuantity(item)" class="quantity-btn">-</button>
+                        <input 
+                            type="number" 
+                            :value="item.quantity" 
+                            @input="updateQuantity(item, $event.target.value)"
+                            class="quantity-input"
+                            min="1"
+                            max="99"
+                        >
+                        <button @click="increaseQuantity(item)" class="quantity-btn">+</button>
+                    </div>
+                </div>
+
+                <!-- 총 가격 -->
+                <div class="item-total">
+                    <span class="total-label">총 가격</span>
+                    <span class="total-price">₩{{ formatPrice(item.price * item.quantity) }}</span>
+                </div>
+
+                <!-- 삭제 버튼 -->
+                <div class="item-remove">
+                    <button @click="removeItem(getItemKey(item))" class="remove-btn">
+                        <span class="remove-icon">✕</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 주문 요약 사이드바 -->
+    <div class="cart-sidebar">
+        <div class="order-summary">
+            <h3>주문 요약</h3>
+            
+            <div class="summary-row">
+                <span>상품 금액 ({{ selectedItems.length }}개)</span>
+                <span>₩{{ formatPrice(selectedSubtotal) }}</span>
+            </div>
+            
+            <div class="summary-row">
+                <span>할인 금액</span>
+                <span class="discount-amount">-₩{{ formatPrice(selectedDiscount) }}</span>
+            </div>
+            
+            <div class="summary-row">
+                <span>배송비</span>
+                <span>{{ shippingFee === 0 ? '무료' : '₩' + formatPrice(shippingFee) }}</span>
+            </div>
+            
+            <div class="summary-divider"></div>
+            
+            <div class="summary-row summary-total">
+                <span>총 결제 금액</span>
+                <span class="total-amount">₩{{ formatPrice(selectedTotal) }}</span>
+            </div>
+
+            <!-- 무료배송 진행률 -->
+            <div v-if="freeShippingThreshold > selectedSubtotal" class="free-shipping-progress">
+                <p class="progress-text">
+                    <strong>₩{{ formatPrice(freeShippingThreshold - selectedSubtotal) }}</strong> 
+                    더 구매하면 무료배송!
+                </p>
+                <div class="progress-bar">
+                    <div 
+                        class="progress-fill" 
+                        :style="{ width: (selectedSubtotal / freeShippingThreshold * 100) + '%' }"
+                    ></div>
+                </div>
+            </div>
+
+            <!-- 주문하기 버튼 -->
+            <div class="order-actions">
+                <button 
+                    @click="proceedToCheckout" 
+                    class="btn btn-primary btn-large"
+                    :disabled="selectedItems.length === 0"
+                >
+                    주문하기 ({{ selectedItems.length }}개)
+                </button>
+                <button @click="navigateTo('products')" class="btn btn-secondary btn-large">
+                    계속 쇼핑하기
+                </button>
+            </div>
+
+            <!-- 쿠폰 적용 -->
+            <div class="coupon-section">
+                <h4>쿠폰 적용</h4>
+                <div class="coupon-input">
+                    <input 
+                        type="text" 
+                        v-model="couponCode" 
+                        placeholder="쿠폰 코드를 입력하세요"
+                        class="form-input"
+                    >
+                    <button @click="applyCoupon" class="btn btn-outline">적용</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 추천 상품 -->
+        <div class="recommended-products">
+            <h3>이런 상품은 어떠세요?</h3>
+            <div class="recommended-list">
+                <div 
+                    v-for="product in recommendedProducts" 
+                    :key="product.id"
+                    class="recommended-item"
+                    @click="goToProduct(product.id)"
+                >
+                    <img :src="product.image" :alt="product.name">
+                    <div class="recommended-info">
+                        <h4>{{ product.name }}</h4>
+                        <span class="recommended-price">₩{{ formatPrice(product.price) }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 삭제 확인 모달 -->
+<div v-if="showDeleteModal" class="modal-overlay" @click="cancelDelete">
+    <div class="modal-content" @click.stop>
+        <h3>상품 삭제</h3>
+        <p>선택한 상품을 장바구니에서 삭제하시겠습니까?</p>
+        <div class="modal-actions">
+            <button @click="confirmDelete" class="btn btn-danger">삭제</button>
+            <button @click="cancelDelete" class="btn btn-secondary">취소</button>
+        </div>
+    </div>
+</div>

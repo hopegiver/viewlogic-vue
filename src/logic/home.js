@@ -82,6 +82,8 @@ export default {
                     title: '성공',
                     duration: 4000
                 });
+            } else {
+                console.log('Toast: 컴포넌트 시스템이 정상적으로 작동하고 있습니다!');
             }
         },
         
