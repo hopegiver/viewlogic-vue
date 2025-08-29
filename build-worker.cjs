@@ -47,13 +47,15 @@ async function minifyJavaScript(data) {
     
     const esbuildOptions = {
         minify: options.minify !== false,
-        target: options.target || 'es2015',
+        target: options.target || 'es2020',
         format: options.format || 'esm',
-        keepNames: options.keepNames !== false,
-        treeShaking: options.treeShaking || false,
+        keepNames: options.keepNames || false,
+        treeShaking: options.treeShaking !== false,
         minifyWhitespace: options.minifyWhitespace !== false,
-        minifyIdentifiers: options.minifyIdentifiers || false,
-        minifySyntax: options.minifySyntax !== false
+        minifyIdentifiers: options.minifyIdentifiers !== false,
+        minifySyntax: options.minifySyntax !== false,
+        drop: options.dropConsole ? ['console', 'debugger'] : ['debugger'],
+        legalComments: 'none'
     };
     
     if (options.sourceMaps) {

@@ -41,6 +41,12 @@ class ViewLogicBuilder {
                 usedRules: 0,
                 unusedRules: [],
                 savedBytes: 0
+            },
+            javascript: {
+                originalSize: 0,
+                minifiedSize: 0,
+                savedBytes: 0,
+                filesProcessed: 0
             }
         };
     }
@@ -230,13 +236,15 @@ class ViewLogicBuilder {
         try {
             const options = {
                 minify: this.config.minify,
-                target: 'es2015',
+                target: 'es2020',
                 format: 'esm',
-                keepNames: true,
-                treeShaking: false,
+                keepNames: false,
+                treeShaking: true,
                 minifyWhitespace: true,
-                minifyIdentifiers: false,
-                minifySyntax: true
+                minifyIdentifiers: true,
+                minifySyntax: true,
+                drop: this.config.dropConsole ? ['console', 'debugger'] : ['debugger'],
+                legalComments: 'none'
             };
             
             // Source map 지원
@@ -245,6 +253,13 @@ class ViewLogicBuilder {
             }
             
             const result = await esbuild.transform(code, options);
+            
+            // JavaScript Tree Shaking 통계 업데이트
+            this.treeShakingStats.javascript.originalSize += code.length;
+            this.treeShakingStats.javascript.minifiedSize += result.code.length;
+            this.treeShakingStats.javascript.savedBytes += (code.length - result.code.length);
+            this.treeShakingStats.javascript.filesProcessed++;
+            
             return { code: result.code, map: result.map };
         } catch (error) {
             this.log(`JavaScript 압축 실패, 원본 사용: ${error.message}`, 'warn');
@@ -1106,6 +1121,14 @@ if (typeof window !== 'undefined') {
             } else if (this.treeShakingStats.css.unusedRules.length > 10) {
                 console.log(`   미사용 선택자: ${this.treeShakingStats.css.unusedRules.slice(0, 10).join(', ')} 외 ${this.treeShakingStats.css.unusedRules.length - 10}개`);
             }
+        }
+        
+        // JavaScript 트리셰이킹 통계 출력
+        if (this.treeShakingStats.javascript.filesProcessed > 0) {
+            const jsSavedKB = (this.treeShakingStats.javascript.savedBytes / 1024).toFixed(1);
+            const jsReductionPercent = this.treeShakingStats.javascript.originalSize > 0 ? 
+                ((this.treeShakingStats.javascript.savedBytes / this.treeShakingStats.javascript.originalSize) * 100).toFixed(1) : 0;
+            console.log(`📦 JavaScript 트리셰이킹: ${this.treeShakingStats.javascript.filesProcessed}개 파일, ${jsSavedKB}KB 절약 (${jsReductionPercent}% 감소)`);
         }
         
         if (this.stats.errors.length > 0) {
