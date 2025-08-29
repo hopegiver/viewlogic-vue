@@ -1076,6 +1076,10 @@ if (typeof window !== 'undefined') {
             console.log(`🚀 병렬 빌드: 활성화`);
         }
         
+        if (this.config.workerThreads && this.workers.length > 0) {
+            console.log(`🧵 워커 스레드: ${this.workers.length}개 활성화`);
+        }
+        
         if (this.config.sourceMaps) {
             console.log(`🗺️ Source Maps: 생성됨`);
         }
@@ -1110,6 +1114,219 @@ if (typeof window !== 'undefined') {
         
         console.log('='.repeat(50));
     }
+    
+    // ======================================
+    // 워커 스레드 관리 메서드들
+    // ======================================
+    
+    async initializeWorkers() {
+        const workerCount = this.config.maxWorkers;
+        this.log(`워커 스레드 ${workerCount}개 초기화 중...`, 'info');
+        
+        const workerPromises = [];
+        
+        for (let i = 0; i < workerCount; i++) {
+            const workerPromise = this.createWorker(i);
+            workerPromises.push(workerPromise);
+        }
+        
+        try {
+            const workers = await Promise.all(workerPromises);
+            this.workers = workers.filter(worker => worker !== null);
+            
+            if (this.workers.length > 0) {
+                this.log(`워커 스레드 ${this.workers.length}개 준비 완료`, 'success');
+            } else {
+                this.log('워커 스레드 초기화 실패, 메인 스레드에서 실행', 'warn');
+                this.config.workerThreads = false;
+            }
+        } catch (error) {
+            this.log(`워커 스레드 초기화 오류: ${error.message}`, 'warn');
+            this.config.workerThreads = false;
+        }
+    }
+    
+    async createWorker(id) {
+        return new Promise((resolve) => {
+            try {
+                const worker = new Worker(path.join(__dirname, 'build-worker.cjs'));
+                
+                worker.on('message', (message) => {
+                    if (message.ready) {
+                        // 워커 준비 완료
+                        worker.isReady = true;
+                        worker.isBusy = false;
+                        worker.id = id;
+                        resolve(worker);
+                    } else if (message.taskId) {
+                        // 작업 완료
+                        this.handleWorkerResponse(message);
+                    }
+                });
+                
+                worker.on('error', (error) => {
+                    this.log(`워커 ${id} 오류: ${error.message}`, 'error');
+                    resolve(null);
+                });
+                
+                worker.on('exit', (code) => {
+                    if (code !== 0) {
+                        this.log(`워커 ${id} 비정상 종료: ${code}`, 'warn');
+                    }
+                });
+                
+                // 타임아웃 처리
+                setTimeout(() => {
+                    if (!worker.isReady) {
+                        this.log(`워커 ${id} 초기화 타임아웃`, 'warn');
+                        worker.terminate();
+                        resolve(null);
+                    }
+                }, 5000);
+                
+            } catch (error) {
+                this.log(`워커 ${id} 생성 실패: ${error.message}`, 'error');
+                resolve(null);
+            }
+        });
+    }
+    
+    async executeWorkerTask(taskType, data) {
+        if (!this.config.workerThreads || this.workers.length === 0) {
+            throw new Error('워커 스레드가 사용 불가능합니다');
+        }
+        
+        return new Promise((resolve, reject) => {
+            const taskId = ++this.taskId;
+            const task = {
+                id: taskId,
+                type: taskType,
+                data: data,
+                timestamp: Date.now()
+            };
+            
+            // 사용 가능한 워커 찾기
+            const availableWorker = this.workers.find(worker => !worker.isBusy);
+            
+            if (availableWorker) {
+                // 즉시 실행
+                this.assignTaskToWorker(availableWorker, task, resolve, reject);
+            } else {
+                // 큐에 추가
+                this.workerQueue.push({
+                    task,
+                    resolve,
+                    reject
+                });
+            }
+        });
+    }
+    
+    assignTaskToWorker(worker, task, resolve, reject) {
+        worker.isBusy = true;
+        
+        // 작업 정보 저장
+        this.pendingTasks.set(task.id, {
+            resolve,
+            reject,
+            worker,
+            startTime: Date.now()
+        });
+        
+        // 타임아웃 설정 (30초)
+        const timeout = setTimeout(() => {
+            this.handleWorkerTimeout(task.id);
+        }, 30000);
+        
+        this.pendingTasks.get(task.id).timeout = timeout;
+        
+        // 워커에게 작업 전송
+        worker.postMessage(task);
+    }
+    
+    handleWorkerResponse(message) {
+        const { taskId, success, result, error } = message;
+        const taskInfo = this.pendingTasks.get(taskId);
+        
+        if (!taskInfo) {
+            this.log(`알 수 없는 작업 ID: ${taskId}`, 'warn');
+            return;
+        }
+        
+        const { resolve, reject, worker, timeout } = taskInfo;
+        
+        // 타임아웃 제거
+        clearTimeout(timeout);
+        this.pendingTasks.delete(taskId);
+        
+        // 워커를 다시 사용 가능 상태로
+        worker.isBusy = false;
+        
+        if (success) {
+            resolve(result);
+        } else {
+            reject(new Error(`워커 작업 실패: ${error.message}`));
+        }
+        
+        // 큐에서 다음 작업 처리
+        this.processWorkerQueue();
+    }
+    
+    handleWorkerTimeout(taskId) {
+        const taskInfo = this.pendingTasks.get(taskId);
+        if (!taskInfo) return;
+        
+        const { reject, worker } = taskInfo;
+        this.pendingTasks.delete(taskId);
+        
+        this.log(`워커 ${worker.id} 작업 타임아웃`, 'warn');
+        
+        // 워커 재시작
+        worker.isBusy = false;
+        
+        reject(new Error('워커 작업 타임아웃'));
+        
+        // 큐에서 다음 작업 처리
+        this.processWorkerQueue();
+    }
+    
+    processWorkerQueue() {
+        if (this.workerQueue.length === 0) return;
+        
+        const availableWorker = this.workers.find(worker => !worker.isBusy);
+        if (!availableWorker) return;
+        
+        const { task, resolve, reject } = this.workerQueue.shift();
+        this.assignTaskToWorker(availableWorker, task, resolve, reject);
+    }
+    
+    async terminateWorkers() {
+        if (this.workers.length === 0) return;
+        
+        this.log('워커 스레드 종료 중...', 'info');
+        
+        // 대기 중인 작업들을 모두 거부
+        for (const [taskId, taskInfo] of this.pendingTasks) {
+            taskInfo.reject(new Error('빌드 종료로 인한 작업 취소'));
+            clearTimeout(taskInfo.timeout);
+        }
+        this.pendingTasks.clear();
+        this.workerQueue.length = 0;
+        
+        // 모든 워커 종료
+        const terminatePromises = this.workers.map(async (worker) => {
+            try {
+                await worker.terminate();
+            } catch (error) {
+                this.log(`워커 ${worker.id} 종료 실패: ${error.message}`, 'warn');
+            }
+        });
+        
+        await Promise.all(terminatePromises);
+        this.workers.length = 0;
+        
+        this.log('모든 워커 스레드 종료 완료', 'info');
+    }
 }
 
 // CLI 처리
@@ -1122,7 +1339,9 @@ async function main() {
         minify: !args.includes('--no-minify'),
         cache: !args.includes('--no-cache'),
         parallel: !args.includes('--no-parallel'),
-        sourceMaps: args.includes('--source-maps')
+        sourceMaps: args.includes('--source-maps'),
+        workerThreads: !args.includes('--no-workers'),
+        maxWorkers: parseInt(args.find(arg => arg.startsWith('--max-workers='))?.split('=')[1]) || undefined
     };
     
     const builder = new ViewLogicBuilder(options);
@@ -1148,6 +1367,8 @@ async function main() {
             console.log('  --no-minify                          # 압축 비활성화');
             console.log('  --no-cache                           # 캐싱 비활성화');
             console.log('  --no-parallel                        # 병렬 빌드 비활성화');
+            console.log('  --no-workers                         # 워커 스레드 비활성화');
+            console.log('  --max-workers=N                      # 최대 워커 수 설정');
             console.log('  --source-maps                        # Source map 생성');
             break;
     }
