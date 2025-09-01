@@ -18,6 +18,24 @@ class ViewLogicRouter {
             loadingMinDuration: options.loadingMinDuration || 300, // 최소 로딩 시간 (UX 개선)
             enableErrorReporting: options.enableErrorReporting !== false, // 에러 리포팅 활성화
             useComponents: options.useComponents !== false, // 컴포넌트 시스템 사용 여부
+            // i18n 설정
+            useI18n: options.useI18n !== false, // 다국어 시스템 사용 여부
+            i18nDefaultLanguage: options.i18nDefaultLanguage || 'ko', // 기본 언어 (폴백 언어로도 사용)
+            // 인증 설정
+            authEnabled: options.authEnabled || false, // 인증 시스템 사용 여부
+            loginRoute: options.loginRoute || 'login', // 로그인 페이지 라우트
+            protectedRoutes: options.protectedRoutes || [], // 보호된 특정 라우트들
+            protectedPrefixes: options.protectedPrefixes || [], // 보호된 prefix들 (예: ['admin', 'dashboard'])
+            publicRoutes: options.publicRoutes || ['login', 'register', 'home'], // 공개 라우트들
+            checkAuthFunction: options.checkAuthFunction || null, // 사용자 정의 인증 체크 함수
+            redirectAfterLogin: options.redirectAfterLogin || 'home', // 로그인 후 리다이렉트할 페이지
+            // 쿠키 기반 인증 설정
+            authCookieName: options.authCookieName || 'authToken', // 인증 쿠키 이름
+            authFallbackCookieNames: options.authFallbackCookieNames || ['accessToken', 'token', 'jwt'], // 대체 쿠키 이름들
+            // 스토리지 설정
+            authStorage: options.authStorage || 'cookie', // 인증 토큰 저장소: 'localStorage', 'sessionStorage', 'cookie'
+            authCookieOptions: options.authCookieOptions || {}, // 쿠키 저장 시 옵션
+            authSkipValidation: options.authSkipValidation || false, // JWT 토큰 유효성 검사 스킵 여부
             // 보안 설정
             security: {
                 enableParameterValidation: options.security?.enableParameterValidation !== false,
@@ -26,24 +44,7 @@ class ViewLogicRouter {
                 maxArraySize: options.security?.maxArraySize || 100,
                 allowedKeyPattern: options.security?.allowedKeyPattern || /^[a-zA-Z0-9_-]+$/,
                 logSecurityWarnings: options.security?.logSecurityWarnings !== false
-            },
-            // i18n 설정
-            useI18n: options.useI18n !== false, // 다국어 시스템 사용 여부
-            i18nDefaultLanguage: options.i18nDefaultLanguage || 'ko', // 기본 언어 (폴백 언어로도 사용)
-            
-            // 인증 설정
-            auth: {
-                enabled: options.auth?.enabled || false, // 인증 시스템 사용 여부
-                loginRoute: options.auth?.loginRoute || 'login', // 로그인 페이지 라우트
-                protectedRoutes: options.auth?.protectedRoutes || [], // 보호된 특정 라우트들
-                protectedPrefixes: options.auth?.protectedPrefixes || [], // 보호된 prefix들 (예: ['admin', 'dashboard'])
-                publicRoutes: options.auth?.publicRoutes || ['login', 'register', 'home'], // 공개 라우트들
-                checkAuthFunction: options.auth?.checkAuthFunction || null, // 사용자 정의 인증 체크 함수
-                redirectAfterLogin: options.auth?.redirectAfterLogin || 'home', // 로그인 후 리다이렉트할 페이지
-                // 쿠키 기반 인증 설정
-                cookieName: options.auth?.cookieName || 'authToken', // 인증 쿠키 이름
-                fallbackCookieNames: options.auth?.fallbackCookieNames || ['accessToken', 'token', 'jwt'] // 대체 쿠키 이름들
-            }
+            }            
         };
         
         this.currentHash = '';
@@ -1120,18 +1121,18 @@ class ViewLogicRouter {
      */
     async checkAuthentication(routeName) {
         // 인증 시스템이 비활성화된 경우 모든 접근 허용
-        if (!this.config.auth.enabled) {
+        if (!this.config.authEnabled) {
             return { allowed: true, reason: 'auth_disabled' };
         }
 
         // 공개 라우트 체크
-        if (this.config.auth.publicRoutes.includes(routeName)) {
+        if (this.config.publicRoutes.includes(routeName)) {
             return { allowed: true, reason: 'public_route' };
         }
 
         // 보호된 라우트 체크
-        const isProtectedRoute = this.config.auth.protectedRoutes.includes(routeName);
-        const isProtectedPrefix = this.config.auth.protectedPrefixes.some(prefix => 
+        const isProtectedRoute = this.config.protectedRoutes.includes(routeName);
+        const isProtectedPrefix = this.config.protectedPrefixes.some(prefix => 
             routeName.startsWith(prefix + '/') || routeName === prefix
         );
 
@@ -1141,9 +1142,9 @@ class ViewLogicRouter {
         }
 
         // 사용자 정의 인증 체크 함수가 있으면 사용
-        if (typeof this.config.auth.checkAuthFunction === 'function') {
+        if (typeof this.config.checkAuthFunction === 'function') {
             try {
-                const isAuthenticated = await this.config.auth.checkAuthFunction(routeName);
+                const isAuthenticated = await this.config.checkAuthFunction(routeName);
                 return { 
                     allowed: isAuthenticated, 
                     reason: isAuthenticated ? 'custom_auth_success' : 'custom_auth_failed',
@@ -1230,13 +1231,13 @@ class ViewLogicRouter {
      */
     getAuthCookie() {
         // 기본 쿠키 이름 확인
-        const primaryCookie = this.getCookieValue(this.config.auth.cookieName);
+        const primaryCookie = this.getCookieValue(this.config.authCookieName);
         if (primaryCookie) {
             return primaryCookie;
         }
 
         // 대체 쿠키 이름들 확인
-        for (const cookieName of this.config.auth.fallbackCookieNames) {
+        for (const cookieName of this.config.authFallbackCookieNames) {
             const cookieValue = this.getCookieValue(cookieName);
             if (cookieValue) {
                 return cookieValue;
@@ -1262,7 +1263,7 @@ class ViewLogicRouter {
      * 인증 쿠키 제거
      */
     removeAuthCookie() {
-        const cookiesToRemove = [this.config.auth.cookieName, ...this.config.auth.fallbackCookieNames];
+        const cookiesToRemove = [this.config.authCookieName, ...this.config.authFallbackCookieNames];
         
         for (const cookieName of cookiesToRemove) {
             document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
@@ -1301,9 +1302,9 @@ class ViewLogicRouter {
         }
 
         const {
-            storage = 'localStorage', // 'localStorage', 'sessionStorage', 'cookie'
-            cookieOptions = {},
-            skipValidation = false
+            storage = this.config.authStorage, // 'localStorage', 'sessionStorage', 'cookie'
+            cookieOptions = this.config.authCookieOptions,
+            skipValidation = this.config.authSkipValidation
         } = options;
 
         // JWT 토큰 유효성 검사 (선택사항)
@@ -1366,7 +1367,7 @@ class ViewLogicRouter {
      */
     setAuthCookie(token, options = {}) {
         const {
-            cookieName = this.config.auth.cookieName,
+            cookieName = this.config.authCookieName,
             expires = null, // Date 객체 또는 일수 (숫자)
             path = '/',
             domain = null,
@@ -1460,9 +1461,9 @@ class ViewLogicRouter {
         console.log(`🔒 Authentication required for route: ${originalRoute}`);
         
         // 원래 요청한 페이지를 쿼리 파라미터로 저장
-        const redirectUrl = originalRoute !== this.config.auth.loginRoute ? 
-            `${this.config.auth.loginRoute}?redirect=${encodeURIComponent(originalRoute)}` : 
-            this.config.auth.loginRoute;
+        const redirectUrl = originalRoute !== this.config.loginRoute ? 
+            `${this.config.loginRoute}?redirect=${encodeURIComponent(originalRoute)}` : 
+            this.config.loginRoute;
         
         // 로그인 페이지로 이동
         this.navigateTo(redirectUrl);
@@ -1470,7 +1471,7 @@ class ViewLogicRouter {
         // 인증 이벤트 발생
         this.emitAuthEvent('auth_required', { 
             originalRoute, 
-            loginRoute: this.config.auth.loginRoute 
+            loginRoute: this.config.loginRoute 
         });
     }
 
@@ -1479,7 +1480,7 @@ class ViewLogicRouter {
      */
     handleLoginSuccess() {
         const redirectParam = this.getQueryParam('redirect');
-        const targetRoute = redirectParam || this.config.auth.redirectAfterLogin;
+        const targetRoute = redirectParam || this.config.redirectAfterLogin;
         
         console.log(`✅ Login successful, redirecting to: ${targetRoute}`);
         
@@ -1510,7 +1511,7 @@ class ViewLogicRouter {
         console.log('🚪 User logged out');
         
         // 로그인 페이지로 이동
-        this.navigateTo(this.config.auth.loginRoute);
+        this.navigateTo(this.config.loginRoute);
         
         // 인증 이벤트 발생
         this.emitAuthEvent('logout', {});
