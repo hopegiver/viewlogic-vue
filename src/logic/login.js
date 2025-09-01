@@ -6,6 +6,13 @@
 export default {
     name: 'Login',
     layout: null,
+    
+    props: {
+        showWelcome: {
+            type: Boolean,
+            default: true
+        }
+    },
 
     data() {
         return {
@@ -35,7 +42,6 @@ export default {
             // 설정
             socialLoginEnabled: true,
             minPasswordLength: 6,
-            showWelcome: true,
             
             // 리다이렉트 정보
             redirectRoute: null

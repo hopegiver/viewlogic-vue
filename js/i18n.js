@@ -9,6 +9,9 @@ class I18n {
             defaultLanguage: options.defaultLanguage || 'ko',
             fallbackLanguage: options.fallbackLanguage || 'ko',
             cacheKey: options.cacheKey || 'viewlogic_lang',
+            dataCacheKey: options.dataCacheKey || 'viewlogic_i18n_data',
+            cacheVersion: options.cacheVersion || '1.0.0',
+            enableDataCache: options.enableDataCache !== false,
             debug: options.debug || false
         };
         
@@ -36,17 +39,21 @@ class I18n {
         // 캐시에서 언어 설정 로드
         this.loadLanguageFromCache();
         
-        // URL 쿼리 파라미터에서 언어 확인
-        this.loadLanguageFromQuery();
+        // 개발 모드에서는 캐시 비활성화
+        if (this.config.debug) {
+            this.config.enableDataCache = false;
+            this.log('Data cache disabled in debug mode');
+        }
         
-        this.log('I18n system initialized', { currentLanguage: this.currentLanguage });
-        
-        // 초기 언어 파일 자동 로드
-        try {
-            await this.loadMessages(this.currentLanguage);
-            this.log('Initial language file loaded successfully:', this.currentLanguage);
-        } catch (error) {
-            this.log('Failed to load initial language file:', error);
+        // 초기 언어 파일 자동 로드 (아직 로드되지 않은 경우에만)
+        if (!this.messages.has(this.currentLanguage)) {
+            try {
+                await this.loadMessages(this.currentLanguage);
+            } catch (error) {
+                this.log('Failed to load initial language file:', error);
+            }
+        } else {
+            this.log('Language messages already loaded:', this.currentLanguage);
         }
     }
 
@@ -65,30 +72,6 @@ class I18n {
         }
     }
 
-    /**
-     * URL 쿼리 파라미터에서 언어 로드
-     */
-    loadLanguageFromQuery() {
-        if (typeof window !== 'undefined') {
-            // 먼저 router에서 시도
-            if (window.router && window.router.getQueryParam) {
-                const langFromQuery = window.router.getQueryParam('lang');
-                if (langFromQuery && this.isValidLanguage(langFromQuery)) {
-                    this.setLanguage(langFromQuery);
-                    this.log('Language loaded from query via router:', langFromQuery);
-                    return;
-                }
-            }
-            
-            // router가 없으면 직접 URL에서 파싱
-            const urlParams = new URLSearchParams(window.location.search);
-            const langFromUrl = urlParams.get('lang');
-            if (langFromUrl && this.isValidLanguage(langFromUrl)) {
-                this.setLanguage(langFromUrl);
-                this.log('Language loaded from URL directly:', langFromUrl);
-            }
-        }
-    }
 
     /**
      * 언어 유효성 검사
@@ -189,12 +172,28 @@ class I18n {
     }
 
     /**
-     * 파일에서 메시지 로드
+     * 파일에서 메시지 로드 (캐싱 지원)
      */
     async _loadMessagesFromFile(language) {
+        // 캐시에서 먼저 시도
+        if (this.config.enableDataCache) {
+            const cachedData = this.getDataFromCache(language);
+            if (cachedData) {
+                this.log('Messages loaded from cache:', language);
+                return cachedData;
+            }
+        }
+        
         try {
             const module = await import(`../i18n/${language}.js`);
-            return module.default || module;
+            const messages = module.default || module;
+            
+            // 캐시에 저장
+            if (this.config.enableDataCache) {
+                this.saveDataToCache(language, messages);
+            }
+            
+            return messages;
         } catch (error) {
             this.log('Failed to load messages file for:', language, error);
             
@@ -205,6 +204,62 @@ class I18n {
             }
             
             throw new Error(`Failed to load messages for language: ${language}`);
+        }
+    }
+    
+    /**
+     * 언어 데이터를 캐시에서 가져오기
+     */
+    getDataFromCache(language) {
+        try {
+            const cacheKey = `${this.config.dataCacheKey}_${language}_${this.config.cacheVersion}`;
+            const cachedItem = localStorage.getItem(cacheKey);
+            
+            if (cachedItem) {
+                const { data, timestamp, version } = JSON.parse(cachedItem);
+                
+                // 버전 확인
+                if (version !== this.config.cacheVersion) {
+                    this.log('Cache version mismatch, clearing:', language);
+                    localStorage.removeItem(cacheKey);
+                    return null;
+                }
+                
+                // TTL 확인 (24시간)
+                const now = Date.now();
+                const maxAge = 24 * 60 * 60 * 1000; // 24시간
+                
+                if (now - timestamp > maxAge) {
+                    this.log('Cache expired, removing:', language);
+                    localStorage.removeItem(cacheKey);
+                    return null;
+                }
+                
+                return data;
+            }
+        } catch (error) {
+            this.log('Failed to read from cache:', error);
+        }
+        
+        return null;
+    }
+    
+    /**
+     * 언어 데이터를 캐시에 저장
+     */
+    saveDataToCache(language, data) {
+        try {
+            const cacheKey = `${this.config.dataCacheKey}_${language}_${this.config.cacheVersion}`;
+            const cacheItem = {
+                data,
+                timestamp: Date.now(),
+                version: this.config.cacheVersion
+            };
+            
+            localStorage.setItem(cacheKey, JSON.stringify(cacheItem));
+            this.log('Data saved to cache:', language);
+        } catch (error) {
+            this.log('Failed to save to cache:', error);
         }
     }
 
@@ -372,10 +427,34 @@ class I18n {
     }
     
     /**
+     * 캐시 초기화 (버전 변경 시 사용)
+     */
+    clearCache() {
+        try {
+            const keys = Object.keys(localStorage);
+            const cacheKeys = keys.filter(key => key.startsWith(this.config.dataCacheKey));
+            
+            cacheKeys.forEach(key => {
+                localStorage.removeItem(key);
+            });
+            
+            this.log('Cache cleared, removed', cacheKeys.length, 'items');
+        } catch (error) {
+            this.log('Failed to clear cache:', error);
+        }
+    }
+    
+    /**
      * i18n 설정 변경
      */
     updateConfig(newConfig) {
+        const oldVersion = this.config.cacheVersion;
         this.config = { ...this.config, ...newConfig };
+        
+        // 버전이 변경된 경우 캐시 초기화
+        if (newConfig.cacheVersion && newConfig.cacheVersion !== oldVersion) {
+            this.clearCache();
+        }
         
         // enabled 상태가 변경된 경우 재초기화
         if (newConfig.hasOwnProperty('enabled')) {
@@ -385,6 +464,40 @@ class I18n {
         }
         
         this.log('Config updated:', this.config);
+    }
+    
+    /**
+     * 캐시 상태 확인
+     */
+    getCacheInfo() {
+        const info = {
+            enabled: this.config.enableDataCache,
+            version: this.config.cacheVersion,
+            languages: {}
+        };
+        
+        try {
+            const keys = Object.keys(localStorage);
+            const cacheKeys = keys.filter(key => key.startsWith(this.config.dataCacheKey));
+            
+            cacheKeys.forEach(key => {
+                const match = key.match(new RegExp(`${this.config.dataCacheKey}_(\w+)_(.+)`));
+                if (match) {
+                    const [, language, version] = match;
+                    const cachedItem = JSON.parse(localStorage.getItem(key));
+                    
+                    info.languages[language] = {
+                        version,
+                        timestamp: cachedItem.timestamp,
+                        age: Date.now() - cachedItem.timestamp
+                    };
+                }
+            });
+        } catch (error) {
+            this.log('Failed to get cache info:', error);
+        }
+        
+        return info;
     }
     
     /**
@@ -406,23 +519,6 @@ class I18n {
             return false;
         }
     }
-}
-
-// 전역 인스턴스 생성 및 설정
-// 사용자가 직접 설정할 수 있도록 window.I18nConfig를 확인
-const userConfig = (typeof window !== 'undefined' && window.I18nConfig) ? window.I18nConfig : {};
-
-const defaultConfig = {
-    enabled: true,           // 다국어 시스템 활성화 여부
-    defaultLanguage: 'ko',   // 기본 언어
-    fallbackLanguage: 'ko',  // 폴백 언어
-    debug: true              // 개발 모드에서는 true로 설정
-};
-
-const finalConfig = { ...defaultConfig, ...userConfig };
-
-if (typeof window !== 'undefined') {
-    window.i18n = new I18n(finalConfig);
 }
 
 export default I18n;

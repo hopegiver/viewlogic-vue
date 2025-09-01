@@ -7,7 +7,7 @@
                 <h1 class="logo-text">ViewLogic</h1>
             </div>
             <p class="login-subtitle">
-                <span v-if="showWelcome">👋 환영합니다! </span>
+                <span v-if="showWelcome !== false">👋 환영합니다! </span>
                 {{ $t('login.welcome', '계정에 로그인하세요') }}
             </p>            
         </div>

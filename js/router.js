@@ -1,5 +1,8 @@
 class ViewLogicRouter {
     constructor(options = {}) {
+        // 버전 정보
+        this.version = options.version || '1.0.0';
+        
         // 기본 환경설정
         this.config = {
             basePath: options.basePath || '/src',
@@ -157,9 +160,7 @@ class ViewLogicRouter {
         try {
             // 1. i18n 시스템 먼저 완전히 초기화
             if (this.config.useI18n) {
-                console.log('🌍 Initializing i18n system...');
                 await this.initializeI18n();
-                console.log('✅ i18n system initialized successfully');
             }
 
             // 2. 컴포넌트 시스템 초기화
@@ -390,46 +391,42 @@ class ViewLogicRouter {
 
     async initializeI18n() {
         try {
-            // 라우터에서 i18n이 비활성화된 경우 초기화하지 않음
-            if (!this.config.useI18n) {
-                console.log('I18n system disabled in router config, skipping initialization');
-                return;
-            }
-            
-            // i18n 스크립트 로드 (ES6 모듈 동적 import 사용)
+           
+            // i18n 클래스 로드 및 인스턴스 생성
             if (typeof window.i18n === 'undefined') {
                 try {
-                    await import('./i18n.js');
+                    const I18nModule = await import('./i18n.js');
                     console.log('I18n module loaded successfully');
+                    
+                    // 라우터 설정으로 i18n 인스턴스 생성
+                    const config = {
+                        enabled: this.config.useI18n,
+                        defaultLanguage: this.config.i18nDefaultLanguage,
+                        fallbackLanguage: this.config.i18nDefaultLanguage,
+                        debug: this.config.environment === 'development',
+                        cacheVersion: this.version || '1.0.0',
+                        enableDataCache: this.config.environment === 'production'
+                    };
+                    
+                    window.i18n = new I18nModule.default(config);
+                    
                 } catch (error) {
-                    console.error('Failed to load i18n module:', error);
+                    console.error('Failed to load and create i18n instance:', error);
                     throw error;
                 }
             }
             
-            // i18n 시스템 초기화 (활성화된 경우에만)
+            // i18n 초기화 및 추가 설정
             if (window.i18n) {
-                // 라우터 설정으로 i18n 설정 업데이트
-                if (window.i18n.updateConfig) {
-                    window.i18n.updateConfig({
-                        enabled: this.config.useI18n,
-                        defaultLanguage: this.config.i18nDefaultLanguage,
-                        fallbackLanguage: this.config.i18nDefaultLanguage, // 폴백 언어는 기본 언어와 동일
-                        debug: this.config.environment === 'development' // 개발 환경에서만 디버그 활성화
-                    });
-                }
-                
-                // i18n이 비활성화된 경우 초기화하지 않음
+                // i18n이 비활성화된 경우 초기화 중단
                 if (!window.i18n.isEnabled()) {
                     console.log('I18n system is disabled, skipping initialization');
                     return;
                 }
                 
-                await window.i18n.initialize();
-                
-                // i18n이 완전히 준비될 때까지 대기
-                if (window.i18n.isReady) {
-                    await window.i18n.isReady();
+                // i18n 초기화 완료 대기
+                if (window.i18n.initPromise) {
+                    await window.i18n.initPromise;
                 }
                 
                 // URL 쿼리 파라미터에서 언어 설정 확인 및 적용
@@ -437,11 +434,6 @@ class ViewLogicRouter {
                 if (langFromQuery && langFromQuery !== window.i18n.getCurrentLanguage()) {
                     console.log('Setting language from URL parameter:', langFromQuery);
                     await window.i18n.setLanguage(langFromQuery);
-                    
-                    // 언어 변경 후 다시 준비 상태 확인
-                    if (window.i18n.isReady) {
-                        await window.i18n.isReady();
-                    }
                 }
                 
                 // 언어 변경 이벤트 리스너 등록
@@ -449,7 +441,6 @@ class ViewLogicRouter {
                     this.onLanguageChanged(data);
                 });
                 
-                console.log('I18n system initialized successfully with router config');
             }
         } catch (error) {
             console.warn('Failed to initialize i18n system:', error);
@@ -514,76 +505,6 @@ class ViewLogicRouter {
                 app.config.globalProperties.$i18n = null;
                 app.config.globalProperties.$lang = this.config.i18nDefaultLanguage;
             }
-        }
-    }
-
-    // DEPRECATED: 컴포넌트는 이제 createVueComponent 단계에서 포함됨
-    registerComponentsToVueApp(vueApp) {
-        if (!this.config.useComponents || !vueApp) {
-            if (this.config.environment === 'development') {
-                console.log('⚠️ Components not enabled or Vue app not provided');
-            }
-            return;
-        }
-
-        // 컴포넌트 등록은 각 Vue 앱마다 필요하므로 항상 수행
-        // 하지만 컴포넌트 모듈은 이미 로드되어 있어서 빠르게 등록됨
-
-        if (this.config.environment === 'development') {
-            console.log('🔧 Registering components to Vue app...');
-            console.log('🔧 Environment:', this.config.environment);
-            console.log('🔧 Unified components module available:', !!this.unifiedComponentsModule);
-        }
-
-        try {
-            // 프로덕션 모드에서 통합 컴포넌트 등록
-            if (this.config.environment === 'production' && this.unifiedComponentsModule) {
-                if (this.config.environment === 'development') {
-                    console.log('🔧 Calling registerComponents function...');
-                }
-                this.unifiedComponentsModule.registerComponents(vueApp);
-                if (this.config.environment === 'development') {
-                    console.log('✅ Components registered successfully');
-                }
-                return true;
-            }
-
-            // 개발 모드에서는 컴포넌트가 getUIComponents()에서 동적으로 로딩됨
-            console.log('🔧 Development mode: Components will be loaded dynamically');
-            return true;
-
-        } catch (error) {
-            console.error('❌ Failed to register components to Vue app:', error);
-            console.error('❌ Error details:', error.stack);
-            return false;
-        }
-
-        return false;
-    }
-
-
-    async registerComponentsForVueApp(vueApp) {
-        if (!this.config.useComponents || !vueApp) {
-            return { successful: [], failed: [] };
-        }
-
-        // 프로덕션 모드에서는 컴포넌트가 라우트에 인라인으로 포함되어 있음
-        if (this.config.environment === 'production') {
-            // 프로덕션 모드에서는 컴포넌트가 라우트에 인라인으로 포함되어 있음
-            return { successful: [], failed: [] };
-        }
-
-        if (!this.componentLoader) {
-            return { successful: [], failed: [] };
-        }
-
-        try {
-            console.log('📝 Components will be loaded per-component basis (development mode)');
-            // 개발 모드에서는 컴포넌트가 각 페이지별로 필요할 때 로드됨
-            return { successful: [], failed: [] };
-        } catch (error) {
-            console.warn('Component registration failed:', error);
-            return { successful: [], failed: [] };
         }
     }
 
@@ -958,7 +879,6 @@ class ViewLogicRouter {
             
             // 캐시에 저장
             this.setCache(cacheKey, component);
-            console.log(`💾 Cached Vue component: ${routeName}`);
             
             return component;
         } else {
@@ -1060,7 +980,6 @@ class ViewLogicRouter {
             
             // 캐시에 저장
             this.setCache(cacheKey, component);
-            console.log(`💾 Cached Vue component: ${routeName}`);
             
             return component;
         }
@@ -1632,8 +1551,6 @@ class ViewLogicRouter {
                         'Checkbox', 'Alert', 'DynamicInclude', 'HtmlInclude'
                     ];
                     
-                    console.log('🔄 Loading all components for development mode...');
-                    
                     for (const name of componentNames) {
                         try {
                             const component = await this.componentLoader.loadComponent(name);
@@ -1655,8 +1572,7 @@ class ViewLogicRouter {
         
         // 캐시에 저장 (프로덕션/개발 모드 공통)
         this.uiComponentsCache = components;
-        console.log(`💾 Cached UI components: ${Object.keys(components).length} components (${this.config.environment} mode)`);
-        
+
         return components;
     }
 
@@ -1691,7 +1607,6 @@ class ViewLogicRouter {
         if (cached) return cached;
         
         try {
-            console.log(`🔄 Loading layout: ${this.config.basePath}/layouts/${layoutName}.html`);
             const response = await fetch(`${this.config.basePath}/layouts/${layoutName}.html`);
             if (!response.ok) throw new Error(`Layout not found: ${response.status}`);
             const layout = await response.text();
@@ -1733,7 +1648,6 @@ class ViewLogicRouter {
             result = `${layout}\n${template}`;
         }
         
-        console.log('✓ Layout merge completed');
         this.setCache(cacheKey, result);
         return result;
     }
