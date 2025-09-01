@@ -1575,23 +1575,28 @@ class ViewLogicRouter {
      * UI 컴포넌트들을 가져오기
      */
     async getUIComponents() {
+        // UI 컴포넌트 캐시 확인 (프로덕션/개발 모드 공통)
+        if (this.uiComponentsCache) {
+            return this.uiComponentsCache;
+        }
+        
+        let components = {};
+        
         if (this.config.environment === 'production') {
             // 프로덕션 모드: 통합 컴포넌트에서 가져오기
             if (this.unifiedComponentsModule) {
                 // components export 확인
                 if (this.unifiedComponentsModule.components) {
-                    return this.unifiedComponentsModule.components;
+                    components = this.unifiedComponentsModule.components;
+                } else {
+                    // registerComponents 함수가 있는 경우 (기존 방식 호환)
+                    console.debug('Using legacy component registration method');
                 }
-                // registerComponents 함수가 있는 경우 (기존 방식 호환)
-                console.debug('Using legacy component registration method');
-                return {};
             }
-            return {};
         } else {
             // 개발 모드: 모든 컴포넌트를 직접 로딩해서 반환
             if (this.componentLoader) {
                 try {
-                    const components = {};
                     const componentNames = [
                         'Button', 'Modal', 'Card', 'Toast', 'Input', 'Tabs', 
                         'Checkbox', 'Alert', 'DynamicInclude', 'HtmlInclude'
@@ -1611,14 +1616,18 @@ class ViewLogicRouter {
                     }
                     
                     console.log(`🔄 Total components loaded: ${Object.keys(components).length}`);
-                    return components;
                 } catch (error) {
                     console.warn('Failed to load UI components:', error);
                     return {};
                 }
             }
-            return {};
         }
+        
+        // 캐시에 저장 (프로덕션/개발 모드 공통)
+        this.uiComponentsCache = components;
+        console.log(`💾 Cached UI components: ${Object.keys(components).length} components (${this.config.environment} mode)`);
+        
+        return components;
     }
 
     /**
@@ -1636,6 +1645,13 @@ class ViewLogicRouter {
     clearComponentCache() {
         const componentKeys = Array.from(this.cache.keys()).filter(key => key.startsWith('component_'));
         componentKeys.forEach(key => this.cache.delete(key));
+        
+        // UI 컴포넌트 캐시도 초기화
+        if (this.uiComponentsCache) {
+            this.uiComponentsCache = null;
+            console.log('🗑️ Cleared UI components cache');
+        }
+        
         console.log(`🗑️ Cleared ${componentKeys.length} component cache entries`);
     }
 
