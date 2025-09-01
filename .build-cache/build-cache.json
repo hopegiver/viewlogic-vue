@@ -1,0 +1,98 @@
+{
+  "route_about": {
+    "G:\\workspace\\viewlogic\\src\\logic\\about.js": "1aaebe7d20537ae5729ed626f538f560",
+    "G:\\workspace\\viewlogic\\src\\views\\about.html": "a98070a5a997096da6bfeb1fb7b3f65c",
+    "G:\\workspace\\viewlogic\\src\\styles\\about.css": "79192167c168e6a3c1687aeacafe60ae",
+    "G:\\workspace\\viewlogic\\src\\layouts\\default.html": "0d310966d5e11ef74258b3e767fb933c"
+  },
+  "route_404": {
+    "G:\\workspace\\viewlogic\\src\\logic\\404.js": "f6427218951730686a030f3b32438e87",
+    "G:\\workspace\\viewlogic\\src\\views\\404.html": "74425a6a919c9efe8fc7ebdb9f605cf1",
+    "G:\\workspace\\viewlogic\\src\\styles\\404.css": "78aa3e14be8ddc9db34f82a6dd34a788",
+    "G:\\workspace\\viewlogic\\src\\layouts\\default.html": "0d310966d5e11ef74258b3e767fb933c"
+  },
+  "route_blog": {
+    "G:\\workspace\\viewlogic\\src\\logic\\blog.js": "e2a5a46b2804b2a5e912b88b7d147625",
+    "G:\\workspace\\viewlogic\\src\\views\\blog.html": "8ec05c0b5d8abd66445c258e4f2c01d7",
+    "G:\\workspace\\viewlogic\\src\\styles\\blog.css": "027f641d1620af6b1d3935d8f950bf6f",
+    "G:\\workspace\\viewlogic\\src\\layouts\\default.html": "0d310966d5e11ef74258b3e767fb933c"
+  },
+  "route_blog-detail": {
+    "G:\\workspace\\viewlogic\\src\\logic\\blog-detail.js": "616131e57b3dcb7cb53e737693fdd3a1",
+    "G:\\workspace\\viewlogic\\src\\views\\blog-detail.html": "0fa4917bfb8ae7a87ee12f80b1fab774",
+    "G:\\workspace\\viewlogic\\src\\styles\\blog-detail.css": "ebfae93eeb52161cea4895e521a5e047",
+    "G:\\workspace\\viewlogic\\src\\layouts\\default.html": "0d310966d5e11ef74258b3e767fb933c"
+  },
+  "route_error": {
+    "G:\\workspace\\viewlogic\\src\\logic\\error.js": "531456afe004561daf59685bdacb49f3",
+    "G:\\workspace\\viewlogic\\src\\views\\error.html": "000bee47676e6191e64f3f3ca11e4996",
+    "G:\\workspace\\viewlogic\\src\\styles\\error.css": "6f6f079efbbf1bcb5a0f14dcb4add5af",
+    "G:\\workspace\\viewlogic\\src\\layouts\\default.html": "0d310966d5e11ef74258b3e767fb933c"
+  },
+  "route_contact": {
+    "G:\\workspace\\viewlogic\\src\\logic\\contact.js": "cd5e4959798c907b1a8be1ff6bc023b8",
+    "G:\\workspace\\viewlogic\\src\\views\\contact.html": "c50ab2753acf898a228cf07ec8b1168b",
+    "G:\\workspace\\viewlogic\\src\\styles\\contact.css": "37b3b792bb1b20ae43c8b05b260308ce",
+    "G:\\workspace\\viewlogic\\src\\layouts\\default.html": "0d310966d5e11ef74258b3e767fb933c"
+  },
+  "route_components": {
+    "G:\\workspace\\viewlogic\\src\\logic\\components.js": "a9be64eab14afbbe1acc0ff8656c7456",
+    "G:\\workspace\\viewlogic\\src\\views\\components.html": "65dc55394ad90bc954a640d2ac5d1371",
+    "G:\\workspace\\viewlogic\\src\\styles\\components.css": "e18d9d521f13cc443719176ca42e8506",
+    "G:\\workspace\\viewlogic\\src\\layouts\\default.html": "0d310966d5e11ef74258b3e767fb933c"
+  },
+  "route_cart": {
+    "G:\\workspace\\viewlogic\\src\\logic\\cart.js": "ba3e8f5b50455c632bf2da2cf3a4269a",
+    "G:\\workspace\\viewlogic\\src\\views\\cart.html": "863de16aea70ed525f1ba69f150e2c0b",
+    "G:\\workspace\\viewlogic\\src\\styles\\cart.css": "fc5a941151f7d6b0f36100fca7e124c3",
+    "G:\\workspace\\viewlogic\\src\\layouts\\default.html": "0d310966d5e11ef74258b3e767fb933c"
+  },
+  "route_loading": {
+    "G:\\workspace\\viewlogic\\src\\logic\\loading.js": "0cf7368d389df6d978692aaa9225b2a0",
+    "G:\\workspace\\viewlogic\\src\\views\\loading.html": "a31c20cea3ba26173ad65485b25fc9dd",
+    "G:\\workspace\\viewlogic\\src\\styles\\loading.css": "f82bc15dd7a321f5918c7a7259e728a5",
+    "G:\\workspace\\viewlogic\\src\\layouts\\default.html": "0d310966d5e11ef74258b3e767fb933c"
+  },
+  "route_home": {
+    "G:\\workspace\\viewlogic\\src\\logic\\home.js": "cc2ebcaf30532237bb4fb9a368db68f9",
+    "G:\\workspace\\viewlogic\\src\\views\\home.html": "c41aff77de04b15e0fd7da3b13f25ce4",
+    "G:\\workspace\\viewlogic\\src\\styles\\home.css": "7840962dda46f77dafdbdddc1d88a2a6",
+    "G:\\workspace\\viewlogic\\src\\layouts\\default.html": "0d310966d5e11ef74258b3e767fb933c"
+  },
+  "route_login": {
+    "G:\\workspace\\viewlogic\\src\\logic\\login.js": "2f323ce5ee4b25a2ba88e04e406c5000",
+    "G:\\workspace\\viewlogic\\src\\views\\login.html": "337956cfa55e4fc87921c215d6e2d202",
+    "G:\\workspace\\viewlogic\\src\\styles\\login.css": "4e246aebc044323388c7da3ac164012e",
+    "G:\\workspace\\viewlogic\\src\\layouts\\default.html": "0d310966d5e11ef74258b3e767fb933c"
+  },
+  "route_product-detail": {
+    "G:\\workspace\\viewlogic\\src\\logic\\product-detail.js": "7398f4dafb01601b87978b4ea53da021",
+    "G:\\workspace\\viewlogic\\src\\views\\product-detail.html": "b811a1abf7f85b15c7fa64f7b62c622b",
+    "G:\\workspace\\viewlogic\\src\\styles\\product-detail.css": "cbbb143a697b8d287ef049e8c440b668",
+    "G:\\workspace\\viewlogic\\src\\layouts\\default.html": "0d310966d5e11ef74258b3e767fb933c"
+  },
+  "route_videos": {
+    "G:\\workspace\\viewlogic\\src\\logic\\videos.js": "95d66a956418d85ef862fbfbade66369",
+    "G:\\workspace\\viewlogic\\src\\views\\videos.html": "9c8e602481665687435910f41d62cc54",
+    "G:\\workspace\\viewlogic\\src\\styles\\videos.css": "b0f02becd23df5acc7a15d379d0c976e",
+    "G:\\workspace\\viewlogic\\src\\layouts\\default.html": "0d310966d5e11ef74258b3e767fb933c"
+  },
+  "route_products": {
+    "G:\\workspace\\viewlogic\\src\\logic\\products.js": "d4f9b7077835e2358dfc5da4ebe2be46",
+    "G:\\workspace\\viewlogic\\src\\views\\products.html": "860340697938e568ad7e911b70458366",
+    "G:\\workspace\\viewlogic\\src\\styles\\products.css": "61bd466876aaf5acdb87d0565b27976b",
+    "G:\\workspace\\viewlogic\\src\\layouts\\default.html": "0d310966d5e11ef74258b3e767fb933c"
+  },
+  "route_video-detail": {
+    "G:\\workspace\\viewlogic\\src\\logic\\video-detail.js": "aed681ac03cb75ecedb22a867a4bfccc",
+    "G:\\workspace\\viewlogic\\src\\views\\video-detail.html": "932c1519b677fb93ec5a06e8b829a09f",
+    "G:\\workspace\\viewlogic\\src\\styles\\video-detail.css": "8f3e69e7831005836eda24eb2e9571ad",
+    "G:\\workspace\\viewlogic\\src\\layouts\\default.html": "0d310966d5e11ef74258b3e767fb933c"
+  },
+  "route_signup": {
+    "G:\\workspace\\viewlogic\\src\\logic\\signup.js": "c9d3cd0ad8fbd096bf1c656f0343db6c",
+    "G:\\workspace\\viewlogic\\src\\views\\signup.html": "a5fa2d14ca2abc969a1653c3ba24aa96",
+    "G:\\workspace\\viewlogic\\src\\styles\\signup.css": "258d775f7bdb87ebaa58a3d258a2df8d",
+    "G:\\workspace\\viewlogic\\src\\layouts\\default.html": "0d310966d5e11ef74258b3e767fb933c"
+  }
+}

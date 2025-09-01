@@ -1,17 +1,17 @@
 <div class="home-page">
-    <!-- 언어 스위처 -->
-    <div class="language-switcher-container" style="position: absolute; top: 1rem; right: 1rem;">
+    <!-- 언어 스위처 (임시 비활성화) -->
+    <!-- <div class="language-switcher-container" style="position: absolute; top: 1rem; right: 1rem;">
         <LanguageSwitcher variant="select" @language-changed="onLanguageChanged" />
-    </div>
+    </div> -->
     
     <div class="home-content">
         <Card 
-            :title="$t ? $t('home.router_title') : 'ViewLogic Router'"
-            :subtitle="$t ? $t('home.router_subtitle') : 'Vue 3 호환 라우터 시스템'"
+            :title="$t('home.router_title', 'ViewLogic Router')"
+            :subtitle="$t('home.router_subtitle', 'Vue 3 호환 라우터 시스템')"
             :hoverable="true"
             shadow="medium"
         >
-            <p><strong>{{ message || ($t ? $t('home.message') : 'Vue 스타일 컴포넌트로 동작중입니다!') }}</strong></p>
+            <p><strong>{{ message || $t('home.message', 'Vue 스타일 컴포넌트로 동작중입니다!') }}</strong></p>
             
             <template #footer>
                 <div class="card-tags">
@@ -22,7 +22,7 @@
         </Card>
         
         <Card 
-            :title="$t ? $t('home.features_title') : '주요 기능'"
+            :title="$t('home.features_title', '주요 기능')"
             :hoverable="true"
             shadow="small"
             style="margin-top: 1rem;"
@@ -39,7 +39,7 @@
                 @click="navigateTo('about')"
                 icon="📖"
             >
-                {{ $t ? $t('home.about_page') : 'About 페이지' }}
+                {{ $t('home.about_page', 'About 페이지') }}
             </Button>
             
             <Button 
@@ -48,7 +48,16 @@
                 @click="navigateTo('contact')"
                 icon="📞"
             >
-                {{ $t ? $t('home.contact_page') : 'Contact 페이지' }}
+                {{ $t('home.contact_page', 'Contact 페이지') }}
+            </Button>
+            
+            <Button 
+                variant="info" 
+                size="medium"
+                @click="navigateTo('login')"
+                icon="🔐"
+            >
+                {{ $t('home.login_page', '로그인 페이지') }}
             </Button>
             
             <Button 
@@ -58,7 +67,7 @@
                 @click="handleAction"
                 icon="🚀"
             >
-                {{ $t ? $t('home.test_action') : '테스트 액션' }}
+                {{ $t('home.test_action', '테스트 액션') }}
             </Button>
 
             <Button 
@@ -67,7 +76,7 @@
                 @click="showToast"
                 icon="💬"
             >
-                {{ $t ? $t('home.notification_test') : '알림 테스트' }}
+                {{ $t('home.notification_test', '알림 테스트') }}
             </Button>
 
             <Button 
@@ -76,7 +85,16 @@
                 @click="showModal = true"
                 icon="🔧"
             >
-                {{ $t ? $t('home.modal_test') : '모달 테스트' }}
+                {{ $t('home.modal_test', '모달 테스트') }}
+            </Button>
+            
+            <Button 
+                variant="danger" 
+                size="medium"
+                @click="clearRouterCache"
+                icon="🗑️"
+            >
+                캐시 초기화
             </Button>
         </div>
 
@@ -144,5 +162,48 @@
 
         <!-- Toast 컴포넌트 -->
         <Toast ref="toast" position="top-right" />
+        
+        <!-- 동적 컴포넌트 테스트 영역 -->
+        <div style="margin-top: 3rem; border-top: 1px solid #ddd; padding-top: 2rem;">
+            <h3>🧩 동적 컴포넌트 테스트</h3>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-top: 1rem;">
+                <!-- DynamicInclude 테스트 -->
+                <Card title="DynamicInclude 테스트" subtitle="ViewLogic 페이지 동적 로드">
+                    <p>다른 ViewLogic 페이지를 동적으로 로드합니다:</p>
+                    
+                    <div style="max-height: 400px; overflow-y: auto; border: 1px solid #ddd; border-radius: 8px; margin-top: 1rem;">
+                        <DynamicInclude 
+                            page="login" 
+                            :use-cache="false"
+                            loading-text="로그인 페이지 로딩 중..."
+                            wrapper-class="test-dynamic-include"
+                            :params="{ 
+                                returnUrl: '/dashboard', 
+                                showWelcome: true,
+                                theme: 'compact',
+                                testMode: true
+                            }"
+                            @load="onDynamicLoad"
+                            @error="onDynamicError"
+                        />
+                    </div>
+                </Card>
+                
+                <!-- HtmlInclude 테스트 -->
+                <Card title="HtmlInclude 테스트" subtitle="HTML 파일 동적 로드">
+                    <p>외부 HTML 파일을 동적으로 로드합니다:</p>
+                    <HtmlInclude 
+                        src="/src/views/404.html"
+                        :sanitize="true"
+                        :use-cache="false"
+                        loading-text="위젯 로딩 중..."
+                        wrapper-class="test-html-include"
+                        @load="onHtmlLoad"
+                        @error="onHtmlError"
+                    />
+                </Card>
+            </div>
+        </div>
     </div>
 </div>

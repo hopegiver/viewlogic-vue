@@ -502,16 +502,9 @@ class ViewLogicRouter {
                 return true;
             }
 
-            // 개발 모드에서 ComponentLoader 사용
-            if (this.componentLoader) {
-                if (this.config.environment === 'development') {
-                    console.log('🔧 Using ComponentLoader for development mode...');
-                }
-                this.componentLoader.registerGlobalComponents(vueApp);
-                return true;
-            }
-
-            console.warn('⚠️ No component registration method available');
+            // 개발 모드에서는 컴포넌트가 getUIComponents()에서 동적으로 로딩됨
+            console.log('🔧 Development mode: Components will be loaded dynamically');
+            return true;
 
         } catch (error) {
             console.error('❌ Failed to register components to Vue app:', error);
@@ -539,12 +532,9 @@ class ViewLogicRouter {
         }
 
         try {
-            console.log('📝 Registering global components with Vue app (development mode)...');
-            const result = await this.componentLoader.registerGlobalComponents(vueApp);
-            
-            // 컴포넌트 스타일은 이제 base.css에 통합되어 있음
-            
-            return result;
+            console.log('📝 Components will be loaded per-component basis (development mode)');
+            // 개발 모드에서는 컴포넌트가 각 페이지별로 필요할 때 로드됨
+            return { successful: [], failed: [] };
         } catch (error) {
             console.warn('Component registration failed:', error);
             return { successful: [], failed: [] };
@@ -872,6 +862,14 @@ class ViewLogicRouter {
                         $dataLoading: false
                     };
                 },
+                computed: {
+                    // 기존 computed 속성 유지
+                    ...(script.computed || {}),
+                    // 쿼리 파라미터를 props처럼 사용할 수 있도록 computed 속성 추가
+                    params() {
+                        return router.currentQueryParams || {};
+                    }
+                },
                 async mounted() {
                     // 원래 mounted 함수 실행
                     if (script.mounted) {
@@ -963,6 +961,14 @@ class ViewLogicRouter {
                         // dataURL 관련 로딩 상태
                         $dataLoading: false
                     };
+                },
+                computed: {
+                    // 기존 computed 속성 유지
+                    ...(script.computed || {}),
+                    // 쿼리 파라미터를 props처럼 사용할 수 있도록 computed 속성 추가
+                    params() {
+                        return router.currentQueryParams || {};
+                    }
                 },
                 async mounted() {
                     // 원래 mounted 함수 실행
@@ -1582,12 +1588,16 @@ class ViewLogicRouter {
             }
             return {};
         } else {
-            // 개발 모드: ComponentLoader에서 필요한 컴포넌트들 로드
+            // 개발 모드: 모든 컴포넌트를 직접 로딩해서 반환
             if (this.componentLoader) {
                 try {
-                    // 기본 UI 컴포넌트들 로드
-                    const componentNames = ['Button', 'Modal', 'Card', 'Toast', 'Input', 'Tabs', 'LanguageSwitcher'];
                     const components = {};
+                    const componentNames = [
+                        'Button', 'Modal', 'Card', 'Toast', 'Input', 'Tabs', 
+                        'Checkbox', 'Alert', 'DynamicInclude', 'HtmlInclude'
+                    ];
+                    
+                    console.log('🔄 Loading all components for development mode...');
                     
                     for (const name of componentNames) {
                         try {
@@ -1596,10 +1606,11 @@ class ViewLogicRouter {
                                 components[name] = component;
                             }
                         } catch (error) {
-                            console.debug(`Failed to load component ${name}:`, error.message);
+                            console.warn(`❌ Failed to load component ${name}:`, error.message);
                         }
                     }
                     
+                    console.log(`🔄 Total components loaded: ${Object.keys(components).length}`);
                     return components;
                 } catch (error) {
                     console.warn('Failed to load UI components:', error);
@@ -2398,5 +2409,6 @@ class ViewLogicRouter {
             this.processPreloadQueue();
         }
     }
+
 }
 // 전역 라우터는 index.html에서 환경설정과 함께 생성됨

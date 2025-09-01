@@ -54,7 +54,6 @@ class ComponentLoader {
         const componentPath = `${this.config.basePath}/${componentName}.js`;
         
         try {
-            console.log(`🔄 Loading component: ${componentName} from ${componentPath}`);
             const module = await import(componentPath);
             const component = module.default;
             

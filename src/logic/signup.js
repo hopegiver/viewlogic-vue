@@ -172,7 +172,7 @@ export default {
             // 페이지 리다이렉트
             setTimeout(() => {
                 const targetRoute = this.redirectRoute || 
-                                 this.getQueryParam('redirect') || 
+                                 this.params.redirect || 
                                  'home';
                 this.navigateTo(targetRoute);
             }, 1000);
@@ -360,12 +360,6 @@ export default {
             });
         },
         
-        /**
-         * 쿼리 파라미터 가져오기
-         */
-        getQueryParam(key) {
-            return this.$router?.getQueryParam(key);
-        },
         
         /**
          * 페이지 이동
@@ -409,32 +403,6 @@ export default {
     },
     
     mounted() {
-        // // 회원가입 페이지에서는 body의 패딩을 제거
-        // document.body.style.paddingTop = '0';
-        // document.body.style.overflow = 'hidden';
-        
-        // // 리다이렉트 정보 확인
-        // this.redirectRoute = this.getQueryParam('redirect');
-        
-        // // 이미 로그인된 경우 리다이렉트
-        // const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
-        // if (token) {
-        //     this.navigateTo(this.redirectRoute || 'home');
-        //     return;
-        // }
-        
-        // // 포커스를 첫 번째 입력 필드로 이동
-        // setTimeout(() => {
-        //     const firstNameInput = document.querySelector('input[name="firstName"]');
-        //     if (firstNameInput) {
-        //         firstNameInput.focus();
-        //     }
-        // }, 100);
-    },
 
-    unmounted() {
-        // 회원가입 페이지를 떠날 때 body 스타일 복원
-        document.body.style.paddingTop = '60px';
-        document.body.style.overflow = '';
     }
 };

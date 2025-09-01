@@ -68,15 +68,9 @@ export default {
     
     mounted() {
         // 비디오 ID가 있으면 처리 (옵션)
-        const hash = window.location.hash;
-        if (hash.includes('?')) {
-            const queryString = hash.split('?')[1];
-            const urlParams = new URLSearchParams(queryString);
-            const videoId = urlParams.get('id');
-            if (videoId) {
-                this.currentVideo.id = videoId;
-                this.currentVideo.title = `동영상 ${videoId}번`;
-            }
+        if (this.params.id) {
+            this.currentVideo.id = this.params.id;
+            this.currentVideo.title = `동영상 ${this.params.id}번`;
         }
     },
     

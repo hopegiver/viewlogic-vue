@@ -42,6 +42,7 @@ export default {
     },
     
     computed: {
+
         /**
          * 폼 유효성 검증
          */
@@ -159,7 +160,7 @@ export default {
             // 페이지 리다이렉트
             setTimeout(() => {
                 const targetRoute = this.redirectRoute || 
-                                 this.getQueryParam('redirect') || 
+                                 this.params.redirect || 
                                  'home';
                 this.navigateTo(targetRoute);
             }, 1000);
@@ -284,12 +285,6 @@ export default {
             });
         },
         
-        /**
-         * 쿼리 파라미터 가져오기
-         */
-        getQueryParam(key) {
-            return this.$router?.getQueryParam(key);
-        },
         
         /**
          * 페이지 이동
@@ -315,37 +310,6 @@ export default {
     },
     
     mounted() {
-        // // 리다이렉트 정보 확인
-        // this.redirectRoute = this.getQueryParam('redirect');
-        
-        // // 이미 로그인된 경우 리다이렉트
-        // const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
-        // if (token) {
-        //     this.navigateTo(this.redirectRoute || 'home');
-        //     return;
-        // }
-        
-        // // 데모 계정 정보 표시 (개발용)
-        // if (process.env.NODE_ENV === 'development') {
-        //     setTimeout(() => {
-        //         if (this.$refs.toast) {
-        //             this.$refs.toast.info(
-        //                 '데모 계정: demo@viewlogic.com / demo123',
-        //                 {
-        //                     title: '개발 모드',
-        //                     duration: 5000
-        //                 }
-        //             );
-        //         }
-        //     }, 1000);
-        // }
-        
-        // // 포커스를 이메일 입력 필드로 이동
-        // setTimeout(() => {
-        //     const emailInput = document.querySelector('input[type="email"]');
-        //     if (emailInput) {
-        //         emailInput.focus();
-        //     }
-        // }, 100);
+
     }
 };

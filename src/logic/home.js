@@ -128,21 +128,50 @@ export default {
             this.$nextTick(() => {
                 this.loadI18nData();
             });
+        },
+        
+        // 동적 컴포넌트 이벤트 핸들러들
+        onDynamicLoad(event) {
+            console.log('DynamicInclude 로드 완료:', event);
+            if (this.$refs.toast) {
+                this.$refs.toast.success(`페이지 '${event.page}' 로드 완료!`);
+            }
+        },
+        
+        onDynamicError(event) {
+            console.error('DynamicInclude 로드 실패:', event);
+            if (this.$refs.toast) {
+                this.$refs.toast.error(`페이지 '${event.page}' 로드 실패: ${event.error.message}`);
+            }
+        },
+        
+        onHtmlLoad(event) {
+            console.log('HtmlInclude 로드 완료:', event);
+            if (this.$refs.toast) {
+                this.$refs.toast.success('HTML 위젯 로드 완료!');
+            }
+        },
+        
+        onHtmlError(event) {
+            console.error('HtmlInclude 로드 실패:', event);
+            if (this.$refs.toast) {
+                this.$refs.toast.error(`HTML 로드 실패: ${event.error.message}`);
+            }
+        },
+        
+        // 라우터 캐시 초기화 (디버깅용)
+        clearRouterCache() {
+            if (window.router) {
+                window.router.clearCache();
+                if (this.$refs.toast) {
+                    this.$refs.toast.success('라우터 캐시가 초기화되었습니다!');
+                }
+                console.log('Router cache cleared');
+            }
         }
     },
     
     mounted() {
-        // i18n 데이터 로딩
-        this.loadI18nData();
-        
-        // 컴포넌트 시스템 로드 완료 알림
-        setTimeout(() => {
-            if (this.$refs.toast) {
-                this.$refs.toast.success(this.$t ? this.$t('components.toast.test_message') : '컴포넌트 시스템이 로드되었습니다!', {
-                    title: this.$t ? this.$t('common.success') : '시스템 준비 완료',
-                    duration: 3000
-                });
-            }
-        }, 1000);
+
     }
 };
