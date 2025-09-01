@@ -57,7 +57,7 @@
                 @click="navigateTo('login')"
                 icon="🔐"
             >
-                {{ $t('home.login_page', '로그인 페이지') }}
+                {{ $t('login.sign_in', '로그인 페이지') }}
             </Button>
             
             <Button 
@@ -104,7 +104,6 @@
                 v-model="activeTab" 
                 :tabs="tabsData" 
                 variant="underline"
-                @tab-change="onTabChange"
             >
                 <template #demo1>
                     <div style="padding: 1rem;">
@@ -184,8 +183,6 @@
                                 theme: 'compact',
                                 testMode: true
                             }"
-                            @load="onDynamicLoad"
-                            @error="onDynamicError"
                         />
                     </div>
                 </Card>
@@ -199,8 +196,6 @@
                         :use-cache="false"
                         loading-text="위젯 로딩 중..."
                         wrapper-class="test-html-include"
-                        @load="onHtmlLoad"
-                        @error="onHtmlError"
                     />
                 </Card>
             </div>

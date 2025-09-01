@@ -63,13 +63,8 @@ class ViewLogicRouter {
         this.componentLoader = null; // 컴포넌트 로더 인스턴스
         this.mobileMenuOpen = false; // 모바일 메뉴 상태
 
-        this.init();        
-        this.i18nInitPromise = this.initializeI18n();        
-        this.initializeLoadingComponents();
-        this.initializeComponentSystem();
-
-        // 초기 라우트 로드 후 프리로딩 시작 (설정된 지연 시간 후)
-        setTimeout(() => this.startPreloading(), this.config.preloadDelay);
+        // 비동기 초기화 시작
+        this.initialize();
         
         // 개발 편의를 위한 전역 캐시 관리 함수 노출
         if (this.config.environment === 'development') {
@@ -152,6 +147,37 @@ class ViewLogicRouter {
     handleWindowResize() {
         if (window.innerWidth > 768) {
             this.closeMobileMenu();
+        }
+    }
+
+    /**
+     * 비동기 초기화 - i18n을 먼저 로드한 후 라우터 시작
+     */
+    async initialize() {
+        try {
+            // 1. i18n 시스템 먼저 완전히 초기화
+            if (this.config.useI18n) {
+                console.log('🌍 Initializing i18n system...');
+                await this.initializeI18n();
+                console.log('✅ i18n system initialized successfully');
+            }
+
+            // 2. 컴포넌트 시스템 초기화
+            await this.initializeComponentSystem();
+            
+            // 3. 로딩 컴포넌트 초기화
+            this.initializeLoadingComponents();
+            
+            // 4. 라우터 이벤트 리스너 등록 및 초기 라우트 처리
+            this.init();
+            
+            // 5. 프리로딩 시작 (설정된 지연 시간 후)
+            setTimeout(() => this.startPreloading(), this.config.preloadDelay);
+            
+        } catch (error) {
+            console.error('❌ Router initialization failed:', error);
+            // i18n 실패 시에도 라우터는 동작하도록 fallback
+            this.init();
         }
     }
 
@@ -401,11 +427,21 @@ class ViewLogicRouter {
                 
                 await window.i18n.initialize();
                 
+                // i18n이 완전히 준비될 때까지 대기
+                if (window.i18n.isReady) {
+                    await window.i18n.isReady();
+                }
+                
                 // URL 쿼리 파라미터에서 언어 설정 확인 및 적용
                 const langFromQuery = this.getQueryParam('lang');
                 if (langFromQuery && langFromQuery !== window.i18n.getCurrentLanguage()) {
                     console.log('Setting language from URL parameter:', langFromQuery);
                     await window.i18n.setLanguage(langFromQuery);
+                    
+                    // 언어 변경 후 다시 준비 상태 확인
+                    if (window.i18n.isReady) {
+                        await window.i18n.isReady();
+                    }
                 }
                 
                 // 언어 변경 이벤트 리스너 등록
@@ -453,18 +489,28 @@ class ViewLogicRouter {
 
     updateI18nGlobalProperties(app) {
         if (app) {
-            // 라우터에서 i18n이 비활성화된 경우 더미 함수 제공
-            if (!this.config.useI18n || (window.i18n && !window.i18n.isEnabled())) {
-                app.config.globalProperties.$t = (key, params) => key;
-                app.config.globalProperties.$i18n = null;
-                app.config.globalProperties.$lang = this.config.i18nDefaultLanguage;
-            } else if (window.i18n) {
-                app.config.globalProperties.$t = (key, params) => window.i18n.t(key, params);
+            // 통합된 $t 함수 - 기본값 지원과 안전한 폴백 제공
+            app.config.globalProperties.$t = (key, defaultValue, params) => {
+                // i18n이 비활성화되었거나 사용할 수 없는 경우
+                if (!this.config.useI18n || !window.i18n || !window.i18n.isEnabled()) {
+                    return defaultValue || key;
+                }
+                
+                try {
+                    // i18n 번역 시도
+                    const translation = window.i18n.t(key, params);
+                    return translation || defaultValue || key;
+                } catch (error) {
+                    console.warn(`Translation failed for key: ${key}`, error);
+                    return defaultValue || key;
+                }
+            };
+            
+            // i18n 객체 및 언어 설정
+            if (window.i18n && window.i18n.isEnabled()) {
                 app.config.globalProperties.$i18n = window.i18n;
                 app.config.globalProperties.$lang = window.i18n.getCurrentLanguage();
             } else {
-                // i18n이 아직 로드되지 않은 경우 더미 함수 제공
-                app.config.globalProperties.$t = (key, params) => key;
                 app.config.globalProperties.$i18n = null;
                 app.config.globalProperties.$lang = this.config.i18nDefaultLanguage;
             }
@@ -814,23 +860,7 @@ class ViewLogicRouter {
         const cacheKey = `component_${routeName}`;
         const cached = this.getFromCache(cacheKey);
         if (cached) {
-            console.log(`📦 Using cached Vue component: ${routeName}`);
             return cached;
-        }
-        
-        // i18n 초기화가 완료될 때까지 대기
-        if (this.config.useI18n && this.i18nInitPromise) {
-            try {
-                await this.i18nInitPromise;
-                console.log('📄 I18n initialization completed before component creation');
-                
-                // i18n이 제대로 로드되었는지 확인하고 추가 대기
-                if (window.i18n && window.i18n.isReady) {
-                    await window.i18n.isReady();
-                }
-            } catch (error) {
-                console.warn('⚠️ I18n initialization failed, proceeding without translations:', error);
-            }
         }
         
         const script = await this.loadScript(routeName);
@@ -1681,8 +1711,6 @@ class ViewLogicRouter {
         const cached = this.getFromCache(cacheKey);
         if (cached) return cached;
 
-        console.log('🔄 Merging layout with template...');
-        
         let result;
         // 레이아웃에서 <slot name="content"> 부분을 템플릿으로 교체
         if (layout.includes('{{ content }}')) {

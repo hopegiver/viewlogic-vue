@@ -26,6 +26,8 @@ export default {
                     :max="max"
                     :step="step"
                     :maxlength="maxlength"
+                    :autocomplete="autocomplete"
+                    :name="name"
                     @input="handleInput"
                     @blur="handleBlur"
                     @focus="handleFocus"
@@ -130,6 +132,14 @@ export default {
         },
         maxlength: {
             type: [String, Number],
+            default: undefined
+        },
+        autocomplete: {
+            type: String,
+            default: undefined
+        },
+        name: {
+            type: String,
             default: undefined
         }
     },
