@@ -361,20 +361,17 @@ class ViewLogicRouter {
         try {
             // 통합 _components.js 파일 로드 (성능 최적화된 통합 컴포넌트)
             const componentsPath = `${this.config.routesPath}/_components.js`;
-            console.log(`📦 Loading unified components from: ${componentsPath}`);
             
             // 브라우저에서 상대 경로 import를 위해 현재 origin 추가
             const fullPath = window.location.origin + componentsPath;
-            console.log(`📦 Full path: ${fullPath}`);
             
             const componentsModule = await import(componentsPath);
-            console.log('📦 Components module loaded:', componentsModule);
+            console.log('📦 All components module loaded');
             
             // 컴포넌트 등록 함수가 있는지 확인
             if (typeof componentsModule.registerComponents === 'function') {
                 // 글로벌 Vue 앱이 없으면 임시로 저장
                 this.unifiedComponentsModule = componentsModule;
-                console.log('📦 Unified components loaded and ready for registration');
                 console.log('📦 Available components:', Object.keys(componentsModule.components || {}));
                 return true;
             } else {
