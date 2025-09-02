@@ -1,0 +1,45 @@
+{
+  "purpose": "artifacts 시스템 업데이트 가이드",
+  "lastUpdated": "2025-09-02",
+  "quickReference": {
+    "always": "⭐ node generate-callgraph.cjs (코드 수정 후)",
+    "major": "⭐ project-context.json currentState 업데이트 (기능 완료 후)",
+    "rules": "coding-rules.json 추가 (새 규칙/문제 발견 시)",
+    "tasks": "common-tasks.json 추가 (새 워크플로우/문제해결 시)"
+  },
+  "updateTriggers": {
+    "automatic": {
+      "callgraph": "⭐ router.js/build.cjs 수정 → node generate-callgraph.cjs"
+    },
+    "manual": {
+      "project-context.json": [
+        "⭐ 새 라우트 추가 → totalRoutes 증가",
+        "⭐ 주요 기능 완료 → recentFeatures 추가",
+        "router.js/build.cjs 구조 변경 → keySections 업데이트"
+      ],
+      "coding-rules.json": [
+        "새 규칙 발견 → neverDo/alwaysDo 추가",
+        "문제 발생 → 해당 섹션에 규칙 추가"
+      ],
+      "common-tasks.json": [
+        "새 워크플로우 → frequentWorkflows 추가",
+        "새 문제 해결 → troubleshooting 추가"
+      ],
+      "conversation-history.json": [
+        "중요한 결정 → importantDecisions 추가",
+        "새로운 학습 → technicalLearnings 추가"
+      ]
+    }
+  },
+  "automation": {
+    "gitHook": "#!/bin/sh\nif git diff --cached --name-only | grep -E \"(router\\.js|build\\.cjs)\"; then\n    node generate-callgraph.cjs\n    git add .artifacts/callgraph/\nfi"
+  },
+  "maintenance": {
+    "monthly": "⭐ 중복 정보 정리, 오래된 정보 제거",
+    "issues": {
+      "outdated": "날짜 확인으로 해결",
+      "duplicated": "단일 출처 원칙 적용",
+      "missed": "체크리스트 활용"
+    }
+  }
+}

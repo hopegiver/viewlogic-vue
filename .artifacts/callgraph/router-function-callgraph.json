@@ -1,0 +1,931 @@
+{
+  "functions": {
+    "constructor": {
+      "name": "constructor",
+      "type": "method",
+      "line": 2,
+      "calls": [],
+      "calledBy": []
+    },
+    "toggleMobileMenu": {
+      "name": "toggleMobileMenu",
+      "type": "method",
+      "line": 90,
+      "calls": [],
+      "calledBy": [
+        "renderComponent",
+        "renderComponentWithTransition"
+      ]
+    },
+    "closeMobileMenu": {
+      "name": "closeMobileMenu",
+      "type": "method",
+      "line": 104,
+      "calls": [],
+      "calledBy": [
+        "handleWindowResize",
+        "renderComponent",
+        "renderComponentWithTransition"
+      ]
+    },
+    "updateMobileMenuState": {
+      "name": "updateMobileMenuState",
+      "type": "method",
+      "line": 118,
+      "calls": [],
+      "calledBy": []
+    },
+    "handleWindowResize": {
+      "name": "handleWindowResize",
+      "type": "method",
+      "line": 150,
+      "calls": [
+        "closeMobileMenu"
+      ],
+      "calledBy": [
+        "init"
+      ]
+    },
+    "initialize": {
+      "name": "initialize",
+      "type": "method",
+      "line": 159,
+      "calls": [],
+      "calledBy": []
+    },
+    "triggerLanguageChangeEvent": {
+      "name": "triggerLanguageChangeEvent",
+      "type": "method",
+      "line": 188,
+      "calls": [],
+      "calledBy": [
+        "handleLanguageQueryParam"
+      ]
+    },
+    "clearAllCaches": {
+      "name": "clearAllCaches",
+      "type": "method",
+      "line": 206,
+      "calls": [],
+      "calledBy": [
+        "handleCacheQueryParam"
+      ]
+    },
+    "clearRouterCache": {
+      "name": "clearRouterCache",
+      "type": "method",
+      "line": 226,
+      "calls": [],
+      "calledBy": [
+        "handleCacheQueryParam"
+      ]
+    },
+    "clearI18nCache": {
+      "name": "clearI18nCache",
+      "type": "method",
+      "line": 237,
+      "calls": [],
+      "calledBy": [
+        "handleCacheQueryParam"
+      ]
+    },
+    "removeQueryParameter": {
+      "name": "removeQueryParameter",
+      "type": "method",
+      "line": 256,
+      "calls": [],
+      "calledBy": [
+        "handleCacheQueryParam"
+      ]
+    },
+    "init": {
+      "name": "init",
+      "type": "method",
+      "line": 264,
+      "calls": [
+        "handleWindowResize"
+      ],
+      "calledBy": []
+    },
+    "initializeLoadingComponents": {
+      "name": "initializeLoadingComponents",
+      "type": "method",
+      "line": 298,
+      "calls": [],
+      "calledBy": []
+    },
+    "createProgressBar": {
+      "name": "createProgressBar",
+      "type": "method",
+      "line": 305,
+      "calls": [],
+      "calledBy": []
+    },
+    "showLoading": {
+      "name": "showLoading",
+      "type": "method",
+      "line": 322,
+      "calls": [],
+      "calledBy": [
+        "loadRoute"
+      ]
+    },
+    "animateProgress": {
+      "name": "animateProgress",
+      "type": "method",
+      "line": 334,
+      "calls": [],
+      "calledBy": []
+    },
+    "hideLoading": {
+      "name": "hideLoading",
+      "type": "method",
+      "line": 353,
+      "calls": [],
+      "calledBy": [
+        "showFullPageLoading",
+        "loadRoute"
+      ]
+    },
+    "showFullPageLoading": {
+      "name": "showFullPageLoading",
+      "type": "method",
+      "line": 384,
+      "calls": [
+        "hideLoading"
+      ],
+      "calledBy": []
+    },
+    "initializeComponentSystem": {
+      "name": "initializeComponentSystem",
+      "type": "method",
+      "line": 408,
+      "calls": [],
+      "calledBy": []
+    },
+    "loadUnifiedComponents": {
+      "name": "loadUnifiedComponents",
+      "type": "method",
+      "line": 439,
+      "calls": [],
+      "calledBy": []
+    },
+    "initializeI18n": {
+      "name": "initializeI18n",
+      "type": "method",
+      "line": 468,
+      "calls": [],
+      "calledBy": []
+    },
+    "loadExternalScript": {
+      "name": "loadExternalScript",
+      "type": "method",
+      "line": 526,
+      "calls": [],
+      "calledBy": []
+    },
+    "onLanguageChanged": {
+      "name": "onLanguageChanged",
+      "type": "method",
+      "line": 547,
+      "calls": [],
+      "calledBy": []
+    },
+    "updateI18nGlobalProperties": {
+      "name": "updateI18nGlobalProperties",
+      "type": "method",
+      "line": 557,
+      "calls": [],
+      "calledBy": []
+    },
+    "handleRouteChange": {
+      "name": "handleRouteChange",
+      "type": "method",
+      "line": 587,
+      "calls": [],
+      "calledBy": [
+        "updateURL"
+      ]
+    },
+    "handleQueryParameters": {
+      "name": "handleQueryParameters",
+      "type": "method",
+      "line": 630,
+      "calls": [],
+      "calledBy": []
+    },
+    "handleCacheQueryParam": {
+      "name": "handleCacheQueryParam",
+      "type": "method",
+      "line": 645,
+      "calls": [
+        "clearAllCaches",
+        "clearRouterCache",
+        "clearI18nCache",
+        "removeQueryParameter"
+      ],
+      "calledBy": []
+    },
+    "handleLanguageQueryParam": {
+      "name": "handleLanguageQueryParam",
+      "type": "method",
+      "line": 673,
+      "calls": [
+        "triggerLanguageChangeEvent"
+      ],
+      "calledBy": []
+    },
+    "loadRoute": {
+      "name": "loadRoute",
+      "type": "method",
+      "line": 697,
+      "calls": [
+        "showLoading",
+        "hideLoading"
+      ],
+      "calledBy": []
+    },
+    "handleRouteError": {
+      "name": "handleRouteError",
+      "type": "method",
+      "line": 743,
+      "calls": [],
+      "calledBy": []
+    },
+    "load404Page": {
+      "name": "load404Page",
+      "type": "method",
+      "line": 787,
+      "calls": [],
+      "calledBy": []
+    },
+    "loadErrorPage": {
+      "name": "loadErrorPage",
+      "type": "method",
+      "line": 800,
+      "calls": [],
+      "calledBy": []
+    },
+    "createErrorComponent": {
+      "name": "createErrorComponent",
+      "type": "method",
+      "line": 815,
+      "calls": [],
+      "calledBy": []
+    },
+    "showFallbackErrorPage": {
+      "name": "showFallbackErrorPage",
+      "type": "method",
+      "line": 846,
+      "calls": [],
+      "calledBy": []
+    },
+    "reportError": {
+      "name": "reportError",
+      "type": "method",
+      "line": 907,
+      "calls": [],
+      "calledBy": []
+    },
+    "createVueComponent": {
+      "name": "createVueComponent",
+      "type": "method",
+      "line": 928,
+      "calls": [],
+      "calledBy": []
+    },
+    "getI18nTranslateFunction": {
+      "name": "getI18nTranslateFunction",
+      "type": "method",
+      "line": 1140,
+      "calls": [],
+      "calledBy": []
+    },
+    "getCurrentLanguage": {
+      "name": "getCurrentLanguage",
+      "type": "method",
+      "line": 1156,
+      "calls": [],
+      "calledBy": []
+    },
+    "toPascalCase": {
+      "name": "toPascalCase",
+      "type": "method",
+      "line": 1172,
+      "calls": [],
+      "calledBy": [
+        "generatePageTitle"
+      ]
+    },
+    "generatePageTitle": {
+      "name": "generatePageTitle",
+      "type": "method",
+      "line": 1182,
+      "calls": [
+        "toPascalCase"
+      ],
+      "calledBy": [
+        "generateDefaultTemplate"
+      ]
+    },
+    "generateDefaultTemplate": {
+      "name": "generateDefaultTemplate",
+      "type": "method",
+      "line": 1189,
+      "calls": [
+        "generatePageTitle"
+      ],
+      "calledBy": []
+    },
+    "checkAuthentication": {
+      "name": "checkAuthentication",
+      "type": "method",
+      "line": 1226,
+      "calls": [],
+      "calledBy": []
+    },
+    "isUserAuthenticated": {
+      "name": "isUserAuthenticated",
+      "type": "method",
+      "line": 1275,
+      "calls": [],
+      "calledBy": []
+    },
+    "getAuthCookie": {
+      "name": "getAuthCookie",
+      "type": "method",
+      "line": 1336,
+      "calls": [],
+      "calledBy": [
+        "getAccessToken"
+      ]
+    },
+    "getCookieValue": {
+      "name": "getCookieValue",
+      "type": "method",
+      "line": 1357,
+      "calls": [],
+      "calledBy": []
+    },
+    "removeAuthCookie": {
+      "name": "removeAuthCookie",
+      "type": "method",
+      "line": 1369,
+      "calls": [],
+      "calledBy": [
+        "removeToken",
+        "handleLogout"
+      ]
+    },
+    "getAccessToken": {
+      "name": "getAccessToken",
+      "type": "method",
+      "line": 1383,
+      "calls": [
+        "getAuthCookie"
+      ],
+      "calledBy": []
+    },
+    "setAccessToken": {
+      "name": "setAccessToken",
+      "type": "method",
+      "line": 1402,
+      "calls": [],
+      "calledBy": []
+    },
+    "setAuthCookie": {
+      "name": "setAuthCookie",
+      "type": "method",
+      "line": 1472,
+      "calls": [],
+      "calledBy": []
+    },
+    "removeToken": {
+      "name": "removeToken",
+      "type": "method",
+      "line": 1530,
+      "calls": [
+        "removeAuthCookie"
+      ],
+      "calledBy": []
+    },
+    "redirectToLogin": {
+      "name": "redirectToLogin",
+      "type": "method",
+      "line": 1564,
+      "calls": [],
+      "calledBy": []
+    },
+    "handleLoginSuccess": {
+      "name": "handleLoginSuccess",
+      "type": "method",
+      "line": 1585,
+      "calls": [],
+      "calledBy": []
+    },
+    "handleLogout": {
+      "name": "handleLogout",
+      "type": "method",
+      "line": 1601,
+      "calls": [
+        "removeAuthCookie"
+      ],
+      "calledBy": []
+    },
+    "emitAuthEvent": {
+      "name": "emitAuthEvent",
+      "type": "method",
+      "line": 1627,
+      "calls": [],
+      "calledBy": []
+    },
+    "fetchComponentData": {
+      "name": "fetchComponentData",
+      "type": "method",
+      "line": 1637,
+      "calls": [],
+      "calledBy": []
+    },
+    "getUIComponents": {
+      "name": "getUIComponents",
+      "type": "method",
+      "line": 1675,
+      "calls": [],
+      "calledBy": []
+    },
+    "invalidateComponentCache": {
+      "name": "invalidateComponentCache",
+      "type": "method",
+      "line": 1731,
+      "calls": [],
+      "calledBy": []
+    },
+    "clearComponentCache": {
+      "name": "clearComponentCache",
+      "type": "method",
+      "line": 1740,
+      "calls": [],
+      "calledBy": []
+    },
+    "loadLayout": {
+      "name": "loadLayout",
+      "type": "method",
+      "line": 1753,
+      "calls": [],
+      "calledBy": [
+        "preloadRoute"
+      ]
+    },
+    "mergeLayoutWithTemplate": {
+      "name": "mergeLayoutWithTemplate",
+      "type": "method",
+      "line": 1772,
+      "calls": [],
+      "calledBy": []
+    },
+    "loadTemplate": {
+      "name": "loadTemplate",
+      "type": "method",
+      "line": 1804,
+      "calls": [],
+      "calledBy": [
+        "preloadRoute"
+      ]
+    },
+    "loadScript": {
+      "name": "loadScript",
+      "type": "method",
+      "line": 1817,
+      "calls": [],
+      "calledBy": [
+        "preloadRoute"
+      ]
+    },
+    "loadStyle": {
+      "name": "loadStyle",
+      "type": "method",
+      "line": 1858,
+      "calls": [],
+      "calledBy": [
+        "preloadRoute"
+      ]
+    },
+    "renderComponent": {
+      "name": "renderComponent",
+      "type": "method",
+      "line": 1871,
+      "calls": [
+        "toggleMobileMenu",
+        "closeMobileMenu"
+      ],
+      "calledBy": []
+    },
+    "renderComponentWithTransition": {
+      "name": "renderComponentWithTransition",
+      "type": "method",
+      "line": 1922,
+      "calls": [
+        "toggleMobileMenu",
+        "closeMobileMenu"
+      ],
+      "calledBy": []
+    },
+    "cleanupPreviousPages": {
+      "name": "cleanupPreviousPages",
+      "type": "method",
+      "line": 1983,
+      "calls": [],
+      "calledBy": []
+    },
+    "applyStyle": {
+      "name": "applyStyle",
+      "type": "method",
+      "line": 2012,
+      "calls": [],
+      "calledBy": []
+    },
+    "navigateTo": {
+      "name": "navigateTo",
+      "type": "method",
+      "line": 2026,
+      "calls": [],
+      "calledBy": []
+    },
+    "getCurrentRoute": {
+      "name": "getCurrentRoute",
+      "type": "method",
+      "line": 2042,
+      "calls": [],
+      "calledBy": []
+    },
+    "sanitizeParameter": {
+      "name": "sanitizeParameter",
+      "type": "method",
+      "line": 2047,
+      "calls": [],
+      "calledBy": [
+        "parseQueryString",
+        "setQueryParams"
+      ]
+    },
+    "validateParameter": {
+      "name": "validateParameter",
+      "type": "method",
+      "line": 2090,
+      "calls": [
+        "validateParameter"
+      ],
+      "calledBy": [
+        "validateParameter",
+        "parseQueryString",
+        "setQueryParams"
+      ]
+    },
+    "parseQueryString": {
+      "name": "parseQueryString",
+      "type": "method",
+      "line": 2167,
+      "calls": [
+        "validateParameter",
+        "sanitizeParameter"
+      ],
+      "calledBy": []
+    },
+    "buildQueryString": {
+      "name": "buildQueryString",
+      "type": "method",
+      "line": 2241,
+      "calls": [],
+      "calledBy": [
+        "updateURL"
+      ]
+    },
+    "hasQueryParamsChanged": {
+      "name": "hasQueryParamsChanged",
+      "type": "method",
+      "line": 2258,
+      "calls": [],
+      "calledBy": []
+    },
+    "getQueryParams": {
+      "name": "getQueryParams",
+      "type": "method",
+      "line": 2275,
+      "calls": [],
+      "calledBy": []
+    },
+    "getQueryParam": {
+      "name": "getQueryParam",
+      "type": "method",
+      "line": 2279,
+      "calls": [],
+      "calledBy": []
+    },
+    "setQueryParams": {
+      "name": "setQueryParams",
+      "type": "method",
+      "line": 2283,
+      "calls": [
+        "validateParameter",
+        "sanitizeParameter"
+      ],
+      "calledBy": []
+    },
+    "removeQueryParams": {
+      "name": "removeQueryParams",
+      "type": "method",
+      "line": 2330,
+      "calls": [],
+      "calledBy": []
+    },
+    "updateURL": {
+      "name": "updateURL",
+      "type": "method",
+      "line": 2341,
+      "calls": [
+        "buildQueryString",
+        "handleRouteChange"
+      ],
+      "calledBy": []
+    },
+    "setCache": {
+      "name": "setCache",
+      "type": "method",
+      "line": 2377,
+      "calls": [],
+      "calledBy": []
+    },
+    "getFromCache": {
+      "name": "getFromCache",
+      "type": "method",
+      "line": 2402,
+      "calls": [],
+      "calledBy": [
+        "preloadRoute"
+      ]
+    },
+    "clearCache": {
+      "name": "clearCache",
+      "type": "method",
+      "line": 2435,
+      "calls": [],
+      "calledBy": []
+    },
+    "getCacheStats": {
+      "name": "getCacheStats",
+      "type": "method",
+      "line": 2441,
+      "calls": [],
+      "calledBy": []
+    },
+    "startPreloading": {
+      "name": "startPreloading",
+      "type": "method",
+      "line": 2451,
+      "calls": [],
+      "calledBy": []
+    },
+    "processPreloadQueue": {
+      "name": "processPreloadQueue",
+      "type": "method",
+      "line": 2465,
+      "calls": [
+        "processPreloadQueue"
+      ],
+      "calledBy": [
+        "processPreloadQueue",
+        "preloadSpecificRoute"
+      ]
+    },
+    "preloadRoute": {
+      "name": "preloadRoute",
+      "type": "method",
+      "line": 2485,
+      "calls": [
+        "getFromCache",
+        "loadScript",
+        "loadTemplate",
+        "loadStyle",
+        "loadLayout"
+      ],
+      "calledBy": []
+    },
+    "preloadSpecificRoute": {
+      "name": "preloadSpecificRoute",
+      "type": "method",
+      "line": 2513,
+      "calls": [
+        "processPreloadQueue"
+      ],
+      "calledBy": []
+    }
+  },
+  "calls": [
+    {
+      "from": "handleWindowResize",
+      "to": "closeMobileMenu",
+      "line": 152
+    },
+    {
+      "from": "init",
+      "to": "handleWindowResize",
+      "line": 277
+    },
+    {
+      "from": "showFullPageLoading",
+      "to": "hideLoading",
+      "line": 385
+    },
+    {
+      "from": "handleCacheQueryParam",
+      "to": "clearAllCaches",
+      "line": 650
+    },
+    {
+      "from": "handleCacheQueryParam",
+      "to": "clearRouterCache",
+      "line": 654
+    },
+    {
+      "from": "handleCacheQueryParam",
+      "to": "clearI18nCache",
+      "line": 658
+    },
+    {
+      "from": "handleCacheQueryParam",
+      "to": "removeQueryParameter",
+      "line": 667
+    },
+    {
+      "from": "handleLanguageQueryParam",
+      "to": "triggerLanguageChangeEvent",
+      "line": 684
+    },
+    {
+      "from": "loadRoute",
+      "to": "showLoading",
+      "line": 705
+    },
+    {
+      "from": "loadRoute",
+      "to": "hideLoading",
+      "line": 711
+    },
+    {
+      "from": "loadRoute",
+      "to": "hideLoading",
+      "line": 728
+    },
+    {
+      "from": "loadRoute",
+      "to": "hideLoading",
+      "line": 733
+    },
+    {
+      "from": "generatePageTitle",
+      "to": "toPascalCase",
+      "line": 1183
+    },
+    {
+      "from": "generateDefaultTemplate",
+      "to": "generatePageTitle",
+      "line": 1190
+    },
+    {
+      "from": "getAccessToken",
+      "to": "getAuthCookie",
+      "line": 1393
+    },
+    {
+      "from": "removeToken",
+      "to": "removeAuthCookie",
+      "line": 1543
+    },
+    {
+      "from": "removeToken",
+      "to": "removeAuthCookie",
+      "line": 1552
+    },
+    {
+      "from": "handleLogout",
+      "to": "removeAuthCookie",
+      "line": 1609
+    },
+    {
+      "from": "renderComponent",
+      "to": "toggleMobileMenu",
+      "line": 1910
+    },
+    {
+      "from": "renderComponent",
+      "to": "closeMobileMenu",
+      "line": 1911
+    },
+    {
+      "from": "renderComponentWithTransition",
+      "to": "toggleMobileMenu",
+      "line": 1964
+    },
+    {
+      "from": "renderComponentWithTransition",
+      "to": "closeMobileMenu",
+      "line": 1965
+    },
+    {
+      "from": "validateParameter",
+      "to": "validateParameter",
+      "line": 2156
+    },
+    {
+      "from": "parseQueryString",
+      "to": "validateParameter",
+      "line": 2187
+    },
+    {
+      "from": "parseQueryString",
+      "to": "sanitizeParameter",
+      "line": 2193
+    },
+    {
+      "from": "parseQueryString",
+      "to": "validateParameter",
+      "line": 2200
+    },
+    {
+      "from": "setQueryParams",
+      "to": "validateParameter",
+      "line": 2295
+    },
+    {
+      "from": "setQueryParams",
+      "to": "sanitizeParameter",
+      "line": 2303
+    },
+    {
+      "from": "setQueryParams",
+      "to": "sanitizeParameter",
+      "line": 2305
+    },
+    {
+      "from": "updateURL",
+      "to": "buildQueryString",
+      "line": 2343
+    },
+    {
+      "from": "updateURL",
+      "to": "handleRouteChange",
+      "line": 2372
+    },
+    {
+      "from": "processPreloadQueue",
+      "to": "processPreloadQueue",
+      "line": 2477
+    },
+    {
+      "from": "processPreloadQueue",
+      "to": "processPreloadQueue",
+      "line": 2481
+    },
+    {
+      "from": "preloadRoute",
+      "to": "getFromCache",
+      "line": 2487
+    },
+    {
+      "from": "preloadRoute",
+      "to": "loadScript",
+      "line": 2492
+    },
+    {
+      "from": "preloadRoute",
+      "to": "loadTemplate",
+      "line": 2497
+    },
+    {
+      "from": "preloadRoute",
+      "to": "loadStyle",
+      "line": 2498
+    },
+    {
+      "from": "preloadRoute",
+      "to": "getFromCache",
+      "line": 2501
+    },
+    {
+      "from": "preloadRoute",
+      "to": "loadLayout",
+      "line": 2503
+    },
+    {
+      "from": "preloadSpecificRoute",
+      "to": "processPreloadQueue",
+      "line": 2516
+    }
+  ],
+  "metadata": {
+    "totalFunctions": 87,
+    "totalCalls": 40,
+    "generatedAt": "2025-09-02T07:19:02.852Z",
+    "sourceFile": "./js/router.js"
+  }
+}

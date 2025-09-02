@@ -1,0 +1,1122 @@
+{
+  "functions": {
+    "constructor": {
+      "name": "constructor",
+      "type": "method",
+      "line": 16,
+      "calls": [],
+      "calledBy": []
+    },
+    "log": {
+      "name": "log",
+      "type": "method",
+      "line": 88,
+      "calls": [],
+      "calledBy": [
+        "forceGarbageCollection",
+        "minifyCSS",
+        "loadCache",
+        "saveCache",
+        "shouldRebuildRoute",
+        "runValidation",
+        "build",
+        "minifyJavaScript",
+        "buildRoute",
+        "writeLargeFile",
+        "generateRouteFile",
+        "createFallback",
+        "cleanOldFiles",
+        "validateBuildFiles",
+        "preparePurgeContentPaths",
+        "purgeUnusedCSS",
+        "discoverRoutes",
+        "generateComponentsFile",
+        "generateManifest",
+        "optimizeMemoryUsage",
+        "optimizeCache",
+        "runBundleAnalyzer",
+        "initializeWorkers",
+        "createWorker",
+        "handleWorkerResponse",
+        "handleWorkerTimeout",
+        "terminateWorkers"
+      ]
+    },
+    "getMemoryUsage": {
+      "name": "getMemoryUsage",
+      "type": "method",
+      "line": 100,
+      "calls": [],
+      "calledBy": [
+        "trackMemoryUsage",
+        "buildRoute",
+        "optimizeMemoryUsage"
+      ]
+    },
+    "trackMemoryUsage": {
+      "name": "trackMemoryUsage",
+      "type": "method",
+      "line": 111,
+      "calls": [
+        "getMemoryUsage"
+      ],
+      "calledBy": [
+        "forceGarbageCollection"
+      ]
+    },
+    "forceGarbageCollection": {
+      "name": "forceGarbageCollection",
+      "type": "method",
+      "line": 121,
+      "calls": [
+        "trackMemoryUsage",
+        "log"
+      ],
+      "calledBy": [
+        "buildRoute",
+        "optimizeMemoryUsage"
+      ]
+    },
+    "formatBytes": {
+      "name": "formatBytes",
+      "type": "method",
+      "line": 130,
+      "calls": [],
+      "calledBy": [
+        "validateSourceFiles"
+      ]
+    },
+    "minifyCSS": {
+      "name": "minifyCSS",
+      "type": "method",
+      "line": 139,
+      "calls": [
+        "log"
+      ],
+      "calledBy": [
+        "generateRouteFile"
+      ]
+    },
+    "minifyHTML": {
+      "name": "minifyHTML",
+      "type": "method",
+      "line": 215,
+      "calls": [],
+      "calledBy": [
+        "generateRouteFile"
+      ]
+    },
+    "loadCache": {
+      "name": "loadCache",
+      "type": "method",
+      "line": 223,
+      "calls": [
+        "log"
+      ],
+      "calledBy": [
+        "build"
+      ]
+    },
+    "saveCache": {
+      "name": "saveCache",
+      "type": "method",
+      "line": 236,
+      "calls": [
+        "log"
+      ],
+      "calledBy": [
+        "build"
+      ]
+    },
+    "getFileHash": {
+      "name": "getFileHash",
+      "type": "method",
+      "line": 248,
+      "calls": [],
+      "calledBy": [
+        "shouldRebuildRoute"
+      ]
+    },
+    "shouldRebuildRoute": {
+      "name": "shouldRebuildRoute",
+      "type": "method",
+      "line": 252,
+      "calls": [
+        "log",
+        "getFileHash"
+      ],
+      "calledBy": [
+        "buildRoute"
+      ]
+    },
+    "buildRoutesParallel": {
+      "name": "buildRoutesParallel",
+      "type": "method",
+      "line": 301,
+      "calls": [],
+      "calledBy": [
+        "build"
+      ]
+    },
+    "validateSourceFiles": {
+      "name": "validateSourceFiles",
+      "type": "method",
+      "line": 320,
+      "calls": [
+        "formatBytes"
+      ],
+      "calledBy": [
+        "runValidation",
+        "buildRoute"
+      ]
+    },
+    "validateDependencies": {
+      "name": "validateDependencies",
+      "type": "method",
+      "line": 367,
+      "calls": [],
+      "calledBy": [
+        "runValidation"
+      ]
+    },
+    "validateBuildOutput": {
+      "name": "validateBuildOutput",
+      "type": "method",
+      "line": 409,
+      "calls": [],
+      "calledBy": [
+        "runValidation"
+      ]
+    },
+    "validateCompatibility": {
+      "name": "validateCompatibility",
+      "type": "method",
+      "line": 450,
+      "calls": [],
+      "calledBy": [
+        "runValidation"
+      ]
+    },
+    "runValidation": {
+      "name": "runValidation",
+      "type": "method",
+      "line": 500,
+      "calls": [
+        "log",
+        "validateSourceFiles",
+        "validateDependencies",
+        "validateBuildOutput",
+        "validateCompatibility"
+      ],
+      "calledBy": [
+        "buildRoute"
+      ]
+    },
+    "build": {
+      "name": "build",
+      "type": "method",
+      "line": 617,
+      "calls": [
+        "log",
+        "loadCache",
+        "buildRoutesParallel",
+        "saveCache"
+      ],
+      "calledBy": []
+    },
+    "minifyJavaScript": {
+      "name": "minifyJavaScript",
+      "type": "method",
+      "line": 684,
+      "calls": [
+        "log"
+      ],
+      "calledBy": [
+        "generateRouteFile",
+        "generateComponentsFile"
+      ]
+    },
+    "buildRoute": {
+      "name": "buildRoute",
+      "type": "method",
+      "line": 719,
+      "calls": [
+        "log",
+        "validateSourceFiles",
+        "shouldRebuildRoute",
+        "runValidation",
+        "getMemoryUsage",
+        "forceGarbageCollection"
+      ],
+      "calledBy": []
+    },
+    "readFile": {
+      "name": "readFile",
+      "type": "method",
+      "line": 856,
+      "calls": [],
+      "calledBy": []
+    },
+    "readLargeFile": {
+      "name": "readLargeFile",
+      "type": "method",
+      "line": 874,
+      "calls": [],
+      "calledBy": []
+    },
+    "writeFileStreamed": {
+      "name": "writeFileStreamed",
+      "type": "method",
+      "line": 905,
+      "calls": [],
+      "calledBy": []
+    },
+    "writeLargeFile": {
+      "name": "writeLargeFile",
+      "type": "method",
+      "line": 916,
+      "calls": [
+        "log"
+      ],
+      "calledBy": []
+    },
+    "generateRouteFile": {
+      "name": "generateRouteFile",
+      "type": "method",
+      "line": 938,
+      "calls": [
+        "log",
+        "minifyCSS",
+        "minifyHTML",
+        "minifyJavaScript"
+      ],
+      "calledBy": []
+    },
+    "createFallback": {
+      "name": "createFallback",
+      "type": "method",
+      "line": 1012,
+      "calls": [
+        "log"
+      ],
+      "calledBy": []
+    },
+    "ensureDirectory": {
+      "name": "ensureDirectory",
+      "type": "method",
+      "line": 1091,
+      "calls": [],
+      "calledBy": []
+    },
+    "cleanDirectory": {
+      "name": "cleanDirectory",
+      "type": "method",
+      "line": 1101,
+      "calls": [],
+      "calledBy": []
+    },
+    "cleanOldFiles": {
+      "name": "cleanOldFiles",
+      "type": "method",
+      "line": 1116,
+      "calls": [
+        "log"
+      ],
+      "calledBy": []
+    },
+    "validateBuildFiles": {
+      "name": "validateBuildFiles",
+      "type": "method",
+      "line": 1144,
+      "calls": [
+        "log"
+      ],
+      "calledBy": []
+    },
+    "preparePurgeContentPaths": {
+      "name": "preparePurgeContentPaths",
+      "type": "method",
+      "line": 1179,
+      "calls": [
+        "log"
+      ],
+      "calledBy": []
+    },
+    "purgeUnusedCSS": {
+      "name": "purgeUnusedCSS",
+      "type": "method",
+      "line": 1229,
+      "calls": [
+        "log"
+      ],
+      "calledBy": []
+    },
+    "analyzeComponentUsage": {
+      "name": "analyzeComponentUsage",
+      "type": "method",
+      "line": 1311,
+      "calls": [],
+      "calledBy": [
+        "generateComponentsFile"
+      ]
+    },
+    "discoverRoutes": {
+      "name": "discoverRoutes",
+      "type": "method",
+      "line": 1371,
+      "calls": [
+        "log"
+      ],
+      "calledBy": []
+    },
+    "generateComponentsFile": {
+      "name": "generateComponentsFile",
+      "type": "method",
+      "line": 1387,
+      "calls": [
+        "log",
+        "analyzeComponentUsage",
+        "minifyJavaScript"
+      ],
+      "calledBy": []
+    },
+    "generateManifest": {
+      "name": "generateManifest",
+      "type": "method",
+      "line": 1550,
+      "calls": [
+        "log"
+      ],
+      "calledBy": []
+    },
+    "printReport": {
+      "name": "printReport",
+      "type": "method",
+      "line": 1574,
+      "calls": [],
+      "calledBy": []
+    },
+    "printMemoryReport": {
+      "name": "printMemoryReport",
+      "type": "method",
+      "line": 1677,
+      "calls": [],
+      "calledBy": []
+    },
+    "optimizeMemoryUsage": {
+      "name": "optimizeMemoryUsage",
+      "type": "method",
+      "line": 1702,
+      "calls": [
+        "log",
+        "forceGarbageCollection",
+        "getMemoryUsage"
+      ],
+      "calledBy": []
+    },
+    "optimizeCache": {
+      "name": "optimizeCache",
+      "type": "method",
+      "line": 1730,
+      "calls": [
+        "log"
+      ],
+      "calledBy": []
+    },
+    "optimizeTreeShakingStats": {
+      "name": "optimizeTreeShakingStats",
+      "type": "method",
+      "line": 1762,
+      "calls": [],
+      "calledBy": []
+    },
+    "runBundleAnalyzer": {
+      "name": "runBundleAnalyzer",
+      "type": "method",
+      "line": 1773,
+      "calls": [
+        "log"
+      ],
+      "calledBy": []
+    },
+    "initializeWorkers": {
+      "name": "initializeWorkers",
+      "type": "method",
+      "line": 1795,
+      "calls": [
+        "log"
+      ],
+      "calledBy": []
+    },
+    "createWorker": {
+      "name": "createWorker",
+      "type": "method",
+      "line": 1822,
+      "calls": [
+        "log"
+      ],
+      "calledBy": []
+    },
+    "executeWorkerTask": {
+      "name": "executeWorkerTask",
+      "type": "method",
+      "line": 1867,
+      "calls": [],
+      "calledBy": []
+    },
+    "assignTaskToWorker": {
+      "name": "assignTaskToWorker",
+      "type": "method",
+      "line": 1898,
+      "calls": [],
+      "calledBy": [
+        "processWorkerQueue"
+      ]
+    },
+    "handleWorkerResponse": {
+      "name": "handleWorkerResponse",
+      "type": "method",
+      "line": 1920,
+      "calls": [
+        "log"
+      ],
+      "calledBy": []
+    },
+    "handleWorkerTimeout": {
+      "name": "handleWorkerTimeout",
+      "type": "method",
+      "line": 1948,
+      "calls": [
+        "log"
+      ],
+      "calledBy": []
+    },
+    "processWorkerQueue": {
+      "name": "processWorkerQueue",
+      "type": "method",
+      "line": 1966,
+      "calls": [
+        "assignTaskToWorker"
+      ],
+      "calledBy": []
+    },
+    "terminateWorkers": {
+      "name": "terminateWorkers",
+      "type": "method",
+      "line": 1976,
+      "calls": [
+        "log"
+      ],
+      "calledBy": []
+    },
+    "main": {
+      "name": "main",
+      "type": "function",
+      "line": 2006,
+      "calls": [
+        "main"
+      ],
+      "calledBy": [
+        "main"
+      ]
+    }
+  },
+  "calls": [
+    {
+      "from": "trackMemoryUsage",
+      "to": "getMemoryUsage",
+      "line": 112
+    },
+    {
+      "from": "forceGarbageCollection",
+      "to": "trackMemoryUsage",
+      "line": 125
+    },
+    {
+      "from": "forceGarbageCollection",
+      "to": "log",
+      "line": 126
+    },
+    {
+      "from": "minifyCSS",
+      "to": "log",
+      "line": 195
+    },
+    {
+      "from": "minifyCSS",
+      "to": "log",
+      "line": 199
+    },
+    {
+      "from": "minifyCSS",
+      "to": "log",
+      "line": 205
+    },
+    {
+      "from": "loadCache",
+      "to": "log",
+      "line": 230
+    },
+    {
+      "from": "loadCache",
+      "to": "log",
+      "line": 232
+    },
+    {
+      "from": "saveCache",
+      "to": "log",
+      "line": 242
+    },
+    {
+      "from": "saveCache",
+      "to": "log",
+      "line": 244
+    },
+    {
+      "from": "shouldRebuildRoute",
+      "to": "log",
+      "line": 261
+    },
+    {
+      "from": "shouldRebuildRoute",
+      "to": "getFileHash",
+      "line": 277
+    },
+    {
+      "from": "validateSourceFiles",
+      "to": "formatBytes",
+      "line": 342
+    },
+    {
+      "from": "runValidation",
+      "to": "log",
+      "line": 501
+    },
+    {
+      "from": "runValidation",
+      "to": "validateSourceFiles",
+      "line": 521
+    },
+    {
+      "from": "runValidation",
+      "to": "log",
+      "line": 527
+    },
+    {
+      "from": "runValidation",
+      "to": "log",
+      "line": 529
+    },
+    {
+      "from": "runValidation",
+      "to": "log",
+      "line": 536
+    },
+    {
+      "from": "runValidation",
+      "to": "validateDependencies",
+      "line": 542
+    },
+    {
+      "from": "runValidation",
+      "to": "log",
+      "line": 548
+    },
+    {
+      "from": "runValidation",
+      "to": "log",
+      "line": 550
+    },
+    {
+      "from": "runValidation",
+      "to": "log",
+      "line": 556
+    },
+    {
+      "from": "runValidation",
+      "to": "validateBuildOutput",
+      "line": 562
+    },
+    {
+      "from": "runValidation",
+      "to": "log",
+      "line": 567
+    },
+    {
+      "from": "runValidation",
+      "to": "log",
+      "line": 568
+    },
+    {
+      "from": "runValidation",
+      "to": "log",
+      "line": 572
+    },
+    {
+      "from": "runValidation",
+      "to": "validateCompatibility",
+      "line": 578
+    },
+    {
+      "from": "runValidation",
+      "to": "log",
+      "line": 585
+    },
+    {
+      "from": "runValidation",
+      "to": "log",
+      "line": 592
+    },
+    {
+      "from": "runValidation",
+      "to": "log",
+      "line": 595
+    },
+    {
+      "from": "runValidation",
+      "to": "log",
+      "line": 611
+    },
+    {
+      "from": "build",
+      "to": "log",
+      "line": 618
+    },
+    {
+      "from": "build",
+      "to": "loadCache",
+      "line": 622
+    },
+    {
+      "from": "build",
+      "to": "log",
+      "line": 634
+    },
+    {
+      "from": "build",
+      "to": "log",
+      "line": 638
+    },
+    {
+      "from": "build",
+      "to": "log",
+      "line": 641
+    },
+    {
+      "from": "build",
+      "to": "log",
+      "line": 643
+    },
+    {
+      "from": "build",
+      "to": "buildRoutesParallel",
+      "line": 657
+    },
+    {
+      "from": "build",
+      "to": "saveCache",
+      "line": 666
+    },
+    {
+      "from": "build",
+      "to": "log",
+      "line": 679
+    },
+    {
+      "from": "minifyJavaScript",
+      "to": "log",
+      "line": 714
+    },
+    {
+      "from": "buildRoute",
+      "to": "log",
+      "line": 721
+    },
+    {
+      "from": "buildRoute",
+      "to": "log",
+      "line": 736
+    },
+    {
+      "from": "buildRoute",
+      "to": "log",
+      "line": 743
+    },
+    {
+      "from": "buildRoute",
+      "to": "log",
+      "line": 750
+    },
+    {
+      "from": "buildRoute",
+      "to": "log",
+      "line": 763
+    },
+    {
+      "from": "buildRoute",
+      "to": "log",
+      "line": 774
+    },
+    {
+      "from": "buildRoute",
+      "to": "log",
+      "line": 776
+    },
+    {
+      "from": "buildRoute",
+      "to": "validateSourceFiles",
+      "line": 782
+    },
+    {
+      "from": "buildRoute",
+      "to": "log",
+      "line": 784
+    },
+    {
+      "from": "buildRoute",
+      "to": "log",
+      "line": 785
+    },
+    {
+      "from": "buildRoute",
+      "to": "log",
+      "line": 789
+    },
+    {
+      "from": "buildRoute",
+      "to": "shouldRebuildRoute",
+      "line": 793
+    },
+    {
+      "from": "buildRoute",
+      "to": "log",
+      "line": 794
+    },
+    {
+      "from": "buildRoute",
+      "to": "runValidation",
+      "line": 810
+    },
+    {
+      "from": "buildRoute",
+      "to": "log",
+      "line": 813
+    },
+    {
+      "from": "buildRoute",
+      "to": "log",
+      "line": 833
+    },
+    {
+      "from": "buildRoute",
+      "to": "log",
+      "line": 838
+    },
+    {
+      "from": "buildRoute",
+      "to": "getMemoryUsage",
+      "line": 841
+    },
+    {
+      "from": "buildRoute",
+      "to": "forceGarbageCollection",
+      "line": 843
+    },
+    {
+      "from": "buildRoute",
+      "to": "log",
+      "line": 848
+    },
+    {
+      "from": "buildRoute",
+      "to": "log",
+      "line": 849
+    },
+    {
+      "from": "writeLargeFile",
+      "to": "log",
+      "line": 935
+    },
+    {
+      "from": "generateRouteFile",
+      "to": "log",
+      "line": 951
+    },
+    {
+      "from": "generateRouteFile",
+      "to": "minifyCSS",
+      "line": 955
+    },
+    {
+      "from": "generateRouteFile",
+      "to": "minifyHTML",
+      "line": 988
+    },
+    {
+      "from": "generateRouteFile",
+      "to": "minifyJavaScript",
+      "line": 1000
+    },
+    {
+      "from": "createFallback",
+      "to": "log",
+      "line": 1072
+    },
+    {
+      "from": "createFallback",
+      "to": "log",
+      "line": 1074
+    },
+    {
+      "from": "createFallback",
+      "to": "log",
+      "line": 1084
+    },
+    {
+      "from": "createFallback",
+      "to": "log",
+      "line": 1086
+    },
+    {
+      "from": "cleanOldFiles",
+      "to": "log",
+      "line": 1137
+    },
+    {
+      "from": "validateBuildFiles",
+      "to": "log",
+      "line": 1164
+    },
+    {
+      "from": "validateBuildFiles",
+      "to": "log",
+      "line": 1169
+    },
+    {
+      "from": "preparePurgeContentPaths",
+      "to": "log",
+      "line": 1205
+    },
+    {
+      "from": "preparePurgeContentPaths",
+      "to": "log",
+      "line": 1218
+    },
+    {
+      "from": "preparePurgeContentPaths",
+      "to": "log",
+      "line": 1222
+    },
+    {
+      "from": "purgeUnusedCSS",
+      "to": "log",
+      "line": 1300
+    },
+    {
+      "from": "purgeUnusedCSS",
+      "to": "log",
+      "line": 1305
+    },
+    {
+      "from": "discoverRoutes",
+      "to": "log",
+      "line": 1382
+    },
+    {
+      "from": "generateComponentsFile",
+      "to": "log",
+      "line": 1389
+    },
+    {
+      "from": "generateComponentsFile",
+      "to": "analyzeComponentUsage",
+      "line": 1392
+    },
+    {
+      "from": "generateComponentsFile",
+      "to": "log",
+      "line": 1434
+    },
+    {
+      "from": "generateComponentsFile",
+      "to": "log",
+      "line": 1438
+    },
+    {
+      "from": "generateComponentsFile",
+      "to": "log",
+      "line": 1443
+    },
+    {
+      "from": "generateComponentsFile",
+      "to": "log",
+      "line": 1455
+    },
+    {
+      "from": "generateComponentsFile",
+      "to": "minifyJavaScript",
+      "line": 1529
+    },
+    {
+      "from": "generateComponentsFile",
+      "to": "log",
+      "line": 1531
+    },
+    {
+      "from": "generateComponentsFile",
+      "to": "log",
+      "line": 1533
+    },
+    {
+      "from": "generateComponentsFile",
+      "to": "log",
+      "line": 1543
+    },
+    {
+      "from": "generateComponentsFile",
+      "to": "log",
+      "line": 1546
+    },
+    {
+      "from": "generateManifest",
+      "to": "log",
+      "line": 1569
+    },
+    {
+      "from": "optimizeMemoryUsage",
+      "to": "log",
+      "line": 1703
+    },
+    {
+      "from": "optimizeMemoryUsage",
+      "to": "forceGarbageCollection",
+      "line": 1713
+    },
+    {
+      "from": "optimizeMemoryUsage",
+      "to": "getMemoryUsage",
+      "line": 1716
+    },
+    {
+      "from": "optimizeMemoryUsage",
+      "to": "log",
+      "line": 1720
+    },
+    {
+      "from": "optimizeMemoryUsage",
+      "to": "log",
+      "line": 1723
+    },
+    {
+      "from": "optimizeMemoryUsage",
+      "to": "log",
+      "line": 1726
+    },
+    {
+      "from": "optimizeCache",
+      "to": "log",
+      "line": 1745
+    },
+    {
+      "from": "optimizeCache",
+      "to": "log",
+      "line": 1758
+    },
+    {
+      "from": "runBundleAnalyzer",
+      "to": "log",
+      "line": 1774
+    },
+    {
+      "from": "runBundleAnalyzer",
+      "to": "log",
+      "line": 1784
+    },
+    {
+      "from": "runBundleAnalyzer",
+      "to": "log",
+      "line": 1787
+    },
+    {
+      "from": "initializeWorkers",
+      "to": "log",
+      "line": 1797
+    },
+    {
+      "from": "initializeWorkers",
+      "to": "log",
+      "line": 1811
+    },
+    {
+      "from": "initializeWorkers",
+      "to": "log",
+      "line": 1813
+    },
+    {
+      "from": "initializeWorkers",
+      "to": "log",
+      "line": 1817
+    },
+    {
+      "from": "createWorker",
+      "to": "log",
+      "line": 1841
+    },
+    {
+      "from": "createWorker",
+      "to": "log",
+      "line": 1847
+    },
+    {
+      "from": "createWorker",
+      "to": "log",
+      "line": 1854
+    },
+    {
+      "from": "createWorker",
+      "to": "log",
+      "line": 1861
+    },
+    {
+      "from": "handleWorkerResponse",
+      "to": "log",
+      "line": 1925
+    },
+    {
+      "from": "handleWorkerTimeout",
+      "to": "log",
+      "line": 1955
+    },
+    {
+      "from": "processWorkerQueue",
+      "to": "assignTaskToWorker",
+      "line": 1973
+    },
+    {
+      "from": "terminateWorkers",
+      "to": "log",
+      "line": 1979
+    },
+    {
+      "from": "terminateWorkers",
+      "to": "log",
+      "line": 1994
+    },
+    {
+      "from": "terminateWorkers",
+      "to": "log",
+      "line": 2001
+    },
+    {
+      "from": "main",
+      "to": "main",
+      "line": 2063
+    }
+  ],
+  "metadata": {
+    "totalFunctions": 52,
+    "totalCalls": 118,
+    "generatedAt": "2025-09-02T07:19:02.937Z",
+    "sourceFile": "./build.cjs"
+  }
+}

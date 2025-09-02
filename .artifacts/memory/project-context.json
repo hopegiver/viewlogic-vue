@@ -1,0 +1,97 @@
+{
+  "projectInfo": {
+    "name": "ViewLogic",
+    "description": "Vue 3 기반 SPA with 커스텀 라우팅 시스템",
+    "version": "1.0.0",
+    "framework": "Vue 3",
+    "buildSystem": "Custom Node.js Build System",
+    "lastUpdated": "2025-09-02"
+  },
+  "corePhilosophy": {
+    "principles": [
+      "모듈화: 각 라우트는 독립적인 view/logic/style 파일 구조",
+      "빌드 자동화: routes 폴더는 빌드 시 자동 생성, 수동 편집 금지",
+      "성능 최적화: CSS 트리셰이킹, 컴포넌트 트리셰이킹, 캐싱 시스템",
+      "국제화: 다국어 지원 시스템 내장",
+      "개발 편의성: 개발/프로덕션 모드 분리, 핫 리로드 지원"
+    ],
+    "architecture": "SPA + Custom Router + Build System + Component System"
+  },
+  "keyDirectories": {
+    "src/": "소스 코드 디렉토리",
+    "src/views/": "HTML 템플릿 파일들 (라우트명.html)",
+    "src/logic/": "JavaScript 로직 파일들 (라우트명.js)",
+    "src/styles/": "CSS 스타일 파일들 (라우트명.css)",
+    "src/components/": "재사용 가능한 Vue 컴포넌트들",
+    "src/layouts/": "레이아웃 템플릿 파일들",
+    "routes/": "빌드된 라우트 파일들 (자동 생성, 편집 금지)",
+    "js/": "핵심 시스템 파일들 (router.js, i18n.js)",
+    "css/": "기본 CSS 파일들",
+    "i18n/": "다국어 지원 파일들",
+    ".artifacts/": "프로젝트 메타데이터 및 참고 자료"
+  },
+  "coreFiles": {
+    "CLAUDE.md": "Claude AI를 위한 프로젝트 규칙 및 지침",
+    "js/router.js": {
+      "description": "핵심 라우팅 시스템 (2500+ 라인)",
+      "class": "ViewLogicRouter",
+      "keySections": {
+        "constructor": "라우터 초기화 및 설정 (라인 2)",
+        "mobileMenu": "모바일 메뉴 관리 (라인 90)",
+        "initialization": "비동기 시스템 초기화 (라인 159)",
+        "queryParameters": "쿼리 파라미터 처리 (라인 630)",
+        "routing": "핵심 라우팅 로직 (라인 820)",
+        "authentication": "인증 시스템 (라인 1100)",
+        "componentSystem": "컴포넌트 로딩 시스템 (라인 1500)",
+        "i18nIntegration": "국제화 통합 (라인 1800)",
+        "utilities": "유틸리티 함수들 (라인 2100)"
+      }
+    },
+    "build.cjs": {
+      "description": "빌드 시스템 (1500+ 라인)",
+      "class": "ViewLogicBuilder",
+      "keySections": {
+        "constructor": "빌드 시스템 초기화 (라인 1)",
+        "discovery": "라우트 및 컴포넌트 발견 (라인 150)",
+        "analysis": "의존성 분석 및 트리셰이킹 (라인 400)",
+        "transformation": "소스 코드 변환 (라인 700)",
+        "validation": "빌드 결과 검증 (라인 1000)",
+        "optimization": "최종 최적화 및 캐싱 (라인 1200)"
+      }
+    },
+    "index.html": "개발 모드 진입점",
+    "production.html": "프로덕션 모드 진입점",
+    "package.json": "Node.js 패키지 설정"
+  },
+  "workflowReference": "⭐ 상세 워크플로우는 common-tasks.json 참고",
+  "commonUrlPatterns": {
+    "development": "http://127.0.0.1:5500/",
+    "production": "http://127.0.0.1:5500/production.html",
+    "routeAccess": "#{route-name}",
+    "queryParams": "?lang=en&clearCache=all",
+    "examples": [
+      "http://127.0.0.1:5500/#/home",
+      "http://127.0.0.1:5500/#/manual?id=admin-overview",
+      "http://127.0.0.1:5500/production.html#/login?lang=en"
+    ]
+  },
+  "buildCommands": {
+    "⭐ build": "node build.cjs build",
+    "minify": "node build.cjs build --minify",
+    "clean": "node build.cjs clean",
+    "info": "node build.cjs info"
+  },
+  "currentState": {
+    "totalRoutes": 16,
+    "recentFeatures": [
+      "쿼리 파라미터 기반 캐시 클리어 (?clearCache=all|router|i18n)",
+      "쿼리 파라미터 기반 언어 변경 (?lang=en|ko)",
+      "production.html URL 유지 기능",
+      "CSS 최적화 개선 (PurgeCSS + CleanCSS)",
+      "함수 레벨 콜그래프 시스템"
+    ],
+    "knownIssues": [],
+    "upcomingTasks": [],
+    "maintenanceNote": "artifacts 시스템 업데이트는 .artifacts/memory/maintenance-guide.json 참고"
+  }
+}

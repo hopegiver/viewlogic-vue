@@ -1,0 +1,192 @@
+{
+  "overallArchitecture": {
+    "pattern": "Custom SPA Framework",
+    "description": "Vue.js 기반의 커스텀 라우팅과 빌드 시스템을 가진 단일 페이지 애플리케이션",
+    "layers": [
+      "Presentation Layer (Vue Components + Templates)",
+      "Logic Layer (Route Controllers)", 
+      "Routing Layer (Custom Router)",
+      "Build Layer (Custom Build System)",
+      "Infrastructure Layer (i18n, Components, Authentication)"
+    ]
+  },
+  "routingPattern": {
+    "type": "Hash-based SPA Routing",
+    "structure": {
+      "pattern": "/#/{route-name}?{query-params}",
+      "examples": [
+        "/#/home",
+        "/#/manual?id=admin-overview",
+        "/#/products?category=electronics"
+      ]
+    },
+    "lifecycle": [
+      "URL 변경 감지 (hashchange)",
+      "라우트 파싱 및 쿼리 파라미터 추출",
+      "쿼리 파라미터 처리 (캐시 클리어, 언어 변경)",
+      "인증 확인 (필요시)",
+      "컴포넌트 로딩 및 렌더링",
+      "이전 컴포넌트 정리"
+    ],
+    "features": [
+      "캐시 시스템 (메모리 + TTL)",
+      "지연 로딩 (Lazy Loading)",
+      "프리로딩 (Preloading)",
+      "에러 핸들링 (404, 500)",
+      "인증 통합"
+    ]
+  },
+  "buildSystemPattern": {
+    "type": "Multi-Stage Build Pipeline",
+    "stages": [
+      {
+        "name": "Discovery",
+        "purpose": "라우트 및 컴포넌트 발견",
+        "outputs": ["라우트 목록", "컴포넌트 목록"]
+      },
+      {
+        "name": "Analysis", 
+        "purpose": "의존성 분석 및 트리셰이킹 준비",
+        "outputs": ["사용된 컴포넌트", "CSS 컨텐츠 경로"]
+      },
+      {
+        "name": "Transformation",
+        "purpose": "소스 코드를 빌드 출력으로 변환",
+        "outputs": ["통합 컴포넌트", "최적화된 라우트 파일"]
+      },
+      {
+        "name": "Validation",
+        "purpose": "빌드 결과 검증",
+        "outputs": ["검증 리포트", "에러 목록"]
+      },
+      {
+        "name": "Optimization",
+        "purpose": "최종 최적화 및 캐싱",
+        "outputs": ["압축 파일", "캐시 메타데이터"]
+      }
+    ],
+    "principles": [
+      "Incremental Build (변경된 부분만 재빌드)",
+      "Parallel Processing (라우트별 병렬 처리)",
+      "Smart Caching (해시 기반 캐시 무효화)",
+      "Multi-layer Validation (구문, 의존성, 출력 검증)"
+    ]
+  },
+  "componentPattern": {
+    "type": "Hybrid Component System",
+    "development": {
+      "loading": "Dynamic Import per Component",
+      "caching": "Memory-based Component Cache",
+      "debugging": "Individual Component Files"
+    },
+    "production": {
+      "loading": "Unified Bundle (_components.js)",
+      "optimization": "Tree Shaking + Minification",
+      "performance": "Single HTTP Request"
+    },
+    "structure": {
+      "registration": "Global Component Registration",
+      "usage": "Template-based Usage",
+      "lifecycle": "Vue 3 Composition/Options API"
+    }
+  },
+  "i18nPattern": {
+    "type": "Lazy-loaded Internationalization",
+    "structure": {
+      "files": "i18n/{lang}.js (ko.js, en.js)",
+      "keys": "Hierarchical (manual.admin.overview.title)",
+      "fallback": "Korean → English → Key itself"
+    },
+    "loading": [
+      "Initial: Default language (Korean)",
+      "On-demand: Additional languages",
+      "Caching: Browser localStorage + memory"
+    ],
+    "integration": [
+      "Router: Query parameter (?lang=en)",
+      "Components: $t() function",
+      "Templates: {{ $t('key') }} syntax"
+    ]
+  },
+  "stateManagement": {
+    "type": "Distributed State Management",
+    "router": "Router state (current route, query params)",
+    "i18n": "Language state (current language, loaded translations)",
+    "auth": "Authentication state (tokens, user info)",
+    "cache": "Cache state (component cache, route cache)",
+    "communication": "Event-driven (Custom Events + Vue reactivity)"
+  },
+  "errorHandlingPattern": {
+    "levels": [
+      {
+        "level": "Component Level",
+        "handler": "try-catch in component methods",
+        "fallback": "Error message in component"
+      },
+      {
+        "level": "Route Level", 
+        "handler": "Route error handler",
+        "fallback": "Error page component"
+      },
+      {
+        "level": "Router Level",
+        "handler": "Global route error handler", 
+        "fallback": "404 page or error page"
+      },
+      {
+        "level": "Application Level",
+        "handler": "Window error event",
+        "fallback": "Fallback HTML page"
+      }
+    ]
+  },
+  "securityPattern": {
+    "authentication": {
+      "type": "Multi-storage JWT Authentication",
+      "storages": ["Cookie", "localStorage", "sessionStorage"],
+      "validation": "JWT expiration + custom validation",
+      "fallback": "Multiple cookie name fallbacks"
+    },
+    "authorization": {
+      "type": "Route-based Protection",
+      "levels": ["Public routes", "Protected routes", "Admin routes"],
+      "implementation": "Route middleware pattern"
+    },
+    "input": {
+      "validation": "Multi-layer parameter validation",
+      "sanitization": "XSS prevention + SQL injection prevention",
+      "limits": "Parameter length + count limits"
+    }
+  },
+  "cachingPattern": {
+    "layers": [
+      {
+        "name": "Browser Cache",
+        "scope": "Static assets (CSS, JS)",
+        "strategy": "HTTP cache headers"
+      },
+      {
+        "name": "Application Cache", 
+        "scope": "Route components, translations",
+        "strategy": "Memory cache with TTL"
+      },
+      {
+        "name": "Build Cache",
+        "scope": "Build artifacts, component analysis",
+        "strategy": "File hash-based invalidation"
+      }
+    ]
+  },
+  "deploymentPattern": {
+    "development": {
+      "server": "Python HTTP Server (port 8000)",
+      "entry": "index.html",
+      "features": ["Hot reload", "Debug info", "No caching"]
+    },
+    "production": {
+      "entry": "production.html", 
+      "features": ["Minified assets", "Optimized routing", "Cache enabled"],
+      "optimization": ["Gzip compression", "Bundle splitting", "Asset optimization"]
+    }
+  }
+}

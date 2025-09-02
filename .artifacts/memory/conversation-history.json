@@ -1,0 +1,210 @@
+{
+  "importantDecisions": {
+    "architecture": [
+      {
+        "date": "2025-09-02",
+        "topic": "Query Parameter Handling Enhancement",
+        "decision": "쿼리 파라미터 처리 로직을 handleRouteChange 함수로 통합",
+        "rationale": "코드 단순화 및 일관된 적용을 위해",
+        "implementation": "handleQueryParameters 함수를 handleRouteChange 내부에 통합",
+        "impact": "더 간결한 코드 구조, 모든 라우트 변경 시 쿼리 파라미터 자동 처리"
+      },
+      {
+        "date": "2025-09-02", 
+        "topic": "Production URL Preservation",
+        "decision": "production.html URL이 자동으로 index.html로 변경되지 않도록 유지",
+        "rationale": "프로덕션과 개발 환경의 명확한 분리",
+        "implementation": "URL 변경 로직에서 production.html 경로 보존",
+        "impact": "사용자가 의도한 환경(개발/프로덕션)에서 지속적으로 작업 가능"
+      },
+      {
+        "date": "2025-09-02",
+        "topic": "Language Query Parameter Support", 
+        "decision": "?lang=en 쿼리 파라미터로 언어 변경 지원",
+        "rationale": "URL을 통한 직접적인 언어 설정 요구",
+        "implementation": "handleLanguageQueryParam 함수로 쿼리에서 언어 추출 및 적용",
+        "impact": "URL 공유 시 언어 설정 포함, 북마크를 통한 언어 유지"
+      }
+    ],
+    "buildSystem": [
+      {
+        "date": "2025-09-02",
+        "topic": "CSS Optimization Strategy",
+        "decision": "PurgeCSS + CleanCSS 조합으로 CSS 최적화",
+        "rationale": "미사용 CSS 제거와 압축을 통한 성능 향상",
+        "implementation": "빌드 파이프라인에 CSS 최적화 단계 통합",
+        "safelist": ["subsection", "main-header", "main-description"],
+        "impact": "CSS 파일 크기 대폭 감소, 로딩 성능 향상"
+      },
+      {
+        "date": "2025-09-02",
+        "topic": "Component Tree Shaking",
+        "decision": "사용하지 않는 컴포넌트 자동 제거",
+        "rationale": "번들 크기 최적화 및 성능 향상",
+        "implementation": "빌드 시 컴포넌트 사용량 분석 후 미사용 컴포넌트 제거",
+        "impact": "프로덕션 번들 크기 감소, 로딩 시간 단축"
+      }
+    ],
+    "caching": [
+      {
+        "date": "2025-09-02",
+        "topic": "Query-based Cache Control",
+        "decision": "?clearCache 쿼리 파라미터로 선택적 캐시 클리어 지원",
+        "rationale": "개발 편의성과 문제 해결을 위한 유연한 캐시 제어",
+        "implementation": "clearCache=all|router|i18n 옵션으로 세분화된 제어",
+        "impact": "개발자가 필요에 따라 특정 캐시만 클리어 가능"
+      }
+    ],
+    "tooling": [
+      {
+        "date": "2025-09-02",
+        "topic": "Artifacts Reference System",
+        "decision": "대형 파일(router.js, build.cjs)에 대한 JSON 참조 파일 생성",
+        "rationale": "코드 수정 시 구조 파악을 위한 참고 자료 필요",
+        "implementation": ".artifacts/ 폴더에 구조화된 참조 JSON 파일들",
+        "impact": "LLM이 대형 파일 수정 시 정확한 위치와 구조 파악 가능"
+      },
+      {
+        "date": "2025-09-02",
+        "topic": "Function-level Callgraph Generation",
+        "decision": "JavaScript AST 분석을 통한 함수 호출 관계 맵핑",
+        "rationale": "코드 수정 시 영향 범위 파악 및 안전한 리팩토링",
+        "implementation": "@babel/parser와 @babel/traverse를 사용한 커스텀 분석 도구",
+        "impact": "함수 수정 시 의존성 파악 및 사이드 이펙트 예측 가능"
+      },
+      {
+        "date": "2025-09-02",
+        "topic": "LLM Long-term Memory System",
+        "decision": "프로젝트 컨텍스트, 규칙, 아키텍처를 영속화하는 메모리 시스템 구축",
+        "rationale": "LLM 세션 간 컨텍스트 유지 및 프로젝트 지식 보존",
+        "implementation": "memory/ 폴더에 구조화된 JSON 파일들",
+        "components": ["project-context.json", "coding-rules.json", "architecture-patterns.json", "common-tasks.json"],
+        "impact": "새로운 LLM 세션에서도 프로젝트 전체 맥락 이해 가능"
+      }
+    ]
+  },
+  "technicalLearnings": {
+    "routingSystem": [
+      {
+        "lesson": "Hash-based Routing Lifecycle",
+        "insight": "hashchange 이벤트 → 파싱 → 쿼리 처리 → 인증 → 렌더링 순서가 중요",
+        "application": "각 단계에서 적절한 에러 핸들링과 폴백 필요"
+      },
+      {
+        "lesson": "Query Parameter Processing Timing",
+        "insight": "쿼리 파라미터 처리는 라우트 변경의 초기 단계에서 수행되어야 함",
+        "application": "캐시 클리어나 언어 변경이 컴포넌트 로딩 전에 완료되어야 함"
+      }
+    ],
+    "buildSystemOptimization": [
+      {
+        "lesson": "Incremental Build Strategy",
+        "insight": "파일 해시 기반 캐시로 변경된 부분만 재빌드하여 성능 향상",
+        "application": "대규모 프로젝트에서 빌드 시간 대폭 단축 가능"
+      },
+      {
+        "lesson": "CSS Tree Shaking Complexity",
+        "insight": "PurgeCSS의 content paths 설정이 CSS 최적화의 핵심",
+        "application": "safelist로 중요한 클래스들을 보호하면서 미사용 CSS 제거"
+      }
+    ],
+    "componentArchitecture": [
+      {
+        "lesson": "Development vs Production Loading",
+        "insight": "개발 시에는 디버깅을 위해 개별 파일, 프로덕션에서는 통합 번들 사용",
+        "application": "환경별로 다른 로딩 전략으로 개발 편의성과 성능 모두 확보"
+      }
+    ]
+  },
+  "problemSolutions": {
+    "routingIssues": [
+      {
+        "problem": "production.html URL이 자동으로 변경되는 문제",
+        "rootCause": "router.js의 URL 정규화 로직에서 production.html 경로 미고려",
+        "solution": "URL 변경 로직에서 production.html이 포함된 경우 유지하도록 조건 추가",
+        "prevention": "URL 관련 로직 수정 시 모든 진입점(index.html, production.html) 고려"
+      },
+      {
+        "problem": "언어 쿼리 파라미터가 적용되지 않는 문제",
+        "rootCause": "쿼리 파라미터 처리가 라우트 로딩 후에 수행됨",
+        "solution": "handleRouteChange 초기 단계에서 쿼리 파라미터 우선 처리",
+        "prevention": "쿼리 파라미터는 항상 컴포넌트 로딩 전에 처리"
+      }
+    ],
+    "buildIssues": [
+      {
+        "problem": "빌드 후 스타일이 사라지는 문제",
+        "rootCause": "PurgeCSS가 실제 사용되는 클래스까지 제거",
+        "solution": "중요한 클래스들을 safelist에 추가",
+        "prevention": "새로운 CSS 클래스 추가 시 사용 패턴 확인 및 필요시 safelist 업데이트"
+      }
+    ]
+  },
+  "evolutionHistory": {
+    "phases": [
+      {
+        "phase": "Initial Architecture",
+        "period": "프로젝트 초기",
+        "focus": "기본적인 Vue SPA 구조 구축",
+        "achievements": ["커스텀 라우터 구현", "기본 빌드 시스템", "컴포넌트 시스템"]
+      },
+      {
+        "phase": "Performance Optimization",
+        "period": "중기 발전",
+        "focus": "성능 최적화 및 캐싱 시스템 도입",
+        "achievements": ["CSS 트리셰이킹", "컴포넌트 지연 로딩", "스마트 캐싱"]
+      },
+      {
+        "phase": "Developer Experience Enhancement", 
+        "period": "최근",
+        "focus": "개발 편의성 향상 및 도구 개선",
+        "achievements": ["쿼리 기반 제어", "LLM 메모리 시스템", "자동화 도구"]
+      }
+    ]
+  },
+  "futureConsiderations": {
+    "potentialEnhancements": [
+      {
+        "area": "Performance",
+        "ideas": [
+          "Service Worker를 통한 오프라인 지원",
+          "Web Workers를 활용한 빌드 최적화",
+          "HTTP/2 Push를 활용한 리소스 최적화"
+        ]
+      },
+      {
+        "area": "Developer Experience",
+        "ideas": [
+          "Hot Module Replacement (HMR) 구현",
+          "TypeScript 지원 추가",
+          "자동화된 테스트 프레임워크 도입"
+        ]
+      },
+      {
+        "area": "Architecture",
+        "ideas": [
+          "Micro Frontend 아키텍처 고려",
+          "Server-Side Rendering (SSR) 옵션",
+          "Progressive Web App (PWA) 기능"
+        ]
+      }
+    ]
+  },
+  "keyInsights": [
+    {
+      "insight": "대형 파일 관리의 중요성",
+      "description": "router.js(2500+라인), build.cjs(1500+라인) 같은 대형 파일은 참조 시스템 없이는 수정이 어려움",
+      "solution": "구조화된 참조 파일과 콜그래프를 통한 체계적 접근"
+    },
+    {
+      "insight": "점진적 최적화의 효과",
+      "description": "한 번에 모든 것을 최적화하기보다는 단계별로 개선하는 것이 효과적",
+      "approach": "캐싱 → CSS 최적화 → 컴포넌트 최적화 순서로 진행"
+    },
+    {
+      "insight": "개발자 경험과 성능의 균형",
+      "description": "개발 모드에서는 디버깅 편의성, 프로덕션에서는 성능에 집중하는 이중 전략",
+      "implementation": "환경별 다른 로딩 전략과 최적화 수준 적용"
+    }
+  ]
+}

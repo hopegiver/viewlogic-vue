@@ -1,0 +1,103 @@
+{
+  "absoluteRules": {
+    "neverDo": [
+      {
+        "rule": "routes 폴더 직접 편집 금지",
+        "reason": "빌드 시 자동 생성되어 덮어씌워짐",
+        "alternative": "src/ 폴더의 원본 파일들을 수정하고 빌드 실행"
+      },
+      {
+        "rule": "사용자 명시적 지시 없이 파일 수정 금지", 
+        "reason": "CLAUDE.md의 절대 규칙",
+        "examples": ["차이가 있다고 해서 임의로 수정하지 않기", "불확실할 때는 사용자에게 먼저 질문"]
+      },
+      {
+        "rule": "base.css 함부로 수정 금지",
+        "reason": "민감한 파일, 전체 레이아웃에 영향",
+        "alternative": "개별 라우트의 CSS 파일 사용"
+      }
+    ],
+    "alwaysDo": [
+      {
+        "rule": "새 페이지 생성 시 3개 파일 세트 필수",
+        "files": ["src/views/{route}.html", "src/logic/{route}.js", "src/styles/{route}.css"]
+      },
+      {
+        "rule": "파일 수정 후 반드시 빌드 실행",
+        "command": "node build.cjs build"
+      },
+      {
+        "rule": "artifacts 파일 동기화 유지",
+        "when": "router.js나 build.cjs 수정 시 해당 reference.json 업데이트"
+      }
+    ]
+  },
+  "codingConventions": {
+    "fileNaming": {
+      "routes": "kebab-case (product-detail.js, blog-detail.js)",
+      "components": "PascalCase (Button.js, Modal.js)",
+      "functions": "camelCase (handleRouteChange, loadRoute)"
+    },
+    "vue": {
+      "structure": "Options API 사용",
+      "lifecycle": "mounted, beforeUnmount 적극 활용",
+      "props": "명확한 타입 정의",
+      "events": "커스텀 이벤트는 kebab-case"
+    },
+    "css": {
+      "methodology": "BEM과 유사한 네이밍",
+      "responsive": "모바일 우선 (768px, 1024px 브레이크포인트)",
+      "darkMode": "@media (prefers-color-scheme: dark) 활용"
+    },
+    "javascript": {
+      "asyncAwait": "Promise보다 async/await 선호",
+      "errorHandling": "try-catch 블록 필수",
+      "logging": "console.log보다 적절한 로그 레벨 사용"
+    }
+  },
+  "buildSystemRules": {
+    "css": {
+      "optimization": "PurgeCSS + CleanCSS 조합 사용",
+      "safelist": ["subsection", "main-header", "main-description 등 중요 클래스 보호"],
+      "keyframes": "애니메이션 키프레임 항상 보존"
+    },
+    "components": {
+      "treeShaking": "사용하지 않는 컴포넌트 자동 제거",
+      "unification": "프로덕션에서는 _components.js로 통합"
+    },
+    "validation": {
+      "mandatory": "모든 라우트에 대해 파일 구조, 의존성, 출력 검증",
+      "levels": ["파일 존재성", "구문 검사", "의존성 확인", "빌드 출력 검증"]
+    }
+  },
+  "securityRules": {
+    "input": {
+      "validation": "모든 사용자 입력 검증 필수",
+      "sanitization": "XSS 방지를 위한 입력 정화",
+      "limits": "파라미터 길이 제한 (1000자, 50개)"
+    },
+    "authentication": {
+      "tokens": "JWT 토큰 만료시간 검증",
+      "storage": "쿠키/localStorage/sessionStorage 선택적 사용",
+      "fallback": "다중 인증 방식 지원"
+    }
+  },
+  "i18nRules": {
+    "keys": "계층적 구조 (manual.admin.overview.title)",
+    "fallback": "한국어가 기본, 영어 폴백",
+    "caching": "번역 데이터 브라우저 캐시 활용",
+    "realtime": "언어 변경 시 즉시 반영"
+  },
+  "debuggingRules": {
+    "logging": {
+      "development": "상세한 디버그 로그",
+      "production": "에러 로그만 유지",
+      "format": "이모지 + 메시지 형태 (🧹 Cache clear requested)"
+    },
+    "errorHandling": {
+      "graceful": "에러 발생 시 대체 화면 표시",
+      "reporting": "에러 정보 수집 및 리포팅",
+      "fallback": "404 페이지, 에러 페이지 제공"
+    }
+  }
+}
