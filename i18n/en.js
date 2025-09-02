@@ -226,5 +226,151 @@ export default {
         signup_success: 'Account Created Successfully',
         welcome_message: 'Welcome, {name}!',
         error_title: 'Signup Failed'
+    },
+
+    // Manual page
+    manual: {
+        title: 'System Manual',
+        description: 'Guide to using the ViewLogic system',
+        copySuccess: 'Copied to clipboard',
+        copyError: 'Failed to copy',
+        searchPrompt: 'Enter search term',
+        footer: {
+            lastUpdated: 'Last Updated',
+            version: 'Version'
+        },
+        
+        tabs: {
+            admin: 'Admin Manual',
+            user: 'User Manual'
+        },
+        
+        // Admin Manual
+        admin: {
+            overview: {
+                title: 'Admin Overview',
+                content: 'Comprehensive guide for ViewLogic system administrators. This manual covers everything administrators need to know about system configuration, user management, security settings, and more.'
+            },
+            
+            userManagement: {
+                title: 'User Management',
+                addUser: {
+                    title: 'Add New User',
+                    step1: 'Select "User Management" from the admin dashboard',
+                    step2: 'Click the "Add New User" button',
+                    step3: 'Enter user information (name, email, permissions)',
+                    step4: 'Click "Save" to create the user'
+                },
+                editUser: {
+                    title: 'Edit User Information',
+                    step1: 'Select the user to edit from the user list',
+                    step2: 'Modify the necessary information',
+                    step3: 'Click "Update" to save changes'
+                },
+                deleteUser: {
+                    title: 'Delete User',
+                    step1: 'Select the user to delete from the user list',
+                    step2: 'Click the "Delete" button',
+                    step3: 'Confirm deletion in the confirmation dialog'
+                }
+            },
+            
+            systemSettings: {
+                title: 'System Settings',
+                general: {
+                    title: 'General Settings',
+                    item1: 'System language settings',
+                    item2: 'Timezone settings',
+                    item3: 'Date format settings'
+                },
+                security: {
+                    title: 'Security Settings',
+                    item1: 'Password policy settings',
+                    item2: 'Session timeout settings',
+                    item3: 'Enable two-factor authentication'
+                }
+            },
+            
+            monitoring: {
+                title: 'Monitoring',
+                logs: {
+                    title: 'System Logs',
+                    content: 'Monitor and analyze system activity logs in real-time. Adjust log levels to filter only the information you need.'
+                },
+                performance: {
+                    title: 'Performance Monitoring',
+                    content: 'View system performance metrics in real-time, monitor CPU usage, memory usage, response times, and more.'
+                }
+            }
+        },
+        
+        // User Manual
+        user: {
+            overview: {
+                title: 'User Overview',
+                content: 'Guide for using the ViewLogic system effectively. This manual explains step-by-step from basic to advanced features.'
+            },
+            
+            gettingStarted: {
+                title: 'Getting Started',
+                login: {
+                    title: 'Login',
+                    step1: 'Access the ViewLogic system in your web browser',
+                    step2: 'Enter your email and password',
+                    step3: 'Click the "Login" button'
+                },
+                navigation: {
+                    title: 'Screen Navigation',
+                    item1: 'Access main features through the top menu bar',
+                    item2: 'Select detailed menus from the left sidebar',
+                    item3: 'Access personal settings via the profile icon in the top right'
+                }
+            },
+            
+            features: {
+                title: 'Main Features',
+                dashboard: {
+                    title: 'Dashboard',
+                    content: 'The dashboard allows you to view important information at a glance.',
+                    item1: 'View recent activity history',
+                    item2: 'Check key statistical metrics',
+                    item3: 'Execute quick actions'
+                },
+                profile: {
+                    title: 'Profile Management',
+                    step1: 'Click the profile icon in the top right',
+                    step2: 'Select "Profile Settings"',
+                    step3: 'Edit and save personal information'
+                }
+            },
+            
+            dataManagement: {
+                title: 'Data Management',
+                view: {
+                    title: 'View Data',
+                    content: 'Quickly find the data you need using various filters and search options.'
+                },
+                export: {
+                    title: 'Export Data',
+                    step1: 'Select the data to export',
+                    step2: 'Choose export format (Excel, CSV, PDF)',
+                    step3: 'Click the "Export" button'
+                }
+            },
+            
+            troubleshooting: {
+                title: 'Troubleshooting',
+                commonIssues: {
+                    title: 'Common Issues',
+                    item1: 'Cannot login: Reset your password',
+                    item2: 'Screen not displaying properly: Clear browser cache',
+                    item3: 'Data not saving: Check internet connection'
+                },
+                support: {
+                    title: 'Support Request',
+                    content: 'If the problem persists, contact support@viewlogic.com or call customer support (1234-5678).'
+                }
+            }
+        }
     }
 };

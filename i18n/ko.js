@@ -226,5 +226,151 @@ export default {
         signup_success: '회원가입 성공',
         welcome_message: '환영합니다, {name}님!',
         error_title: '회원가입 실패'
+    },
+
+    // 매뉴얼 페이지
+    manual: {
+        title: '시스템 매뉴얼',
+        description: 'ViewLogic 시스템 사용 방법을 안내합니다',
+        copySuccess: '클립보드에 복사되었습니다',
+        copyError: '복사에 실패했습니다',
+        searchPrompt: '검색어를 입력하세요',
+        footer: {
+            lastUpdated: '최종 업데이트',
+            version: '버전'
+        },
+        
+        tabs: {
+            admin: '관리자 매뉴얼',
+            user: '사용자 매뉴얼'
+        },
+        
+        // 관리자 매뉴얼
+        admin: {
+            overview: {
+                title: '관리자 개요',
+                content: 'ViewLogic 시스템 관리자를 위한 종합 가이드입니다. 이 매뉴얼은 시스템 구성, 사용자 관리, 보안 설정 등 관리자가 알아야 할 모든 내용을 다룹니다.'
+            },
+            
+            userManagement: {
+                title: '사용자 관리',
+                addUser: {
+                    title: '새 사용자 추가',
+                    step1: '관리자 대시보드에서 "사용자 관리" 메뉴를 선택합니다',
+                    step2: '"새 사용자 추가" 버튼을 클릭합니다',
+                    step3: '사용자 정보(이름, 이메일, 권한)를 입력합니다',
+                    step4: '"저장" 버튼을 클릭하여 사용자를 생성합니다'
+                },
+                editUser: {
+                    title: '사용자 정보 수정',
+                    step1: '사용자 목록에서 수정할 사용자를 선택합니다',
+                    step2: '필요한 정보를 수정합니다',
+                    step3: '"업데이트" 버튼을 클릭하여 변경사항을 저장합니다'
+                },
+                deleteUser: {
+                    title: '사용자 삭제',
+                    step1: '사용자 목록에서 삭제할 사용자를 선택합니다',
+                    step2: '"삭제" 버튼을 클릭합니다',
+                    step3: '확인 대화상자에서 삭제를 확인합니다'
+                }
+            },
+            
+            systemSettings: {
+                title: '시스템 설정',
+                general: {
+                    title: '일반 설정',
+                    item1: '시스템 언어 설정',
+                    item2: '시간대 설정',
+                    item3: '날짜 형식 설정'
+                },
+                security: {
+                    title: '보안 설정',
+                    item1: '비밀번호 정책 설정',
+                    item2: '세션 타임아웃 설정',
+                    item3: '2단계 인증 활성화'
+                }
+            },
+            
+            monitoring: {
+                title: '모니터링',
+                logs: {
+                    title: '시스템 로그',
+                    content: '시스템 활동 로그를 실시간으로 모니터링하고 분석할 수 있습니다. 로그 레벨을 조정하여 필요한 정보만 필터링할 수 있습니다.'
+                },
+                performance: {
+                    title: '성능 모니터링',
+                    content: '시스템 성능 지표를 실시간으로 확인하고, CPU 사용률, 메모리 사용량, 응답 시간 등을 모니터링할 수 있습니다.'
+                }
+            }
+        },
+        
+        // 사용자 매뉴얼
+        user: {
+            overview: {
+                title: '사용자 개요',
+                content: 'ViewLogic 시스템을 효과적으로 사용하기 위한 가이드입니다. 이 매뉴얼은 기본 기능부터 고급 기능까지 단계별로 설명합니다.'
+            },
+            
+            gettingStarted: {
+                title: '시작하기',
+                login: {
+                    title: '로그인',
+                    step1: '웹 브라우저에서 ViewLogic 시스템에 접속합니다',
+                    step2: '이메일과 비밀번호를 입력합니다',
+                    step3: '"로그인" 버튼을 클릭합니다'
+                },
+                navigation: {
+                    title: '화면 탐색',
+                    item1: '상단 메뉴바를 통해 주요 기능에 접근합니다',
+                    item2: '좌측 사이드바에서 세부 메뉴를 선택합니다',
+                    item3: '우측 상단의 프로필 아이콘으로 개인 설정에 접근합니다'
+                }
+            },
+            
+            features: {
+                title: '주요 기능',
+                dashboard: {
+                    title: '대시보드',
+                    content: '대시보드에서는 중요한 정보를 한눈에 확인할 수 있습니다.',
+                    item1: '최근 활동 내역 확인',
+                    item2: '주요 통계 지표 확인',
+                    item3: '빠른 작업 실행'
+                },
+                profile: {
+                    title: '프로필 관리',
+                    step1: '우측 상단의 프로필 아이콘을 클릭합니다',
+                    step2: '"프로필 설정"을 선택합니다',
+                    step3: '개인 정보를 수정하고 저장합니다'
+                }
+            },
+            
+            dataManagement: {
+                title: '데이터 관리',
+                view: {
+                    title: '데이터 조회',
+                    content: '다양한 필터와 검색 옵션을 사용하여 필요한 데이터를 빠르게 찾을 수 있습니다.'
+                },
+                export: {
+                    title: '데이터 내보내기',
+                    step1: '내보낼 데이터를 선택합니다',
+                    step2: '내보내기 형식(Excel, CSV, PDF)을 선택합니다',
+                    step3: '"내보내기" 버튼을 클릭합니다'
+                }
+            },
+            
+            troubleshooting: {
+                title: '문제 해결',
+                commonIssues: {
+                    title: '자주 발생하는 문제',
+                    item1: '로그인이 안 될 때: 비밀번호를 재설정하세요',
+                    item2: '화면이 제대로 표시되지 않을 때: 브라우저 캐시를 삭제하세요',
+                    item3: '데이터가 저장되지 않을 때: 인터넷 연결을 확인하세요'
+                },
+                support: {
+                    title: '지원 요청',
+                    content: '문제가 해결되지 않으면 support@viewlogic.com으로 문의하거나 고객 지원 센터(1234-5678)로 연락하세요.'
+                }
+            }
+        }
     }
 };

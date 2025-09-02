@@ -1,4 +1,5 @@
 node_modules
 routes
+.artifacts
 .build-cache.json
 bundle-report.html

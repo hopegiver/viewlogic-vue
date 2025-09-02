@@ -1,0 +1,303 @@
+<div id="manual" class="manual-container">
+  <div class="manual-wrapper">
+    <!-- 왼쪽 사이드바 메뉴 -->
+    <aside class="manual-sidebar">
+      <div class="sidebar-header">
+        <h2>{{ $t('manual.title') }}</h2>
+      </div>
+      
+      <nav class="sidebar-nav">
+        <div class="tree-menu">
+          <!-- 관리자 매뉴얼 섹션 -->
+          <div class="tree-node">
+            <div class="tree-node-toggle" @click="toggleTreeNode('admin')" :class="{ expanded: adminSectionOpen }">
+              <span class="tree-node-icon">{{ adminSectionOpen ? '📂' : '📁' }}</span>
+              <span class="tree-node-label">{{ $t('manual.tabs.admin') }}</span>
+            </div>
+            
+            <div class="tree-children" v-show="adminSectionOpen">
+              <!-- 관리자 개요 -->
+              <div class="tree-leaf" :class="{ active: activePageId === 'admin-overview' }">
+                <span class="tree-indent"></span>
+                <span class="tree-leaf-icon">📄</span>
+                <a @click="setActiveContent('admin-overview')" class="tree-leaf-link">
+                  {{ $t('manual.admin.overview.title') }}
+                </a>
+              </div>
+              
+              <!-- 사용자 관리 -->
+              <div class="tree-node">
+                <div class="tree-node-toggle" @click="toggleTreeNode('admin-userManagement')" :class="{ expanded: treeNodeStates['admin-userManagement'] }">
+                  <span class="tree-indent"></span>
+                  <span class="tree-node-icon">{{ treeNodeStates['admin-userManagement'] ? '📂' : '📁' }}</span>
+                  <a @click="setActiveContent('admin-userManagement')" class="tree-node-link" :class="{ active: activePageId === 'admin-userManagement' }">
+                    {{ $t('manual.admin.userManagement.title') }}
+                  </a>
+                </div>
+                
+                <div class="tree-children" v-show="treeNodeStates['admin-userManagement']">
+                  <div class="tree-leaf">
+                    <span class="tree-indent"></span>
+                    <span class="tree-indent"></span>
+                    <span class="tree-leaf-icon">📝</span>
+                    <a @click="scrollToSubsection('addUser')" class="tree-leaf-link">
+                      {{ $t('manual.admin.userManagement.addUser.title') }}
+                    </a>
+                  </div>
+                  <div class="tree-leaf">
+                    <span class="tree-indent"></span>
+                    <span class="tree-indent"></span>
+                    <span class="tree-leaf-icon">✏️</span>
+                    <a @click="scrollToSubsection('editUser')" class="tree-leaf-link">
+                      {{ $t('manual.admin.userManagement.editUser.title') }}
+                    </a>
+                  </div>
+                  <div class="tree-leaf">
+                    <span class="tree-indent"></span>
+                    <span class="tree-indent"></span>
+                    <span class="tree-leaf-icon">🗑️</span>
+                    <a @click="scrollToSubsection('deleteUser')" class="tree-leaf-link">
+                      {{ $t('manual.admin.userManagement.deleteUser.title') }}
+                    </a>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- 시스템 설정 -->
+              <div class="tree-node">
+                <div class="tree-node-toggle" @click="toggleTreeNode('admin-systemSettings')" :class="{ expanded: treeNodeStates['admin-systemSettings'] }">
+                  <span class="tree-indent"></span>
+                  <span class="tree-node-icon">{{ treeNodeStates['admin-systemSettings'] ? '📂' : '📁' }}</span>
+                  <a @click="setActiveContent('admin-systemSettings')" class="tree-node-link" :class="{ active: activePageId === 'admin-systemSettings' }">
+                    {{ $t('manual.admin.systemSettings.title') }}
+                  </a>
+                </div>
+                
+                <div class="tree-children" v-show="treeNodeStates['admin-systemSettings']">
+                  <div class="tree-leaf">
+                    <span class="tree-indent"></span>
+                    <span class="tree-indent"></span>
+                    <span class="tree-leaf-icon">⚙️</span>
+                    <a @click="scrollToSubsection('general')" class="tree-leaf-link">
+                      {{ $t('manual.admin.systemSettings.general.title') }}
+                    </a>
+                  </div>
+                  <div class="tree-leaf">
+                    <span class="tree-indent"></span>
+                    <span class="tree-indent"></span>
+                    <span class="tree-leaf-icon">🔒</span>
+                    <a @click="scrollToSubsection('security')" class="tree-leaf-link">
+                      {{ $t('manual.admin.systemSettings.security.title') }}
+                    </a>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- 모니터링 -->
+              <div class="tree-node">
+                <div class="tree-node-toggle" @click="toggleTreeNode('admin-monitoring')" :class="{ expanded: treeNodeStates['admin-monitoring'] }">
+                  <span class="tree-indent"></span>
+                  <span class="tree-node-icon">{{ treeNodeStates['admin-monitoring'] ? '📂' : '📁' }}</span>
+                  <a @click="setActiveContent('admin-monitoring')" class="tree-node-link" :class="{ active: activePageId === 'admin-monitoring' }">
+                    {{ $t('manual.admin.monitoring.title') }}
+                  </a>
+                </div>
+                
+                <div class="tree-children" v-show="treeNodeStates['admin-monitoring']">
+                  <div class="tree-leaf">
+                    <span class="tree-indent"></span>
+                    <span class="tree-indent"></span>
+                    <span class="tree-leaf-icon">📋</span>
+                    <a @click="scrollToSubsection('logs')" class="tree-leaf-link">
+                      {{ $t('manual.admin.monitoring.logs.title') }}
+                    </a>
+                  </div>
+                  <div class="tree-leaf">
+                    <span class="tree-indent"></span>
+                    <span class="tree-indent"></span>
+                    <span class="tree-leaf-icon">📊</span>
+                    <a @click="scrollToSubsection('performance')" class="tree-leaf-link">
+                      {{ $t('manual.admin.monitoring.performance.title') }}
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 사용자 매뉴얼 섹션 -->
+          <div class="tree-node">
+            <div class="tree-node-toggle" @click="toggleTreeNode('user')" :class="{ expanded: userSectionOpen }">
+              <span class="tree-node-icon">{{ userSectionOpen ? '📂' : '📁' }}</span>
+              <span class="tree-node-label">{{ $t('manual.tabs.user') }}</span>
+            </div>
+            
+            <div class="tree-children" v-show="userSectionOpen">
+              <!-- 사용자 개요 -->
+              <div class="tree-leaf" :class="{ active: activePageId === 'user-overview' }">
+                <span class="tree-indent"></span>
+                <span class="tree-leaf-icon">📄</span>
+                <a @click="setActiveContent('user-overview')" class="tree-leaf-link">
+                  {{ $t('manual.user.overview.title') }}
+                </a>
+              </div>
+              
+              <!-- 시작하기 -->
+              <div class="tree-node">
+                <div class="tree-node-toggle" @click="toggleTreeNode('user-gettingStarted')" :class="{ expanded: treeNodeStates['user-gettingStarted'] }">
+                  <span class="tree-indent"></span>
+                  <span class="tree-node-icon">{{ treeNodeStates['user-gettingStarted'] ? '📂' : '📁' }}</span>
+                  <a @click="setActiveContent('user-gettingStarted')" class="tree-node-link" :class="{ active: activePageId === 'user-gettingStarted' }">
+                    {{ $t('manual.user.gettingStarted.title') }}
+                  </a>
+                </div>
+                
+                <div class="tree-children" v-show="treeNodeStates['user-gettingStarted']">
+                  <div class="tree-leaf">
+                    <span class="tree-indent"></span>
+                    <span class="tree-indent"></span>
+                    <span class="tree-leaf-icon">🔑</span>
+                    <a @click="scrollToSubsection('login')" class="tree-leaf-link">
+                      {{ $t('manual.user.gettingStarted.login.title') }}
+                    </a>
+                  </div>
+                  <div class="tree-leaf">
+                    <span class="tree-indent"></span>
+                    <span class="tree-indent"></span>
+                    <span class="tree-leaf-icon">🧭</span>
+                    <a @click="scrollToSubsection('navigation')" class="tree-leaf-link">
+                      {{ $t('manual.user.gettingStarted.navigation.title') }}
+                    </a>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- 주요 기능 -->
+              <div class="tree-node">
+                <div class="tree-node-toggle" @click="toggleTreeNode('user-features')" :class="{ expanded: treeNodeStates['user-features'] }">
+                  <span class="tree-indent"></span>
+                  <span class="tree-node-icon">{{ treeNodeStates['user-features'] ? '📂' : '📁' }}</span>
+                  <a @click="setActiveContent('user-features')" class="tree-node-link" :class="{ active: activePageId === 'user-features' }">
+                    {{ $t('manual.user.features.title') }}
+                  </a>
+                </div>
+                
+                <div class="tree-children" v-show="treeNodeStates['user-features']">
+                  <div class="tree-leaf">
+                    <span class="tree-indent"></span>
+                    <span class="tree-indent"></span>
+                    <span class="tree-leaf-icon">📊</span>
+                    <a @click="scrollToSubsection('dashboard')" class="tree-leaf-link">
+                      {{ $t('manual.user.features.dashboard.title') }}
+                    </a>
+                  </div>
+                  <div class="tree-leaf">
+                    <span class="tree-indent"></span>
+                    <span class="tree-indent"></span>
+                    <span class="tree-leaf-icon">👤</span>
+                    <a @click="scrollToSubsection('profile')" class="tree-leaf-link">
+                      {{ $t('manual.user.features.profile.title') }}
+                    </a>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- 데이터 관리 -->
+              <div class="tree-node">
+                <div class="tree-node-toggle" @click="toggleTreeNode('user-dataManagement')" :class="{ expanded: treeNodeStates['user-dataManagement'] }">
+                  <span class="tree-indent"></span>
+                  <span class="tree-node-icon">{{ treeNodeStates['user-dataManagement'] ? '📂' : '📁' }}</span>
+                  <a @click="setActiveContent('user-dataManagement')" class="tree-node-link" :class="{ active: activePageId === 'user-dataManagement' }">
+                    {{ $t('manual.user.dataManagement.title') }}
+                  </a>
+                </div>
+                
+                <div class="tree-children" v-show="treeNodeStates['user-dataManagement']">
+                  <div class="tree-leaf">
+                    <span class="tree-indent"></span>
+                    <span class="tree-indent"></span>
+                    <span class="tree-leaf-icon">👁️</span>
+                    <a @click="scrollToSubsection('view')" class="tree-leaf-link">
+                      {{ $t('manual.user.dataManagement.view.title') }}
+                    </a>
+                  </div>
+                  <div class="tree-leaf">
+                    <span class="tree-indent"></span>
+                    <span class="tree-indent"></span>
+                    <span class="tree-leaf-icon">📤</span>
+                    <a @click="scrollToSubsection('export')" class="tree-leaf-link">
+                      {{ $t('manual.user.dataManagement.export.title') }}
+                    </a>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- 문제 해결 -->
+              <div class="tree-node">
+                <div class="tree-node-toggle" @click="toggleTreeNode('user-troubleshooting')" :class="{ expanded: treeNodeStates['user-troubleshooting'] }">
+                  <span class="tree-indent"></span>
+                  <span class="tree-node-icon">{{ treeNodeStates['user-troubleshooting'] ? '📂' : '📁' }}</span>
+                  <a @click="setActiveContent('user-troubleshooting')" class="tree-node-link" :class="{ active: activePageId === 'user-troubleshooting' }">
+                    {{ $t('manual.user.troubleshooting.title') }}
+                  </a>
+                </div>
+                
+                <div class="tree-children" v-show="treeNodeStates['user-troubleshooting']">
+                  <div class="tree-leaf">
+                    <span class="tree-indent"></span>
+                    <span class="tree-indent"></span>
+                    <span class="tree-leaf-icon">❗</span>
+                    <a @click="scrollToSubsection('commonIssues')" class="tree-leaf-link">
+                      {{ $t('manual.user.troubleshooting.commonIssues.title') }}
+                    </a>
+                  </div>
+                  <div class="tree-leaf">
+                    <span class="tree-indent"></span>
+                    <span class="tree-indent"></span>
+                    <span class="tree-leaf-icon">💬</span>
+                    <a @click="scrollToSubsection('support')" class="tree-leaf-link">
+                      {{ $t('manual.user.troubleshooting.support.title') }}
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </nav>
+    </aside>
+
+    <!-- 오른쪽 콘텐츠 영역 -->
+    <main class="manual-main">
+      <div class="main-header">
+        <h1>{{ currentTitle }}</h1>
+        <p class="main-description">{{ $t('manual.description') }}</p>
+      </div>
+
+      <div class="manual-content">
+        <!-- 동적 컨텐츠 로드 -->
+        <div v-if="activePageId">
+          <HtmlInclude 
+            :src="`/manuals/${activePageId}.html`"
+            :sanitize="true"
+            :use-cache="true"
+            loading-text="매뉴얼 로딩 중..."
+            wrapper-class="manual-page-content"
+          />
+        </div>
+        
+        <!-- 기본 컨텐츠 (페이지가 선택되지 않은 경우) -->
+        <div v-else class="section">
+          <h2>{{ $t('manual.title') }}</h2>
+          <p>{{ $t('manual.description') }}</p>
+          <p>왼쪽 메뉴에서 항목을 선택해주세요.</p>
+        </div>
+      </div>
+
+      <div class="manual-footer">
+        <p>{{ $t('manual.footer.lastUpdated') }}: {{ lastUpdated }}</p>
+        <p>{{ $t('manual.footer.version') }}: v1.0.0</p>
+      </div>
+    </main>
+  </div>
+</div>

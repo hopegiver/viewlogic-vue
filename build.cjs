@@ -9,6 +9,8 @@ const esbuild = require('esbuild');
 const crypto = require('crypto');
 const { createReadStream, createWriteStream } = require('fs');
 const { pipeline } = require('stream/promises');
+const CleanCSS = require('clean-css');
+const { PurgeCSS } = require('purgecss');
 
 class ViewLogicBuilder {
     constructor(options = {}) {
@@ -133,13 +135,80 @@ class ViewLogicBuilder {
         return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
     }
     
-    // CSS 압축 유틸리티
+    // CSS 압축 유틸리티 (전문 라이브러리 사용)
     minifyCSS(css) {
-        return css
-            .replace(/\/\*[^*]*\*+(?:[^/*][^*]*\*+)*\//g, '')  // 주석 제거
-            .replace(/\s+/g, ' ')                              // 연속 공백을 하나로
-            .replace(/\s*([{}:;,])\s*/g, '$1')                 // 구분자 주변 공백 제거
-            .trim();
+        try {
+            const cleanCSS = new CleanCSS({
+                level: {
+                    1: {
+                        // Level 1 optimizations - safe optimizations
+                        cleanupCharsets: true,
+                        normalizeUrls: true,
+                        optimizeBackground: true,
+                        optimizeBorderRadius: true,
+                        optimizeFilter: true,
+                        optimizeFont: true,
+                        optimizeFontWeight: true,
+                        optimizeOutline: true,
+                        removeEmpty: true,
+                        removeNegativePaddings: true,
+                        removeQuotes: false, // Keep quotes for compatibility
+                        removeWhitespace: true,
+                        replaceMultipleZeros: true,
+                        replaceTimeUnits: true,
+                        replaceZeroUnits: true,
+                        roundingPrecision: -1,
+                        selectorsSortingMethod: 'standard',
+                        specialComments: 'none',
+                        tidyAtRules: false, // Disable to preserve keyframes structure
+                        tidyBlockScopes: false, // Disable to preserve keyframes structure
+                        tidySelectors: true,
+                        transform: function() {}
+                    },
+                    2: {
+                        // Level 2 optimizations - conservative for keyframes
+                        mergeAdjacentRules: false, // Disable to preserve keyframes
+                        mergeIntoShorthands: false, // Disable to preserve keyframes
+                        mergeMedia: true,
+                        mergeNonAdjacentRules: false, // Disable to preserve keyframes
+                        mergeSemantically: false, // Keep false for safety
+                        overrideProperties: false, // Disable to preserve keyframes
+                        removeEmpty: true,
+                        reduceNonAdjacentRules: false, // Disable to preserve keyframes
+                        removeDuplicateFontRules: true,
+                        removeDuplicateMediaBlocks: true,
+                        removeDuplicateRules: false, // Disable to preserve keyframes
+                        removeUnusedAtRules: false,
+                        restructureRules: false, // Disable to preserve keyframes structure
+                        skipProperties: []
+                    }
+                },
+                format: false, // No formatting, maximum compression
+                inline: false,
+                rebase: false,
+                returnPromise: false
+            });
+            
+            const result = cleanCSS.minify(css);
+            
+            if (result.errors && result.errors.length > 0) {
+                this.log(`CSS minification errors: ${result.errors.join(', ')}`, 'warn');
+            }
+            
+            if (result.warnings && result.warnings.length > 0) {
+                this.log(`CSS minification warnings: ${result.warnings.join(', ')}`, 'warn');
+            }
+            
+            return result.styles || css; // Fallback to original CSS if minification fails
+            
+        } catch (error) {
+            this.log(`CSS minification failed: ${error.message}`, 'error');
+            // Fallback to simple compression
+            return css
+                .replace(/\/\*[^*]*\*+(?:[^/*][^*]*\*+)*\//g, '')  // Remove comments
+                .replace(/\s+/g, ' ')                              // Normalize whitespace
+                .trim();
+        }
     }
     
     // HTML 압축 유틸리티 (Vue 템플릿 보호)
@@ -568,10 +637,10 @@ class ViewLogicBuilder {
             
             this.log(`${routes.length}개 라우트 발견: ${routes.join(', ')}`, 'info');
 
-            // 3단계: CSS 사용량 분석 (트리셰이킹용)
-            this.log('CSS 사용량 분석 시작...', 'info');
-            this.cssUsageAnalysis = await this.analyzeCssUsage();
-            this.log(`CSS 분석 완료: 클래스 ${this.cssUsageAnalysis.usedClasses.size}개, ID ${this.cssUsageAnalysis.usedIds.size}개, 태그 ${this.cssUsageAnalysis.usedTags.size}개`, 'info');
+            // 3단계: PurgeCSS 컨텐츠 경로 준비 (전문 트리셰이킹용)
+            this.log('PurgeCSS 컨텐츠 분석 준비...', 'info');
+            this.purgeContentPaths = await this.preparePurgeContentPaths();
+            this.log(`PurgeCSS 컨텐츠 경로: ${this.purgeContentPaths.length}개 파일 준비 완료`, 'info');
             
             // 4단계: 컴포넌트 시스템 파일 생성
             await this.generateComponentsFile();
@@ -873,18 +942,13 @@ class ViewLogicBuilder {
         if (styleContent.trim()) {
             let processedStyle = styleContent;
             
-            // CSS 트리셰이킹 적용
-            if (this.cssUsageAnalysis) {
-                const result = this.treeshakeCss(
-                    styleContent, 
-                    this.cssUsageAnalysis.usedClasses, 
-                    this.cssUsageAnalysis.usedIds, 
-                    this.cssUsageAnalysis.usedTags
-                );
+            // PurgeCSS 트리셰이킹 적용
+            if (this.purgeContentPaths && this.purgeContentPaths.length > 0) {
+                const result = await this.purgeUnusedCSS(styleContent, routeName);
                 processedStyle = result.css;
                 
-                if (result.removedRules.length > 0) {
-                    this.log(`  - CSS 트리셰이킹: ${result.removedRules.length}개 규칙 제거`, 'info');
+                if (result.removedSelectors > 0) {
+                    this.log(`  - PurgeCSS 트리셰이킹: ${result.removedSelectors}개 선택자 제거`, 'info');
                 }
             }
             
@@ -1111,185 +1175,135 @@ export default component;`;
         }
     }
     
-    // CSS 사용량 분석
-    async analyzeCssUsage() {
-        const usedClasses = new Set();
-        const usedIds = new Set();
-        const usedTags = new Set(['html', 'body', 'div', 'span', 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'a', 'button', 'input', 'form', 'ul', 'li', 'img', 'nav', 'header', 'footer', 'main', 'section']);
+    // PurgeCSS 컨텐츠 경로 준비
+    async preparePurgeContentPaths() {
+        const contentPaths = [];
         
-        // 모든 라우트의 HTML 템플릿에서 클래스와 ID 추출
-        const routes = await this.discoverRoutes();
-        
-        for (const route of routes) {
-            try {
-                const viewPath = path.join(this.config.srcPath, 'views', `${route}.html`);
-                const viewContent = await fs.readFile(viewPath, 'utf-8');
-                
-                // 클래스 추출 (class="..." 또는 :class="...")
-                const classMatches = viewContent.match(/(?:class|:class)=["']([^"']*)["']/g);
-                if (classMatches) {
-                    classMatches.forEach(match => {
-                        const classes = match.replace(/(?:class|:class)=["']([^"']*)(["'])/, '$1')
-                            .split(/\s+/)
-                            .filter(cls => cls.trim() && !cls.includes('{') && !cls.includes('}'));
-                        classes.forEach(cls => usedClasses.add(cls.trim()));
-                    });
-                }
-                
-                // ID 추출
-                const idMatches = viewContent.match(/id=["']([^"']*)["']/g);
-                if (idMatches) {
-                    idMatches.forEach(match => {
-                        const id = match.replace(/id=["']([^"']*)(["'])/, '$1');
-                        if (id.trim() && !id.includes('{') && !id.includes('}')) {
-                            usedIds.add(id.trim());
-                        }
-                    });
-                }
-                
-                // 태그명 추출
-                const tagMatches = viewContent.match(/<\/?([a-zA-Z][a-zA-Z0-9-]*)/g);
-                if (tagMatches) {
-                    tagMatches.forEach(match => {
-                        const tag = match.replace(/[<>/]/g, '');
-                        if (tag && !tag.includes('{')) {
-                            usedTags.add(tag.toLowerCase());
-                        }
-                    });
-                }
-                
-            } catch (error) {
-                this.log(`CSS 분석 중 오류 (${route}): ${error.message}`, 'warn');
-            }
-        }
-        
-        // 레이아웃에서도 클래스 추출
         try {
-            const layoutPath = path.join(this.config.srcPath, 'layouts', 'default.html');
-            const layoutContent = await fs.readFile(layoutPath, 'utf-8');
-            
-            const classMatches = layoutContent.match(/(?:class|:class)=["']([^"']*)["']/g);
-            if (classMatches) {
-                classMatches.forEach(match => {
-                    const classes = match.replace(/(?:class|:class)=["']([^"']*)(["'])/, '$1')
-                        .split(/\s+/)
-                        .filter(cls => cls.trim() && !cls.includes('{'));
-                    classes.forEach(cls => usedClasses.add(cls.trim()));
-                });
+            // 모든 라우트의 view 파일들
+            const routes = await this.discoverRoutes();
+            for (const route of routes) {
+                const viewPath = path.join(this.config.srcPath, 'views', `${route}.html`);
+                try {
+                    await fs.access(viewPath);
+                    contentPaths.push(viewPath);
+                } catch (error) {
+                    // 파일이 없으면 스킵
+                }
             }
             
-            const idMatches = layoutContent.match(/id=["']([^"']*)["']/g);
-            if (idMatches) {
-                idMatches.forEach(match => {
-                    const id = match.replace(/id=["']([^"']*)(["'])/, '$1');
-                    if (id.trim() && !id.includes('{')) {
-                        usedIds.add(id.trim());
+            // 레이아웃 파일들
+            const layoutsDir = path.join(this.config.srcPath, 'layouts');
+            try {
+                const layoutFiles = await fs.readdir(layoutsDir);
+                for (const file of layoutFiles) {
+                    if (file.endsWith('.html')) {
+                        contentPaths.push(path.join(layoutsDir, file));
                     }
-                });
+                }
+            } catch (error) {
+                this.log(`레이아웃 디렉토리 읽기 오류: ${error.message}`, 'warn');
             }
+            
+            // 컴포넌트 파일들
+            const componentsDir = path.join(this.config.srcPath, 'components');
+            try {
+                const componentFiles = await fs.readdir(componentsDir);
+                for (const file of componentFiles) {
+                    if (file.endsWith('.js')) {
+                        contentPaths.push(path.join(componentsDir, file));
+                    }
+                }
+            } catch (error) {
+                this.log(`컴포넌트 디렉토리 읽기 오류: ${error.message}`, 'warn');
+            }
+            
         } catch (error) {
-            this.log(`레이아웃 CSS 분석 중 오류: ${error.message}`, 'warn');
+            this.log(`PurgeCSS 컨텐츠 경로 준비 중 오류: ${error.message}`, 'warn');
         }
         
-        return { usedClasses, usedIds, usedTags };
+        return contentPaths;
     }
     
-    // CSS 트리셰이킹 처리
-    treeshakeCss(css, usedClasses, usedIds, usedTags) {
-        if (!css || !css.trim()) return { css: '', removedRules: [] };
-        
-        const originalSize = css.length;
-        const removedRules = [];
-        let processedCss = '';
-        
-        // CSS 규칙을 분석하고 필터링
-        const cssRules = css.split('}').filter(rule => rule.trim());
-        
-        for (let rule of cssRules) {
-            rule = rule.trim();
-            if (!rule) continue;
-            
-            const ruleWithBrace = rule + '}';
-            const selectorPart = rule.split('{')[0];
-            if (!selectorPart) {
-                processedCss += ruleWithBrace + '\n';
-                continue;
-            }
-            
-            const selectors = selectorPart.split(',')
-                .map(s => s.trim())
-                .filter(s => s);
-            
-            let keepRule = false;
-            
-            for (const selector of selectors) {
-                const cleanSelector = selector.replace(/:hover|:focus|:active|:visited|::before|::after|:first-child|:last-child|:nth-child\([^)]*\)|@media[^{]*|@keyframes[^{]*/g, '').trim();
-                
-                // 클래스 선택자 확인
-                if (cleanSelector.includes('.')) {
-                    const classes = cleanSelector.match(/\.[a-zA-Z_-][a-zA-Z0-9_-]*/g);
-                    if (classes) {
-                        for (const cls of classes) {
-                            const className = cls.substring(1);
-                            if (usedClasses.has(className)) {
-                                keepRule = true;
-                                break;
-                            }
-                        }
-                    }
-                }
-                
-                // ID 선택자 확인
-                if (!keepRule && cleanSelector.includes('#')) {
-                    const ids = cleanSelector.match(/#[a-zA-Z_-][a-zA-Z0-9_-]*/g);
-                    if (ids) {
-                        for (const id of ids) {
-                            const idName = id.substring(1);
-                            if (usedIds.has(idName)) {
-                                keepRule = true;
-                                break;
-                            }
-                        }
-                    }
-                }
-                
-                // 태그 선택자 확인
-                if (!keepRule) {
-                    const tagMatch = cleanSelector.match(/^[a-zA-Z][a-zA-Z0-9-]*/);
-                    if (tagMatch) {
-                        const tagName = tagMatch[0].toLowerCase();
-                        if (usedTags.has(tagName)) {
-                            keepRule = true;
-                        }
-                    }
-                }
-                
-                // 미디어 쿼리나 키프레임은 보존
-                if (!keepRule && (selector.includes('@media') || selector.includes('@keyframes') || selector.includes('@-') || selector.includes('*') || selector === 'html' || selector === 'body')) {
-                    keepRule = true;
-                }
-                
-                if (keepRule) break;
-            }
-            
-            if (keepRule) {
-                processedCss += ruleWithBrace + '\n';
-                this.treeShakingStats.css.usedRules++;
-            } else {
-                removedRules.push(selectorPart.trim());
-                this.treeShakingStats.css.unusedRules.push(selectorPart.trim());
-            }
-            
-            this.treeShakingStats.css.totalRules++;
+    // PurgeCSS 기반 CSS 트리셰이킹 처리
+    async purgeUnusedCSS(css, routeName) {
+        if (!css || !css.trim()) {
+            return { css: '', removedSelectors: 0 };
         }
         
-        const finalSize = processedCss.length;
-        this.treeShakingStats.css.savedBytes += (originalSize - finalSize);
+        const originalSize = css.length;
         
-        return {
-            css: processedCss.trim(),
-            removedRules
-        };
+        try {
+            // PurgeCSS 실행
+            const purgeCSS = new PurgeCSS();
+            const result = await purgeCSS.purge({
+                content: this.purgeContentPaths,
+                css: [{
+                    raw: css,
+                    extension: 'css'
+                }],
+                // PurgeCSS 옵션
+                safelist: {
+                    // 항상 보존할 선택자들
+                    standard: [
+                        'html', 'body', '*', '::before', '::after',
+                        // Vue.js 관련
+                        /^v-/, /^data-v-/, 
+                        // Alpine.js 관련  
+                        /^x-/, /^\[x-/, /^@/,
+                        // 상태 클래스들
+                        'active', 'disabled', 'loading', 'error', 'success',
+                        // 미디어 쿼리 관련
+                        /^@media/, /^@supports/, /^@keyframes/
+                    ],
+                    // 키프레임 애니메이션 보존
+                    keyframes: true,
+                    // 동적으로 추가되는 클래스들
+                    greedy: [
+                        /^btn-/, /^alert-/, /^modal-/, /^form-/,
+                        /^nav-/, /^card-/, /^input-/, /^toast-/
+                    ]
+                },
+                // 키프레임과 미디어 쿼리 보존
+                keyframes: true,
+                fontFace: true,
+                // CSS 변수 보존
+                variables: true,
+                // 더 관대한 매칭
+                defaultExtractor: content => {
+                    const broadMatches = content.match(/[^<>"'`\s]*[^<>"'`\s:]/g) || [];
+                    const innerMatches = content.match(/[^<>"'`\s.()]*[^<>"'`\s.():]/g) || [];
+                    return broadMatches.concat(innerMatches);
+                }
+            });
+            
+            if (result && result[0]) {
+                const purgedCSS = result[0].css;
+                const finalSize = purgedCSS.length;
+                const removedSize = originalSize - finalSize;
+                const removedSelectors = Math.max(0, Math.floor(removedSize / 50)); // 대략적인 제거된 선택자 수
+                
+                // 통계 업데이트
+                if (this.treeShakingStats?.css) {
+                    this.treeShakingStats.css.savedBytes += removedSize;
+                    this.treeShakingStats.css.totalRules++;
+                    this.treeShakingStats.css.usedRules++;
+                }
+                
+                return {
+                    css: purgedCSS,
+                    removedSelectors
+                };
+            } else {
+                this.log(`PurgeCSS 결과가 없음 (${routeName})`, 'warn');
+                return { css, removedSelectors: 0 };
+            }
+            
+        } catch (error) {
+            this.log(`PurgeCSS 오류 (${routeName}): ${error.message}`, 'warn');
+            // PurgeCSS 실패 시 원본 CSS 반환
+            return { css, removedSelectors: 0 };
+        }
     }
     
     async analyzeComponentUsage() {
