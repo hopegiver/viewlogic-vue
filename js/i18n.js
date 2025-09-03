@@ -185,8 +185,12 @@ class I18n {
         }
         
         try {
-            const module = await import(`../i18n/${language}.js`);
-            const messages = module.default || module;
+            // JSON 파일로 변경
+            const response = await fetch(`../i18n/${language}.json`);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const messages = await response.json();
             
             // 캐시에 저장
             if (this.config.enableDataCache) {

@@ -1,0 +1,328 @@
+{
+    "common": {
+        "loading": "Loading...",
+        "error": "Error",
+        "success": "Success",
+        "cancel": "Cancel",
+        "confirm": "Confirm",
+        "save": "Save",
+        "edit": "Edit",
+        "delete": "Delete",
+        "close": "Close",
+        "search": "Search",
+        "previous": "Previous",
+        "next": "Next",
+        "back": "Back",
+        "home": "Home",
+        "language": "Language",
+        "korean": "한국어",
+        "english": "English"
+    },
+    "nav": {
+        "home": "Home",
+        "about": "About",
+        "contact": "Contact",
+        "components": "Components"
+    },
+    "home": {
+        "title": "Welcome to ViewLogic",
+        "subtitle": "Welcome to Vue SFC Compatible Router!",
+        "router_title": "ViewLogic Router",
+        "router_subtitle": "Vue 3 Compatible Router System",
+        "message": "Running with Vue-style components!",
+        "features_title": "Key Features",
+        "features": [
+            "Hash-based routing system",
+            "Vue 3 compatible components",
+            "Dynamic component loading",
+            "Caching and preloading",
+            "Error handling and recovery",
+            "Responsive design"
+        ],
+        "about_page": "About Page",
+        "contact_page": "Contact Page",
+        "test_action": "Test Action",
+        "notification_test": "Notification Test",
+        "modal_test": "Modal Test",
+        "component_demo": "Component Demo",
+        "demo_description": "This is the first panel of the tab component.",
+        "demo_input_label": "Demo Input",
+        "demo_input_placeholder": "Type something here",
+        "demo_input_help": "The component system is working properly"
+    },
+    "about": {
+        "title": "About",
+        "project_intro": "Project Introduction",
+        "project_description": "This project is a hash-based router compatible with both React and Vue.",
+        "core_features": "Core Features",
+        "features": [
+            {
+                "title": "Fast Routing",
+                "description": "Hash-based fast page transitions"
+            },
+            {
+                "title": "Component System",
+                "description": "Vue 3 compatible components"
+            },
+            {
+                "title": "Caching",
+                "description": "Intelligent caching system"
+            }
+        ]
+    },
+    "contact": {
+        "title": "Contact",
+        "contact_info": "Contact Information",
+        "send_message": "Send Message",
+        "name": "Name",
+        "email": "Email",
+        "subject": "Subject",
+        "message": "Message",
+        "send": "Send"
+    },
+    "errors": {
+        "404": "Page Not Found",
+        "500": "Internal Server Error",
+        "403": "Access Denied",
+        "401": "Authentication Required",
+        "400": "Bad Request",
+        "network_error": "Network error occurred",
+        "try_again": "Try Again",
+        "go_home": "Go Home",
+        "report_error": "Report Issue",
+        "technical_details": "Technical Details",
+        "error_code": "Error Code",
+        "time": "Time",
+        "url": "URL"
+    },
+    "components": {
+        "modal": {
+            "title": "Component System Test",
+            "description": "This is a modal component test.",
+            "system_working": "ViewLogic's component system is working properly!",
+            "input_label": "Input in Modal",
+            "input_placeholder": "Components work in modals too"
+        },
+        "toast": {
+            "test_message": "This is a notification test!"
+        },
+        "file_upload": {
+            "drop_files": "Drag files here or",
+            "select_files": "Select Files",
+            "upload": "Upload",
+            "remove": "Remove"
+        }
+    },
+    "validation": {
+        "required": "This field is required",
+        "email": "Please enter a valid email address",
+        "min_length": "Please enter at least {0} characters",
+        "max_length": "Maximum {0} characters allowed"
+    },
+    "datetime": {
+        "now": "Now",
+        "today": "Today",
+        "yesterday": "Yesterday",
+        "tomorrow": "Tomorrow"
+    },
+    "login": {
+        "welcome": "Sign in to your account",
+        "email": "Email",
+        "password": "Password",
+        "email_placeholder": "your@email.com",
+        "password_placeholder": "Enter your password",
+        "remember_me": "Remember me",
+        "forgot_password": "Forgot your password?",
+        "sign_in": "Sign In",
+        "signing_in": "Signing in...",
+        "or": "Or",
+        "google_login": "Sign in with Google",
+        "kakao_login": "Sign in with Kakao",
+        "no_account": "Don't have an account?",
+        "sign_up": "Sign up",
+        "email_required": "Please enter your email.",
+        "email_invalid": "Please enter a valid email address.",
+        "password_required": "Please enter your password.",
+        "password_min_length": "Password must be at least {length} characters.",
+        "invalid_credentials": "Invalid email or password.",
+        "network_error": "Network error occurred. Please try again.",
+        "social_login_failed": "Social login failed.",
+        "social_login_error": "An error occurred during social login.",
+        "login_success": "Login Successful",
+        "welcome_back": "Welcome back, {name}!",
+        "error_title": "Login Failed"
+    },
+    "signup": {
+        "welcome": "Create your new account",
+        "first_name": "First Name",
+        "last_name": "Last Name",
+        "email": "Email",
+        "password": "Password",
+        "confirm_password": "Confirm Password",
+        "first_name_placeholder": "Enter your first name",
+        "last_name_placeholder": "Enter your last name",
+        "email_placeholder": "your@email.com",
+        "password_placeholder": "At least 8 characters",
+        "confirm_password_placeholder": "Re-enter your password",
+        "create_account": "Create Account",
+        "creating_account": "Creating account...",
+        "or": "Or",
+        "google_signup": "Sign up with Google",
+        "kakao_signup": "Sign up with Kakao",
+        "have_account": "Already have an account?",
+        "sign_in": "Sign In",
+        "agree_to": "I agree to the",
+        "terms_of_service": "Terms of Service",
+        "privacy_policy": "Privacy Policy",
+        "and": "and",
+        "first_name_required": "Please enter your first name.",
+        "last_name_required": "Please enter your last name.",
+        "email_required": "Please enter your email.",
+        "email_invalid": "Please enter a valid email address.",
+        "email_exists": "This email is already in use.",
+        "password_required": "Please enter your password.",
+        "password_min_length": "Password must be at least {length} characters.",
+        "confirm_password_required": "Please confirm your password.",
+        "password_mismatch": "Passwords do not match.",
+        "terms_required": "Please agree to the terms of service.",
+        "signup_failed": "Account creation failed.",
+        "network_error": "Network error occurred. Please try again.",
+        "social_signup_failed": "Social signup failed.",
+        "social_signup_error": "An error occurred during social signup.",
+        "signup_success": "Account Created Successfully",
+        "welcome_message": "Welcome, {name}!",
+        "error_title": "Signup Failed"
+    },
+    "manual": {
+        "title": "System Manual",
+        "description": "Guide to using the ViewLogic system",
+        "copySuccess": "Copied to clipboard",
+        "copyError": "Failed to copy",
+        "searchPrompt": "Enter search term",
+        "footer": {
+            "lastUpdated": "Last Updated",
+            "version": "Version"
+        },
+        "tabs": {
+            "admin": "Admin Manual",
+            "user": "User Manual"
+        },
+        "admin": {
+            "overview": {
+                "title": "Admin Overview",
+                "content": "Comprehensive guide for ViewLogic system administrators. This manual covers everything administrators need to know about system configuration, user management, security settings, and more."
+            },
+            "userManagement": {
+                "title": "User Management",
+                "addUser": {
+                    "title": "Add New User",
+                    "step1": "Select \"User Management\" from the admin dashboard",
+                    "step2": "Click the \"Add New User\" button",
+                    "step3": "Enter user information (name, email, permissions)",
+                    "step4": "Click \"Save\" to create the user"
+                },
+                "editUser": {
+                    "title": "Edit User Information",
+                    "step1": "Select the user to edit from the user list",
+                    "step2": "Modify the necessary information",
+                    "step3": "Click \"Update\" to save changes"
+                },
+                "deleteUser": {
+                    "title": "Delete User",
+                    "step1": "Select the user to delete from the user list",
+                    "step2": "Click the \"Delete\" button",
+                    "step3": "Confirm deletion in the confirmation dialog"
+                }
+            },
+            "systemSettings": {
+                "title": "System Settings",
+                "general": {
+                    "title": "General Settings",
+                    "item1": "System language settings",
+                    "item2": "Timezone settings",
+                    "item3": "Date format settings"
+                },
+                "security": {
+                    "title": "Security Settings",
+                    "item1": "Password policy settings",
+                    "item2": "Session timeout settings",
+                    "item3": "Enable two-factor authentication"
+                }
+            },
+            "monitoring": {
+                "title": "Monitoring",
+                "logs": {
+                    "title": "System Logs",
+                    "content": "Monitor and analyze system activity logs in real-time. Adjust log levels to filter only the information you need."
+                },
+                "performance": {
+                    "title": "Performance Monitoring",
+                    "content": "View system performance metrics in real-time, monitor CPU usage, memory usage, response times, and more."
+                }
+            }
+        },
+        "user": {
+            "overview": {
+                "title": "User Overview",
+                "content": "Guide for using the ViewLogic system effectively. This manual explains step-by-step from basic to advanced features."
+            },
+            "gettingStarted": {
+                "title": "Getting Started",
+                "login": {
+                    "title": "Login",
+                    "step1": "Access the ViewLogic system in your web browser",
+                    "step2": "Enter your email and password",
+                    "step3": "Click the \"Login\" button"
+                },
+                "navigation": {
+                    "title": "Screen Navigation",
+                    "item1": "Access main features through the top menu bar",
+                    "item2": "Select detailed menus from the left sidebar",
+                    "item3": "Access personal settings via the profile icon in the top right"
+                }
+            },
+            "features": {
+                "title": "Main Features",
+                "dashboard": {
+                    "title": "Dashboard",
+                    "content": "The dashboard allows you to view important information at a glance.",
+                    "item1": "View recent activity history",
+                    "item2": "Check key statistical metrics",
+                    "item3": "Execute quick actions"
+                },
+                "profile": {
+                    "title": "Profile Management",
+                    "step1": "Click the profile icon in the top right",
+                    "step2": "Select \"Profile Settings\"",
+                    "step3": "Edit and save personal information"
+                }
+            },
+            "dataManagement": {
+                "title": "Data Management",
+                "view": {
+                    "title": "View Data",
+                    "content": "Quickly find the data you need using various filters and search options."
+                },
+                "export": {
+                    "title": "Export Data",
+                    "step1": "Select the data to export",
+                    "step2": "Choose export format (Excel, CSV, PDF)",
+                    "step3": "Click the \"Export\" button"
+                }
+            },
+            "troubleshooting": {
+                "title": "Troubleshooting",
+                "commonIssues": {
+                    "title": "Common Issues",
+                    "item1": "Cannot login: Reset your password",
+                    "item2": "Screen not displaying properly: Clear browser cache",
+                    "item3": "Data not saving: Check internet connection"
+                },
+                "support": {
+                    "title": "Support Request",
+                    "content": "If the problem persists, contact support@viewlogic.com or call customer support (1234-5678)."
+                }
+            }
+        }
+    }
+}
