@@ -11,28 +11,25 @@
 
     <!-- Vue 3 Runtime + Compiler -->
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-    <script src="js/router.js"></script>
+    <script src="js/viewlogic-router.umd.js"></script>
     <script>
-        // 개발 환경설정
+        // 라우터 설정
         const routerConfig = {
-            basePath: '/src',               // 소스 파일 기본 경로 (development 모드에서 사용)
-            routesPath: '/routes',          // 빌드된 파일 경로 (production 모드에서 사용)
-            mode: 'hash',                   // 'hash' 또는 'history'
-            cacheMode: 'memory',            // 'memory' 또는 'lru'
-            cacheTTL: 300000,              // 캐시 TTL (5분)
-            maxCacheSize: 50,              // LRU 캐시 최대 크기
-            useLayout: true,               // 레이아웃 사용 활성화
-            defaultLayout: 'default',      // 기본 레이아웃
-            environment: 'development',     // 프로덕션 모드로 설정
-            //preloadRoutes: ['home', 'about', 'contact'], // 프리로드할 라우트들 (home은 첫 페이지이므로 제외)
-            //preloadDelay: 1500,            // 프리로드 시작 지연 시간 (1.5초)
-            //preloadInterval: 300,          // 프리로드 간격 (0.3초)
-            // 다국어 설정
-            useI18n: true,                          // 다국어 시스템 사용 여부
-            i18nDefaultLanguage: 'ko'               // 기본 언어 (폴백 언어로도 사용)
+            basePath: '/src',
+            routesPath: '/routes',
+            mode: 'hash',
+            environment: 'development',
+            useLayout: true,
+            defaultLayout: 'default',
+            authEnabled: true,
+            loginRoute: 'login',
+            protectedRoutes: ['manual'],
+            publicRoutes: ['login', 'home', 'about', 'contact'],
+            useI18n: true,
+            defaultLanguage: 'ko'
         };
         
-        // 환경설정과 함께 라우터 생성
+        // 라우터 생성
         window.router = new ViewLogicRouter(routerConfig);
     </script>
 </body>
