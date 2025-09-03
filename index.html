@@ -13,7 +13,6 @@
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="js/viewlogic-router.umd.js"></script>
     <script>
-        // 라우터 설정
         const routerConfig = {
             basePath: '/src',
             routesPath: '/routes',
@@ -28,9 +27,11 @@
             useI18n: true,
             defaultLanguage: 'ko'
         };
-        
-        // 라우터 생성
-        window.router = new ViewLogicRouter(routerConfig);
+
+        // Promise 기반 초기화
+        createRouter(routerConfig).then(router => {
+            router.mount('#app');
+        });
     </script>
 </body>
 </html>

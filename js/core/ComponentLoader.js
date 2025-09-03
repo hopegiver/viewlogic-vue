@@ -189,10 +189,28 @@ export class ComponentLoader {
         }
         
         // 개발 모드: 개별 컴포넌트 로딩
-        const componentNames = [
-            'Button', 'Modal', 'Card', 'Toast', 'Input', 'Tabs', 
-            'Checkbox', 'Alert', 'DynamicInclude', 'HtmlInclude'
-        ];
+        // 구성 옵션 우선 적용: componentNames(string[]) 또는 getComponentNames(()=>string[])
+        let componentNames = [];
+        if (Array.isArray(this.config.componentNames) && this.config.componentNames.length > 0) {
+            componentNames = [...this.config.componentNames];
+        } else if (typeof this.config.getComponentNames === 'function') {
+            try {
+                const resolved = await this.config.getComponentNames();
+                if (Array.isArray(resolved) && resolved.length > 0) {
+                    componentNames = [...resolved];
+                }
+            } catch (e) {
+                console.warn('getComponentNames() failed, falling back to defaults:', e);
+            }
+        }
+        
+        // 폴백: 기존 하드코딩 목록
+        if (componentNames.length === 0) {
+            componentNames = [
+                'Button', 'Modal', 'Card', 'Toast', 'Input', 'Tabs',
+                'Checkbox', 'Alert', 'DynamicInclude', 'HtmlInclude'
+            ];
+        }
         
         const components = {};
         

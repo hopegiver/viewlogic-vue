@@ -393,12 +393,7 @@ export class RouteLoader {
             .join('');
     }
 
-    /**
-     * 페이지 제목 생성
-     */
-    generatePageTitle(routeName) {
-        return this.toPascalCase(routeName).replace(/([A-Z])/g, ' $1').trim();
-    }
+    
 
     /**
      * 기본 템플릿 생성

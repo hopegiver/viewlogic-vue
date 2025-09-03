@@ -33,6 +33,11 @@ export class ViewLogicRouter {
             loadingMinDuration: options.loadingMinDuration || 300, // 최소 로딩 시간 (UX 개선)
             enableErrorReporting: options.enableErrorReporting !== false, // 에러 리포팅 활성화
             useComponents: options.useComponents !== false, // 컴포넌트 시스템 사용 여부
+            // 컴포넌트 로더 설정
+            componentNames: options.componentNames || [
+                'Button', 'Modal', 'Card', 'Toast', 'Input', 'Tabs',
+                'Checkbox', 'Alert', 'DynamicInclude', 'HtmlInclude'
+            ],
             // i18n 설정
             useI18n: options.useI18n !== false, // 다국어 시스템 사용 여부
             defaultLanguage: options.defaultLanguage || 'ko', // 기본 언어 (폴백 언어로도 사용)
@@ -104,7 +109,8 @@ export class ViewLogicRouter {
                 this.componentLoader = new ComponentLoader(this, {
                     ...this.config,
                     basePath: this.config.basePath + '/components',
-                    cache: true
+                    cache: true,
+                    componentNames: this.config.componentNames
                 });
                 
                 // 프로덕션 모드에서는 통합 components.js 비동기 로드

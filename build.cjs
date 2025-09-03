@@ -673,6 +673,14 @@ class ViewLogicBuilder {
                 await this.runBundleAnalyzer();
             }
             
+            // 11단계: 라우터 시스템 번들링 (js/viewlogic-router.prod.js 생성)
+            try {
+                await this.buildRouterBundle();
+                this.log('라우터 시스템 번들링 완료 (js/viewlogic-router.prod.js)', 'success');
+            } catch (routerBundleError) {
+                this.log(`라우터 번들링 실패: ${routerBundleError.message}`, 'warn');
+            }
+
             return this.stats.routesFailed === 0;
             
         } catch (error) {
@@ -1784,6 +1792,50 @@ if (typeof window !== 'undefined') {
         } catch (error) {
             this.log(`번들 분석 실패: ${error.message}`, 'warn');
         }
+    }
+    
+    // ======================================
+    // Router bundling (js/viewlogic-router.prod.js)
+    // ======================================
+    async buildRouterBundle() {
+        const entry = path.join(__dirname, 'js', 'viewlogic-router.js');
+        const outFile = path.join(__dirname, 'js', 'viewlogic-router.prod.js');
+        
+        // 입력 파일 존재 확인
+        try {
+            await fs.access(entry);
+        } catch (e) {
+            throw new Error(`엔트리 파일을 찾을 수 없습니다: ${entry}`);
+        }
+        
+        // esbuild 번들
+        const result = await esbuild.build({
+            entryPoints: [entry],
+            outfile: outFile,
+            bundle: true,
+            format: 'esm',
+            platform: 'browser',
+            target: 'es2018',
+            sourcemap: this.config.sourceMaps,
+            minify: this.config.minify,
+            treeShaking: true,
+            legalComments: 'none',
+            define: {
+                'process.env.NODE_ENV': JSON.stringify('production')
+            }
+        });
+        
+        // 간단 검증
+        try {
+            const content = await fs.readFile(outFile, 'utf8');
+            if (!content || content.length < 1000) {
+                throw new Error('생성된 라우터 번들 크기가 비정상적으로 작습니다.');
+            }
+        } catch (e) {
+            throw new Error(`생성 파일 검증 실패: ${e.message}`);
+        }
+        
+        return result;
     }
     
     // ======================================
