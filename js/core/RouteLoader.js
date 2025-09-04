@@ -330,14 +330,6 @@ export class RouteLoader {
     }
 
     /**
-     * 설정 업데이트
-     */
-    updateConfig(newConfig) {
-        this.config = { ...this.config, ...newConfig };
-        this.log('debug', 'RouteLoader config updated:', this.config);
-    }
-
-    /**
      * 통계 정보 반환
      */
     getStats() {

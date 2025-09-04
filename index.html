@@ -22,16 +22,12 @@
             defaultLayout: 'default',
             authEnabled: true,
             loginRoute: 'login',
-            protectedRoutes: ['manual'],
             publicRoutes: ['login', 'home', 'about', 'contact'],
             useI18n: true,
             defaultLanguage: 'ko'
         };
 
-        // Promise 기반 초기화
-        createRouter(routerConfig).then(router => {
-            router.mount('#app');
-        });
+        ViewLogicRouter(routerConfig).mount('#app');
     </script>
 </body>
 </html>

@@ -246,17 +246,6 @@ export class ErrorHandler {
     }
 
     /**
-     * 설정 업데이트
-     */
-    updateConfig(newConfig) {
-        this.config = {
-            ...this.config,
-            ...newConfig
-        };
-        this.info('ErrorHandler', 'ErrorHandler config updated:', this.config);
-    }
-
-    /**
      * 통합 로깅 시스템
      * @param {string} level - 로그 레벨 (error, warn, info, debug)
      * @param {string} component - 컴포넌트 이름 (선택적)

@@ -18,7 +18,16 @@ export class PreloadManager {
         // 라우터 인스턴스 참조 (필수 의존성)
         this.router = router;
         
-        this.log('PreloadManager initialized with routes:', this.config.preloadRoutes);
+        this.log('info', 'PreloadManager initialized with routes:', this.config.preloadRoutes);
+    }
+
+    /**
+     * 로깅 래퍼 메서드
+     */
+    log(level, ...args) {
+        if (this.router?.errorHandler) {
+            this.router.errorHandler.log(level, 'PreloadManager', ...args);
+        }
     }
 
     /**
@@ -26,11 +35,11 @@ export class PreloadManager {
      */
     async startPreloading(currentRoute = '') {
         if (this.config.preloadRoutes.length === 0) {
-            this.log('No routes to preload');
+            this.log('info', 'No routes to preload');
             return;
         }
 
-        this.log(`🚀 Starting preload for routes: [${this.config.preloadRoutes.join(', ')}]`);
+        this.log('info', `🚀 Starting preload for routes: [${this.config.preloadRoutes.join(', ')}]`);
 
         // 현재 라우트를 제외한 라우트들을 큐에 추가
         for (const route of this.config.preloadRoutes) {
@@ -164,35 +173,7 @@ export class PreloadManager {
      */
     setRouter(router) {
         this.router = router;
-        this.log('Router instance updated');
-    }
-
-
-    /**
-     * 프리로드 설정 업데이트
-     */
-    updateConfig(newConfig) {
-        const oldRoutes = [...this.config.preloadRoutes];
-        this.config = { ...this.config, ...newConfig };
-
-        // 새로운 라우트가 추가된 경우
-        if (newConfig.preloadRoutes && 
-            JSON.stringify(oldRoutes) !== JSON.stringify(newConfig.preloadRoutes)) {
-            
-            this.log('Preload routes updated:', newConfig.preloadRoutes);
-            
-            // 새로운 라우트들을 큐에 추가
-            for (const route of newConfig.preloadRoutes) {
-                if (!this.preloadedRoutes.has(route) && !this.preloadQueue.includes(route)) {
-                    this.preloadQueue.push(route);
-                }
-            }
-
-            // 프리로드 재시작
-            if (!this.isProcessing && this.preloadQueue.length > 0) {
-                this.processPreloadQueue();
-            }
-        }
+        this.log('debug', 'Router instance updated');
     }
 
     /**
@@ -202,7 +183,7 @@ export class PreloadManager {
         this.preloadedRoutes.clear();
         this.preloadQueue = [];
         this.isProcessing = false;
-        this.log('Preload cache cleared');
+        this.log('debug', 'Preload cache cleared');
     }
 
     /**
@@ -251,15 +232,6 @@ export class PreloadManager {
                 ? (this.preloadedRoutes.size / this.config.preloadRoutes.length * 100).toFixed(1) + '%'
                 : '0%'
         };
-    }
-
-    /**
-     * 디버그 로그
-     */
-    log(...args) {
-        if (this.config.debug) {
-            console.log('[PreloadManager]', ...args);
-        }
     }
 
     /**

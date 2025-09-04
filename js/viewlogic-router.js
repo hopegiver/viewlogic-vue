@@ -61,6 +61,7 @@ export class ViewLogicRouter {
             componentNames: ['Button', 'Modal', 'Card', 'Toast', 'Input', 'Tabs', 'Checkbox', 'Alert', 'DynamicInclude', 'HtmlInclude'],
             useI18n: true,
             defaultLanguage: 'ko',
+            logLevel: 'info',
             authEnabled: false,
             loginRoute: 'login',
             protectedRoutes: [],

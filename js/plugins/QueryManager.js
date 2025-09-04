@@ -20,7 +20,16 @@ export class QueryManager {
         // 현재 쿼리 파라미터 상태
         this.currentQueryParams = {};
         
-        this.log('QueryManager initialized with config:', this.config);
+        this.log('info', 'QueryManager initialized with config:', this.config);
+    }
+
+    /**
+     * 로깅 래퍼 메서드
+     */
+    log(level, ...args) {
+        if (this.router?.errorHandler) {
+            this.router.errorHandler.log(level, 'QueryManager', ...args);
+        }
     }
 
     /**
@@ -166,13 +175,13 @@ export class QueryManager {
                     key = decodeURIComponent(rawKey);
                     value = rawValue ? decodeURIComponent(rawValue) : '';
                 } catch (e) {
-                    this.log('Failed to decode URI component:', pair);
+                    this.log('warn', 'Failed to decode URI component:', pair);
                     continue;
                 }
                 
                 // 보안 검증
                 if (!this.validateParameter(key, value)) {
-                    this.log(`Parameter rejected by security filter: ${key}`);
+                    this.log('warn', `Parameter rejected by security filter: ${key}`);
                     continue;
                 }
                 
@@ -202,7 +211,7 @@ export class QueryManager {
                     params[key] = sanitizedValue;
                 }
             } catch (error) {
-                this.log('Error parsing query parameter:', pair, error);
+                this.log('error', 'Error parsing query parameter:', pair, error);
             }
         }
         
@@ -383,31 +392,11 @@ export class QueryManager {
     }
 
     /**
-     * 설정 업데이트
-     */
-    updateConfig(newConfig) {
-        this.config = {
-            ...this.config,
-            ...newConfig
-        };
-        this.log('QueryManager config updated:', this.config);
-    }
-
-    /**
-     * 디버그 로그
-     */
-    log(...args) {
-        if (this.config.debug) {
-            console.log('[QueryManager]', ...args);
-        }
-    }
-
-    /**
      * 정리 (메모리 누수 방지)
      */
     destroy() {
         this.currentQueryParams = {};
         this.router = null;
-        this.log('QueryManager destroyed');
+        this.log('debug', 'QueryManager destroyed');
     }
 }

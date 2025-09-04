@@ -23,6 +23,15 @@ export class LoadingManager {
     }
 
     /**
+     * 로깅 래퍼 메서드
+     */
+    log(level, ...args) {
+        if (this.router?.errorHandler) {
+            this.router.errorHandler.log(level, 'LoadingManager', ...args);
+        }
+    }
+
+    /**
      * 초기화
      */
     init() {
@@ -333,17 +342,6 @@ export class LoadingManager {
     }
 
     /**
-     * 설정 업데이트
-     */
-    updateConfig(newConfig) {
-        this.config = { ...this.config, ...newConfig };
-        
-        if (newConfig.showLoadingProgress && !this.progressBar) {
-            this.createProgressBar();
-        }
-    }
-
-    /**
      * 정리 (메모리 누수 방지)
      */
     destroy() {
@@ -368,15 +366,6 @@ export class LoadingManager {
         const styleElement = document.querySelector('#loading-manager-styles');
         if (styleElement) {
             styleElement.remove();
-        }
-    }
-
-    /**
-     * 디버그 로그
-     */
-    log(...args) {
-        if (this.config.debug) {
-            console.log('[LoadingManager]', ...args);
         }
     }
 }

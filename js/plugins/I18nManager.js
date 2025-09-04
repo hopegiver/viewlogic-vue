@@ -35,7 +35,7 @@ export class I18nManager {
     async init() {
         // i18n이 비활성화된 경우 초기화하지 않음
         if (!this.config.enabled) {
-            this.log('I18n system disabled');
+            this.log('info', 'I18n system disabled');
             return;
         }
         
@@ -45,7 +45,7 @@ export class I18nManager {
         // 개발 모드에서는 캐시 비활성화
         if (this.config.debug) {
             this.config.enableDataCache = false;
-            this.log('Data cache disabled in debug mode');
+            this.log('debug', 'Data cache disabled in debug mode');
         }
         
         // 초기 언어 파일 자동 로드 (아직 로드되지 않은 경우에만)
@@ -53,10 +53,10 @@ export class I18nManager {
             try {
                 await this.loadMessages(this.currentLanguage);
             } catch (error) {
-                this.log('Failed to load initial language file:', error);
+                this.log('error', 'Failed to load initial language file:', error);
             }
         } else {
-            this.log('Language messages already loaded:', this.currentLanguage);
+            this.log('debug', 'Language messages already loaded:', this.currentLanguage);
         }
     }
 
@@ -68,10 +68,10 @@ export class I18nManager {
             const cachedLang = localStorage.getItem(this.config.cacheKey);
             if (cachedLang && this.isValidLanguage(cachedLang)) {
                 this.currentLanguage = cachedLang;
-                this.log('Language loaded from cache:', cachedLang);
+                this.log('debug', 'Language loaded from cache:', cachedLang);
             }
         } catch (error) {
-            this.log('Failed to load language from cache:', error);
+            this.log('warn', 'Failed to load language from cache:', error);
         }
     }
 
@@ -95,12 +95,12 @@ export class I18nManager {
      */
     async setLanguage(language) {
         if (!this.isValidLanguage(language)) {
-            this.log('Invalid language code:', language);
+            this.log('warn', 'Invalid language code:', language);
             return false;
         }
 
         if (this.currentLanguage === language) {
-            this.log('Language already set to:', language);
+            this.log('debug', 'Language already set to:', language);
             return true;
         }
 
@@ -121,12 +121,12 @@ export class I18nManager {
                 messages: this.messages.get(language)
             });
             
-            this.log('Language changed successfully', { from: oldLanguage, to: language });
+            this.log('info', 'Language changed successfully', { from: oldLanguage, to: language });
             return true;
         } catch (error) {
             // 실패 시 이전 언어로 복원
             this.currentLanguage = oldLanguage;
-            this.log('Failed to change language:', error);
+            this.log('error', 'Failed to change language:', error);
             return false;
         }
     }
@@ -137,9 +137,9 @@ export class I18nManager {
     saveLanguageToCache(language) {
         try {
             localStorage.setItem(this.config.cacheKey, language);
-            this.log('Language saved to cache:', language);
+            this.log('debug', 'Language saved to cache:', language);
         } catch (error) {
-            this.log('Failed to save language to cache:', error);
+            this.log('warn', 'Failed to save language to cache:', error);
         }
     }
 
@@ -149,13 +149,13 @@ export class I18nManager {
     async loadMessages(language) {
         // 이미 로드된 경우
         if (this.messages.has(language)) {
-            this.log('Messages already loaded for:', language);
+            this.log('debug', 'Messages already loaded for:', language);
             return this.messages.get(language);
         }
 
         // 이미 로딩 중인 경우
         if (this.loadPromises.has(language)) {
-            this.log('Messages loading in progress for:', language);
+            this.log('debug', 'Messages loading in progress for:', language);
             return await this.loadPromises.get(language);
         }
 
@@ -166,7 +166,7 @@ export class I18nManager {
             const messages = await loadPromise;
             this.messages.set(language, messages);
             this.loadPromises.delete(language);
-            this.log('Messages loaded successfully for:', language);
+            this.log('debug', 'Messages loaded successfully for:', language);
             return messages;
         } catch (error) {
             this.loadPromises.delete(language);
@@ -182,7 +182,7 @@ export class I18nManager {
         if (this.config.enableDataCache) {
             const cachedData = this.getDataFromCache(language);
             if (cachedData) {
-                this.log('Messages loaded from cache:', language);
+                this.log('debug', 'Messages loaded from cache:', language);
                 return cachedData;
             }
         }
@@ -202,11 +202,11 @@ export class I18nManager {
             
             return messages;
         } catch (error) {
-            this.log('Failed to load messages file for:', language, error);
+            this.log('error', 'Failed to load messages file for:', language, error);
             
             // 폴백 언어 시도
             if (language !== this.config.fallbackLanguage) {
-                this.log('Trying fallback language:', this.config.fallbackLanguage);
+                this.log('info', 'Trying fallback language:', this.config.fallbackLanguage);
                 return await this._loadMessagesFromFile(this.config.fallbackLanguage);
             }
             
@@ -227,7 +227,7 @@ export class I18nManager {
                 
                 // 버전 확인
                 if (version !== this.config.cacheVersion) {
-                    this.log('Cache version mismatch, clearing:', language);
+                    this.log('debug', 'Cache version mismatch, clearing:', language);
                     localStorage.removeItem(cacheKey);
                     return null;
                 }
@@ -237,7 +237,7 @@ export class I18nManager {
                 const maxAge = 24 * 60 * 60 * 1000; // 24시간
                 
                 if (now - timestamp > maxAge) {
-                    this.log('Cache expired, removing:', language);
+                    this.log('debug', 'Cache expired, removing:', language);
                     localStorage.removeItem(cacheKey);
                     return null;
                 }
@@ -245,7 +245,7 @@ export class I18nManager {
                 return data;
             }
         } catch (error) {
-            this.log('Failed to read from cache:', error);
+            this.log('warn', 'Failed to read from cache:', error);
         }
         
         return null;
@@ -264,9 +264,9 @@ export class I18nManager {
             };
             
             localStorage.setItem(cacheKey, JSON.stringify(cacheItem));
-            this.log('Data saved to cache:', language);
+            this.log('debug', 'Data saved to cache:', language);
         } catch (error) {
-            this.log('Failed to save to cache:', error);
+            this.log('warn', 'Failed to save to cache:', error);
         }
     }
 
@@ -281,13 +281,13 @@ export class I18nManager {
         
         const messages = this.messages.get(this.currentLanguage);
         if (!messages) {
-            this.log('No messages loaded for current language:', this.currentLanguage);
+            this.log('warn', 'No messages loaded for current language:', this.currentLanguage);
             return key;
         }
 
         const message = this.getNestedValue(messages, key);
         if (message === undefined) {
-            this.log('Translation not found for key:', key);
+            this.log('warn', 'Translation not found for key:', key);
             
             // 폴백 언어에서 찾기
             const fallbackMessages = this.messages.get(this.config.fallbackLanguage);
@@ -371,7 +371,7 @@ export class I18nManager {
                 try {
                     callback(data);
                 } catch (error) {
-                    this.log('Error in event listener:', error);
+                    this.log('error', 'Error in event listener:', error);
                 }
             });
         }
@@ -401,11 +401,11 @@ export class I18nManager {
     }
 
     /**
-     * 디버그 로그
+     * 로깅 래퍼 메서드
      */
-    log(...args) {
-        if (this.config.debug) {
-            console.log('[I18n]', ...args);
+    log(level, ...args) {
+        if (this.router?.errorHandler) {
+            this.router.errorHandler.log(level, 'I18nManager', ...args);
         }
     }
 
@@ -428,7 +428,7 @@ export class I18nManager {
             await this.initPromise;
             return true;
         } catch (error) {
-            this.log('I18n initialization failed:', error);
+            this.log('error', 'I18n initialization failed:', error);
             return false;
         }
     }
@@ -445,32 +445,10 @@ export class I18nManager {
                 localStorage.removeItem(key);
             });
             
-            this.log('Cache cleared, removed', cacheKeys.length, 'items');
+            this.log('debug', 'Cache cleared, removed', cacheKeys.length, 'items');
         } catch (error) {
-            this.log('Failed to clear cache:', error);
+            this.log('warn', 'Failed to clear cache:', error);
         }
-    }
-    
-    /**
-     * i18n 설정 변경
-     */
-    updateConfig(newConfig) {
-        const oldVersion = this.config.cacheVersion;
-        this.config = { ...this.config, ...newConfig };
-        
-        // 버전이 변경된 경우 캐시 초기화
-        if (newConfig.cacheVersion && newConfig.cacheVersion !== oldVersion) {
-            this.clearCache();
-        }
-        
-        // enabled 상태가 변경된 경우 재초기화
-        if (newConfig.hasOwnProperty('enabled')) {
-            if (newConfig.enabled && !this.isInitialized) {
-                this.init();
-            }
-        }
-        
-        this.log('Config updated:', this.config);
     }
     
     /**
@@ -501,7 +479,7 @@ export class I18nManager {
                 }
             });
         } catch (error) {
-            this.log('Failed to get cache info:', error);
+            this.log('warn', 'Failed to get cache info:', error);
         }
         
         return info;
@@ -512,17 +490,17 @@ export class I18nManager {
      */
     async initialize() {
         if (!this.config.enabled) {
-            this.log('I18n system is disabled, skipping initialization');
+            this.log('info', 'I18n system is disabled, skipping initialization');
             return true;
         }
         
         try {
             // 초기 설정이 완료될 때까지 대기
             await this.initPromise;
-            this.log('I18n system fully initialized');
+            this.log('info', 'I18n system fully initialized');
             return true;
         } catch (error) {
-            this.log('Failed to initialize I18n system:', error);
+            this.log('error', 'Failed to initialize I18n system:', error);
             return false;
         }
     }

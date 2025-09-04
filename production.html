@@ -23,16 +23,12 @@
             useLayout: true,
             defaultLayout: 'default',
             environment: 'production',
-            //preloadRoutes: ['about','contact'],
-            //preloadDelay: 800,
-            //preloadInterval: 200,
+            logLevel: 'error',
             useI18n: true,
             defaultLanguage: 'ko'
         };
 
-        createRouter(routerConfig).then(router => {
-            router.mount('#app');
-        });
+        ViewLogicRouter(routerConfig).mount('#app');
     </script>
 </body>
 </html>

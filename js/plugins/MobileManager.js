@@ -15,10 +15,19 @@ export class MobileManager {
         // 모바일 메뉴 상태
         this.mobileMenuOpen = false;
         
-        this.log('MobileManager initialized with config:', this.config);
+        this.log('info', 'MobileManager initialized with config:', this.config);
         
         // 윈도우 리사이즈 이벤트 리스너 등록
         this.initializeEventListeners();
+    }
+
+    /**
+     * 로깅 래퍼 메서드
+     */
+    log(level, ...args) {
+        if (this.router?.errorHandler) {
+            this.router.errorHandler.log(level, 'MobileManager', ...args);
+        }
     }
 
     /**
@@ -124,27 +133,7 @@ export class MobileManager {
         vueApp.config.globalProperties.toggleMobileMenu = () => this.toggleMobileMenu();
         vueApp.config.globalProperties.closeMobileMenu = () => this.closeMobileMenu();
         
-        this.log('Global properties registered to Vue app');
-    }
-
-    /**
-     * 설정 업데이트
-     */
-    updateConfig(newConfig) {
-        this.config = {
-            ...this.config,
-            ...newConfig
-        };
-        this.log('MobileManager config updated:', this.config);
-    }
-
-    /**
-     * 디버그 로그
-     */
-    log(...args) {
-        if (this.config.debug) {
-            console.log('[MobileManager]', ...args);
-        }
+        this.log('debug', 'Global properties registered to Vue app');
     }
 
     /**

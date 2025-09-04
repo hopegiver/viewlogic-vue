@@ -19,7 +19,16 @@ export class CacheManager {
         this.cacheTimestamps = new Map();
         this.lruOrder = []; // LRU 순서 추적
         
-        this.log('CacheManager initialized with config:', this.config);
+        this.log('info', 'CacheManager initialized with config:', this.config);
+    }
+
+    /**
+     * 로깅 래퍼 메서드
+     */
+    log(level, ...args) {
+        if (this.router?.errorHandler) {
+            this.router.errorHandler.log(level, 'CacheManager', ...args);
+        }
     }
 
     /**
@@ -35,7 +44,7 @@ export class CacheManager {
                 if (oldestKey) {
                     this.cache.delete(oldestKey);
                     this.cacheTimestamps.delete(oldestKey);
-                    this.log(`🗑️ LRU evicted cache key: ${oldestKey}`);
+                    this.log('debug', `🗑️ LRU evicted cache key: ${oldestKey}`);
                 }
             }
             
@@ -52,7 +61,7 @@ export class CacheManager {
         this.cache.set(key, value);
         this.cacheTimestamps.set(key, now);
         
-        this.log(`💾 Cached: ${key} (size: ${this.cache.size})`);
+        this.log('debug', `💾 Cached: ${key} (size: ${this.cache.size})`);
     }
     
     /**
@@ -74,7 +83,7 @@ export class CacheManager {
                 }
             }
             
-            this.log(`⏰ Cache expired and removed: ${key}`);
+            this.log('debug', `⏰ Cache expired and removed: ${key}`);
             return null;
         }
         
@@ -90,9 +99,9 @@ export class CacheManager {
         }
         
         if (value) {
-            this.log(`🎯 Cache hit: ${key}`);
+            this.log('debug', `🎯 Cache hit: ${key}`);
         } else {
-            this.log(`❌ Cache miss: ${key}`);
+            this.log('debug', `❌ Cache miss: ${key}`);
         }
         
         return value;
@@ -129,7 +138,7 @@ export class CacheManager {
             }
         });
         
-        this.log(`🧹 Invalidated ${keysToDelete.length} cache entries matching: ${pattern}`);
+        this.log('debug', `🧹 Invalidated ${keysToDelete.length} cache entries matching: ${pattern}`);
         return keysToDelete.length;
     }
     
@@ -307,34 +316,6 @@ export class CacheManager {
     }
     
     /**
-     * 설정 업데이트
-     */
-    updateConfig(newConfig) {
-        const oldMaxSize = this.config.maxCacheSize;
-        this.config = { ...this.config, ...newConfig };
-        
-        // 최대 크기가 줄어든 경우 LRU 정리
-        if (this.config.cacheMode === 'lru' && 
-            this.config.maxCacheSize < oldMaxSize && 
-            this.cache.size > this.config.maxCacheSize) {
-            
-            const toRemove = this.cache.size - this.config.maxCacheSize;
-            const keysToRemove = this.lruOrder.slice(0, toRemove);
-            
-            keysToRemove.forEach(key => {
-                this.cache.delete(key);
-                this.cacheTimestamps.delete(key);
-            });
-            
-            this.lruOrder = this.lruOrder.slice(toRemove);
-            
-            this.log(`🔧 Config updated, removed ${toRemove} cache entries to fit new max size`);
-        }
-        
-        this.log('Cache config updated:', this.config);
-    }
-    
-    /**
      * 자동 정리 시작 (백그라운드에서 만료된 캐시 정리)
      */
     startAutoCleanup(interval = 60000) { // 기본 1분 간격
@@ -356,16 +337,7 @@ export class CacheManager {
         if (this.cleanupInterval) {
             clearInterval(this.cleanupInterval);
             this.cleanupInterval = null;
-            this.log('🛑 Auto cleanup stopped');
-        }
-    }
-    
-    /**
-     * 디버그 로그
-     */
-    log(...args) {
-        if (this.config.debug) {
-            console.log('[CacheManager]', ...args);
+            this.log('debug', '🛑 Auto cleanup stopped');
         }
     }
     
@@ -375,6 +347,6 @@ export class CacheManager {
     destroy() {
         this.stopAutoCleanup();
         this.clearCache();
-        this.log('CacheManager destroyed');
+        this.log('debug', 'CacheManager destroyed');
     }
 }
