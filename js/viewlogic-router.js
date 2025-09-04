@@ -15,55 +15,8 @@ export class ViewLogicRouter {
         // 버전 정보
         this.version = options.version || '1.0.0';
         
-        // 기본 환경설정
-        this.config = {
-            basePath: options.basePath || '/src',
-            mode: options.mode || 'hash', // 'hash' 또는 'history'
-            cacheMode: options.cacheMode || 'memory', // 'memory' 또는 'lru'
-            cacheTTL: options.cacheTTL || 300000, // 5분 (밀리초)
-            maxCacheSize: options.maxCacheSize || 50, // LRU 캐시 최대 크기
-            useLayout: options.useLayout || false, // 레이아웃 사용 여부
-            defaultLayout: options.defaultLayout || 'default', // 기본 레이아웃
-            environment: options.environment || 'development', // 'development' 또는 'production'
-            routesPath: options.routesPath || '/routes', // 프로덕션 모드에서 사용할 경로
-            preloadRoutes: options.preloadRoutes || [], // 프리로드할 라우트들
-            preloadDelay: options.preloadDelay || 1000, // 프리로드 시작 지연 시간 (밀리초)
-            preloadInterval: options.preloadInterval || 500, // 프리로드 간격 (밀리초)
-            showLoadingProgress: options.showLoadingProgress === true, // 로딩 프로그레스 바 표시
-            loadingMinDuration: options.loadingMinDuration || 300, // 최소 로딩 시간 (UX 개선)
-            enableErrorReporting: options.enableErrorReporting !== false, // 에러 리포팅 활성화
-            useComponents: options.useComponents !== false, // 컴포넌트 시스템 사용 여부
-            // 컴포넌트 로더 설정
-            componentNames: options.componentNames || [
-                'Button', 'Modal', 'Card', 'Toast', 'Input', 'Tabs',
-                'Checkbox', 'Alert', 'DynamicInclude', 'HtmlInclude'
-            ],
-            // i18n 설정
-            useI18n: options.useI18n !== false, // 다국어 시스템 사용 여부
-            defaultLanguage: options.defaultLanguage || 'ko', // 기본 언어 (폴백 언어로도 사용)
-            // 인증 설정
-            authEnabled: options.authEnabled || false, // 인증 시스템 사용 여부
-            loginRoute: options.loginRoute || 'login', // 로그인 페이지 라우트
-            protectedRoutes: options.protectedRoutes || [], // 보호된 특정 라우트들
-            protectedPrefixes: options.protectedPrefixes || [], // 보호된 prefix들 (예: ['admin', 'dashboard'])
-            publicRoutes: options.publicRoutes || ['login', 'register', 'home'], // 공개 라우트들
-            checkAuthFunction: options.checkAuthFunction || null, // 사용자 정의 인증 체크 함수
-            redirectAfterLogin: options.redirectAfterLogin || 'home', // 로그인 후 리다이렉트할 페이지
-            // 쿠키 기반 인증 설정
-            authCookieName: options.authCookieName || 'authToken', // 인증 쿠키 이름
-            authFallbackCookieNames: options.authFallbackCookieNames || ['accessToken', 'token', 'jwt'], // 대체 쿠키 이름들
-            // 스토리지 설정
-            authStorage: options.authStorage || 'cookie', // 인증 토큰 저장소: 'localStorage', 'sessionStorage', 'cookie'
-            authCookieOptions: options.authCookieOptions || {}, // 쿠키 저장 시 옵션
-            authSkipValidation: options.authSkipValidation || false, // JWT 토큰 유효성 검사 스킵 여부
-            // 보안 설정
-            enableParameterValidation: options.enableParameterValidation !== false,
-            maxParameterLength: options.maxParameterLength || 1000,
-            maxParameterCount: options.maxParameterCount || 50,
-            maxArraySize: options.maxArraySize || 100,
-            allowedKeyPattern: options.allowedKeyPattern || /^[a-zA-Z0-9_-]+$/,
-            logSecurityWarnings: options.logSecurityWarnings !== false            
-        };
+        // 기본 환경설정 최적화
+        this.config = this._buildConfig(options);
         
         this.currentHash = '';
         this.currentVueApp = null;
@@ -73,28 +26,93 @@ export class ViewLogicRouter {
         // LoadingManager가 없을 때를 위한 기본 전환 상태
         this.transitionInProgress = false;
         
-        // 모든 매니저를 생성자에서 직접 초기화
-        this.initializeManagers();
+        // 초기화 준비 상태
+        this.isReady = false;
+        this.readyPromise = null;
         
-        // 라우터 시작
-        this.init();
+        // 이벤트 리스너 바인딩 최적화
+        this._boundHandleRouteChange = this.handleRouteChange.bind(this);
+        
+        // 모든 초기화를 한번에 처리
+        this.readyPromise = this.initialize();
     }
 
     /**
-     * 매니저 전체 초기화 - 동기적으로 모든 매니저 생성
+     * 설정 빌드 (분리하여 가독성 향상)
      */
-    initializeManagers() {
+    _buildConfig(options) {
+        const defaults = {
+            basePath: '/src',
+            mode: 'hash',
+            cacheMode: 'memory',
+            cacheTTL: 300000,
+            maxCacheSize: 50,
+            useLayout: false,
+            defaultLayout: 'default',
+            environment: 'development',
+            routesPath: '/routes',
+            preloadRoutes: [],
+            preloadDelay: 1000,
+            preloadInterval: 500,
+            showLoadingProgress: false,
+            loadingMinDuration: 300,
+            enableErrorReporting: true,
+            useComponents: true,
+            componentNames: ['Button', 'Modal', 'Card', 'Toast', 'Input', 'Tabs', 'Checkbox', 'Alert', 'DynamicInclude', 'HtmlInclude'],
+            useI18n: true,
+            defaultLanguage: 'ko',
+            authEnabled: false,
+            loginRoute: 'login',
+            protectedRoutes: [],
+            protectedPrefixes: [],
+            publicRoutes: ['login', 'register', 'home'],
+            checkAuthFunction: null,
+            redirectAfterLogin: 'home',
+            authCookieName: 'authToken',
+            authFallbackCookieNames: ['accessToken', 'token', 'jwt'],
+            authStorage: 'cookie',
+            authCookieOptions: {},
+            authSkipValidation: false,
+            enableParameterValidation: true,
+            maxParameterLength: 1000,
+            maxParameterCount: 50,
+            maxArraySize: 100,
+            allowedKeyPattern: /^[a-zA-Z0-9_-]+$/,
+            logSecurityWarnings: true
+        };
+        
+        return { ...defaults, ...options };
+    }
+
+
+    /**
+     * 로깅 래퍼 메서드
+     */
+    log(level, ...args) {
+        if (this.errorHandler) {
+            this.errorHandler.log(level, 'Router', ...args);
+        }
+    }
+
+    /**
+     * 통합 초기화 - 매니저 생성 → 비동기 로딩 → 라우터 시작
+     */
+    async initialize() {
         try {
-            // 1. 항상 필요한 매니저들
+            // 1. 매니저 초기화 (동기)
+            // 항상 필요한 매니저들
             this.cacheManager = new CacheManager(this, this.config);
             this.routeLoader = new RouteLoader(this, this.config);
             this.queryManager = new QueryManager(this, this.config);
             this.errorHandler = new ErrorHandler(this, this.config);
             this.mobileManager = new MobileManager(this, this.config);
             
-            // 2. 조건부 매니저들
+            // 조건부 매니저들
             if (this.config.useI18n) {
                 this.i18nManager = new I18nManager(this, this.config);
+                if (this.i18nManager.initPromise) {
+                    await this.i18nManager.initPromise;
+                }
             }
             
             if (this.config.showLoadingProgress) {
@@ -112,15 +130,7 @@ export class ViewLogicRouter {
                     cache: true,
                     componentNames: this.config.componentNames
                 });
-                
-                // 프로덕션 모드에서는 통합 components.js 비동기 로드
-                if (this.config.environment === 'production') {
-                    this.componentLoader.loadUnifiedComponents(this.config.routesPath)
-                        .catch(error => {
-                            console.warn('Failed to load unified components:', error);
-                            this.config.useComponents = false;
-                        });
-                }
+                await this.componentLoader.loadAllComponents();
             }
             
             if (this.config.preloadRoutes && this.config.preloadRoutes.length > 0) {
@@ -133,80 +143,94 @@ export class ViewLogicRouter {
                 }, this.config.preloadDelay);
             }
             
-            console.log('✅ All managers initialized successfully');
+            // 2. 라우터 시작
+            this.isReady = true;
+            this.init();
             
         } catch (error) {
-            console.error('❌ Manager initialization failed:', error);
-            throw error;
+            this.log('error', 'Router initialization failed:', error);
+            // 실패해도 라우터는 시작 (graceful degradation)
+            this.isReady = true;
+            this.init();
         }
     }
 
+    /**
+     * 라우터가 준비될 때까지 대기
+     */
+    async waitForReady() {
+        if (this.isReady) return true;
+        if (this.readyPromise) {
+            await this.readyPromise;
+        }
+        return this.isReady;
+    }
+
+
     init() {
-        if (this.config.mode === 'hash') {
-            window.addEventListener('hashchange', () => this.handleRouteChange());
-            
-            // DOM이 준비되면 즉시 라우트 로딩 시작
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', () => this.handleRouteChange());
-            } else {
-                // 이미 로드된 경우 즉시 실행
-                setTimeout(() => this.handleRouteChange(), 0);
-            }
-            
-            
-            if (!window.location.hash) {
+        const isHashMode = this.config.mode === 'hash';
+        
+        // 이벤트 리스너 등록 (메모리 최적화)
+        window.addEventListener(
+            isHashMode ? 'hashchange' : 'popstate',
+            this._boundHandleRouteChange
+        );
+        
+        // DOM 로드 처리 통합
+        const initRoute = () => {
+            if (isHashMode && !window.location.hash) {
                 window.location.hash = '#/';
-            }
-        } else {
-            // History 모드
-            window.addEventListener('popstate', () => this.handleRouteChange());
-            
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', () => this.handleRouteChange());
-            } else {
-                setTimeout(() => this.handleRouteChange(), 0);
-            }
-            
-            if (window.location.pathname === '/') {
+            } else if (!isHashMode && window.location.pathname === '/') {
                 this.navigateTo('home');
+            } else {
+                this.handleRouteChange();
             }
+        };
+        
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initRoute);
+        } else {
+            // requestAnimationFrame으로 성능 개선
+            requestAnimationFrame(initRoute);
         }
     }
 
     handleRouteChange() {
-        let route, queryParams;
-        
-        if (this.config.mode === 'hash') {
-            let hashPath = window.location.hash.slice(1) || '/';
-            
-            // Extract query parameters from hash
-            const hashParts = hashPath.split('?');
-            const pathPart = hashParts[0];
-            const queryPart = hashParts[1] || window.location.search.slice(1);
-            
-            // Handle both /#/ and /#/home formats
-            if (pathPart === '/' || pathPart === '') {
-                route = 'home';
-            } else if (pathPart.startsWith('/')) {
-                route = pathPart.slice(1) || 'home';
-            } else {
-                // Legacy format support (#home)
-                route = pathPart || 'home';
-            }
-            
-            queryParams = this.queryManager?.parseQueryString(queryPart) || {};
-        } else {
-            // History mode
-            route = window.location.pathname.slice(1) || 'home';
-            queryParams = this.queryManager?.parseQueryString(window.location.search.slice(1)) || {};
-        }
+        const { route, queryParams } = this._parseCurrentLocation();
         
         // Store current query parameters in QueryManager
         this.queryManager?.setCurrentQueryParams(queryParams);
         
+        // 변경사항이 있을 때만 로드 (성능 최적화)
         if (route !== this.currentHash || this.queryManager?.hasQueryParamsChanged(queryParams)) {
             this.currentHash = route;
             this.loadRoute(route);
+        }
+    }
+
+    /**
+     * 현재 위치 파싱 (분리하여 가독성 향상)
+     */
+    _parseCurrentLocation() {
+        if (this.config.mode === 'hash') {
+            const hashPath = window.location.hash.slice(1) || '/';
+            const [pathPart, queryPart] = hashPath.split('?');
+            
+            // 경로 파싱 최적화
+            let route = 'home';
+            if (pathPart && pathPart !== '/') {
+                route = pathPart.startsWith('/') ? pathPart.slice(1) : pathPart;
+            }
+            
+            return {
+                route: route || 'home',
+                queryParams: this.queryManager?.parseQueryString(queryPart || window.location.search.slice(1)) || {}
+            };
+        } else {
+            return {
+                route: window.location.pathname.slice(1) || 'home',
+                queryParams: this.queryManager?.parseQueryString(window.location.search.slice(1)) || {}
+            };
         }
     }
 
@@ -266,17 +290,17 @@ export class ViewLogicRouter {
             }
             
         } catch (error) {
-            console.error('라우트 로딩 오류:', error);
+            this.log('error', `Route loading failed [${routeName}]:`, error.message);
             
             if (this.loadingManager) {
                 await this.loadingManager.hideLoading();
             }
             
-            // 에러 타입에 따른 처리 (transitionInProgress는 에러 처리 후에 리셋)
+            // 에러 타입에 따른 처리
             if (this.errorHandler) {
                 await this.errorHandler.handleRouteError(routeName, error);
             } else {
-                console.error('ErrorHandler not available, showing basic error:', error.message);
+                console.error('[Router] No error handler available');
             }
         } finally {
             // 모든 처리가 완료된 후 전환 상태 리셋
@@ -335,15 +359,15 @@ export class ViewLogicRouter {
 
         newVueApp.mount(`#${newPageContainer.id}`);
 
-        // 즉시 이전 페이지들 정리
-        setTimeout(() => {
+        // requestAnimationFrame으로 성능 개선
+        requestAnimationFrame(() => {
             this.cleanupPreviousPages();
             if (this.loadingManager) {
                 this.loadingManager.setTransitionInProgress(false);
             } else {
                 this.transitionInProgress = false;
             }
-        }, 50); // 최소한의 지연만
+        });
 
         // 이전 앱 정리 준비
         if (this.currentVueApp) {
@@ -357,33 +381,26 @@ export class ViewLogicRouter {
         const appElement = document.getElementById('app');
         if (!appElement) return;
 
-        // exiting 상태의 컨테이너들 제거
+        // 배치 DOM 조작으로 성능 개선
+        const fragment = document.createDocumentFragment();
         const exitingContainers = appElement.querySelectorAll('.page-container.page-exiting');
-        exitingContainers.forEach(container => {
-            if (container.parentNode) {
-                container.remove();
-            }
-        });
+        
+        // 한번에 제거
+        exitingContainers.forEach(container => container.remove());
 
         // 이전 Vue 앱 정리
         if (this.previousVueApp) {
             try {
                 this.previousVueApp.unmount();
             } catch (error) {
-                console.debug('Previous Vue app already unmounted:', error);
+                // 무시 (이미 언마운트된 경우)
             }
             this.previousVueApp = null;
         }
 
-        // 로딩 텍스트 제거 (첫 로드 시)
-        if (this.loadingManager) {
-            this.loadingManager.removeLoadingElement(appElement);
-        } else {
-            const loadingElement = appElement.querySelector('.loading');
-            if (loadingElement) {
-                loadingElement.remove();
-            }
-        }
+        // 로딩 엘리먼트 제거
+        this.loadingManager?.removeLoadingElement(appElement) || 
+            appElement.querySelector('.loading')?.remove();
     }
 
     applyStyle(css, routeName) {
@@ -425,28 +442,24 @@ export class ViewLogicRouter {
         const queryParams = params || this.queryManager?.getQueryParams() || {};
         const queryString = this.queryManager?.buildQueryString(queryParams) || '';
         
+        // URL 빌드 최적화
+        const buildURL = (route, queryString, isHash = true) => {
+            const base = route === 'home' ? '/' : `/${route}`;
+            const url = queryString ? `${base}?${queryString}` : base;
+            return isHash ? `#${url}` : url;
+        };
+        
         if (this.config.mode === 'hash') {
-            let newHash;
-            if (route === 'home') {
-                newHash = queryString ? `#/?${queryString}` : '#/';
-            } else {
-                newHash = queryString ? `#/${route}?${queryString}` : `#/${route}`;
-            }
+            const newHash = buildURL(route, queryString);
             
-            // Prevent triggering hashchange if URL is the same
+            // 동일한 URL이면 업데이트하지 않음 (성능 최적화)
             if (window.location.hash !== newHash) {
                 window.location.hash = newHash;
             }
         } else {
-            let newPath;
-            if (route === 'home') {
-                newPath = queryString ? `/?${queryString}` : '/';
-            } else {
-                newPath = queryString ? `/${route}?${queryString}` : `/${route}`;
-            }
-            
-            // Use replaceState to avoid adding to history when only query params change
+            const newPath = buildURL(route, queryString, false);
             const isSameRoute = window.location.pathname === (route === 'home' ? '/' : `/${route}`);
+            
             if (isSameRoute) {
                 window.history.replaceState({}, '', newPath);
             } else {
@@ -454,6 +467,47 @@ export class ViewLogicRouter {
             }
             this.handleRouteChange();
         }
+    }
+
+    /**
+     * 라우터 정리 (메모리 누수 방지)
+     */
+    destroy() {
+        // 이벤트 리스너 제거
+        window.removeEventListener(
+            this.config.mode === 'hash' ? 'hashchange' : 'popstate',
+            this._boundHandleRouteChange
+        );
+        
+        // 현재 Vue 앱 언마운트
+        if (this.currentVueApp) {
+            this.currentVueApp.unmount();
+            this.currentVueApp = null;
+        }
+        
+        // 이전 Vue 앱 언마운트
+        if (this.previousVueApp) {
+            this.previousVueApp.unmount();
+            this.previousVueApp = null;
+        }
+        
+        // 매니저 정리
+        Object.values(this).forEach(manager => {
+            if (manager && typeof manager.destroy === 'function') {
+                manager.destroy();
+            }
+        });
+        
+        // 캐시 클리어
+        this.cacheManager?.clearAll();
+        
+        // DOM 정리
+        const appElement = document.getElementById('app');
+        if (appElement) {
+            appElement.innerHTML = '';
+        }
+        
+        this.log('info', 'Router destroyed');
     }
 }
 // 전역 라우터는 index.html에서 환경설정과 함께 생성됨

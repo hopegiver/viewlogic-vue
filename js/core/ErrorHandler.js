@@ -6,13 +6,23 @@ export class ErrorHandler {
     constructor(router, options = {}) {
         this.config = {
             enableErrorReporting: options.enableErrorReporting !== false,
-            debug: options.debug || false
+            debug: options.debug || false,
+            logLevel: options.logLevel || (options.debug ? 'debug' : 'info'),
+            environment: options.environment || 'development'
         };
         
         // 라우터 인스턴스 참조
         this.router = router;
         
-        this.log('ErrorHandler initialized with config:', this.config);
+        // 로그 레벨 매핑
+        this.logLevels = {
+            error: 0,
+            warn: 1, 
+            info: 2,
+            debug: 3
+        };
+        
+        this.log('info', 'ErrorHandler', 'ErrorHandler initialized with config:', this.config);
     }
 
     /**
@@ -22,7 +32,7 @@ export class ErrorHandler {
         let errorCode = 500;
         let errorMessage = '페이지를 로드할 수 없습니다.';
         
-        console.log('에러 상세:', error.message, error.name);
+        this.debug('ErrorHandler', '에러 상세:', error.message, error.name);
         
         // 에러 타입 분석 (더 정확한 404 감지)
         if (error.message.includes('not found') || 
@@ -40,7 +50,7 @@ export class ErrorHandler {
             errorMessage = '페이지에 접근할 권한이 없습니다.';
         }
         
-        console.log(`에러 코드 결정: ${errorCode} (라우트: ${routeName})`);
+        this.debug('ErrorHandler', `에러 코드 결정: ${errorCode} (라우트: ${routeName})`);
         
         // 에러 리포팅
         if (this.config.enableErrorReporting) {
@@ -56,7 +66,7 @@ export class ErrorHandler {
                 await this.loadErrorPage(errorCode, errorMessage);
             }
         } catch (fallbackError) {
-            console.error('에러 페이지 로딩 실패:', fallbackError);
+            this.error('ErrorHandler', '에러 페이지 로딩 실패:', fallbackError);
             // 모든 에러 페이지가 실패했을 때 최후의 폴백 페이지 표시
             this.showFallbackErrorPage(errorCode, errorMessage);
         }
@@ -67,12 +77,12 @@ export class ErrorHandler {
      */
     async load404Page() {
         try {
-            console.log('🔍 Loading 404 page...');
+            this.info('ErrorHandler', 'Loading 404 page...');
             const component = await this.createVueComponent('404');
             await this.renderComponentWithTransition(component, '404');
-            console.log('✅ 404 page loaded successfully');
+            this.info('ErrorHandler', '404 page loaded successfully');
         } catch (error) {
-            console.error('❌ 404 page loading failed:', error);
+            this.error('ErrorHandler', '404 page loading failed:', error);
             // 404 페이지도 없으면 간단한 에러 메시지 표시
             this.showFallbackErrorPage('404', '페이지를 찾을 수 없습니다.');
         }
@@ -83,14 +93,14 @@ export class ErrorHandler {
      */
     async loadErrorPage(errorCode, errorMessage) {
         try {
-            console.log(`🔍 Loading error page for ${errorCode}...`);
+            this.info('ErrorHandler', `Loading error page for ${errorCode}...`);
             
             // 에러 컴포넌트 생성
             const errorComponent = await this.createErrorComponent(errorCode, errorMessage);
             await this.renderComponentWithTransition(errorComponent, 'error');
-            console.log(`✅ Error page ${errorCode} loaded successfully`);
+            this.info('ErrorHandler', `Error page ${errorCode} loaded successfully`);
         } catch (error) {
-            console.error(`❌ Error page ${errorCode} loading failed:`, error);
+            this.error('ErrorHandler', `Error page ${errorCode} loading failed:`, error);
             // 에러 페이지도 로딩 실패하면 폴백 표시
             this.showFallbackErrorPage(errorCode, errorMessage);
         }
@@ -122,7 +132,7 @@ export class ErrorHandler {
             return errorComponent;
         } catch (error) {
             // 에러 컴포넌트도 로드할 수 없는 경우 간단한 에러 표시
-            console.error('Error component load failed:', error);
+            this.error('ErrorHandler', 'Error component load failed:', error);
             throw new Error(`Cannot load error page: ${error.message}`);
         }
     }
@@ -188,7 +198,7 @@ export class ErrorHandler {
         // 기존 컨테이너들 정리
         appElement.innerHTML = fallbackHTML;
         
-        console.log(`📄 Fallback error page displayed for ${errorCode}`);
+        this.info('ErrorHandler', `Fallback error page displayed for ${errorCode}`);
     }
 
     /**
@@ -209,7 +219,7 @@ export class ErrorHandler {
             }
         };
         
-        console.error('라우터 에러 리포트:', errorReport);
+        this.error('ErrorHandler', '라우터 에러 리포트:', errorReport);
         
         // 추후 에러 추적 서비스로 전송할 수 있음
         // 예: analytics.track('router_error', errorReport);
@@ -243,16 +253,83 @@ export class ErrorHandler {
             ...this.config,
             ...newConfig
         };
-        this.log('ErrorHandler config updated:', this.config);
+        this.info('ErrorHandler', 'ErrorHandler config updated:', this.config);
     }
 
     /**
+     * 통합 로깅 시스템
+     * @param {string} level - 로그 레벨 (error, warn, info, debug)
+     * @param {string} component - 컴포넌트 이름 (선택적)
+     * @param {...any} args - 로그 메시지
+     */
+    log(level, component, ...args) {
+        // 하위 호환성: 기존 방식도 지원
+        if (typeof level !== 'string' || !this.logLevels.hasOwnProperty(level)) {
+            args = [component, ...args];
+            component = level;
+            level = this.config.debug ? 'debug' : 'info';
+        }
+        
+        // 로그 레벨 확인
+        const currentLevelValue = this.logLevels[this.config.logLevel] || this.logLevels.info;
+        const messageLevelValue = this.logLevels[level] || this.logLevels.info;
+        
+        if (messageLevelValue > currentLevelValue) {
+            return; // 현재 설정된 레벨보다 높으면 출력 안함
+        }
+        
+        // 프로덕션 환경에서는 error와 warn만 출력
+        if (this.config.environment === 'production' && messageLevelValue > this.logLevels.warn) {
+            return;
+        }
+        
+        const prefix = component ? `[${component}]` : '[ViewLogic]';
+        const timestamp = new Date().toISOString().substring(11, 23); // HH:MM:SS.mmm
+        
+        switch (level) {
+            case 'error':
+                console.error(`${timestamp} ${prefix}`, ...args);
+                break;
+            case 'warn':
+                console.warn(`${timestamp} ${prefix}`, ...args);
+                break;
+            case 'info':
+                console.info(`${timestamp} ${prefix}`, ...args);
+                break;
+            case 'debug':
+                console.log(`${timestamp} ${prefix}`, ...args);
+                break;
+            default:
+                console.log(`${timestamp} ${prefix}`, ...args);
+        }
+    }
+    
+    /**
+     * 에러 로그 (항상 출력)
+     */
+    error(component, ...args) {
+        this.log('error', component, ...args);
+    }
+    
+    /**
+     * 경고 로그
+     */
+    warn(component, ...args) {
+        this.log('warn', component, ...args);
+    }
+    
+    /**
+     * 정보 로그
+     */
+    info(component, ...args) {
+        this.log('info', component, ...args);
+    }
+    
+    /**
      * 디버그 로그
      */
-    log(...args) {
-        if (this.config.debug) {
-            console.log('[ErrorHandler]', ...args);
-        }
+    debug(component, ...args) {
+        this.log('debug', component, ...args);
     }
 
     /**
@@ -260,6 +337,6 @@ export class ErrorHandler {
      */
     destroy() {
         this.router = null;
-        this.log('ErrorHandler destroyed');
+        this.info('ErrorHandler', 'ErrorHandler destroyed');
     }
 }
