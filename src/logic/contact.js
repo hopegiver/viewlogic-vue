@@ -1,61 +1,46 @@
 export default {
     name: 'Contact',
-    layout: 'default',
+    
     data() {
         return {
-            contactInfo: [
-                {
-                    icon: '📧',
-                    title: 'Email',
-                    value: 'contact@example.com'
-                },
-                {
-                    icon: '📞',
-                    title: 'Phone',
-                    value: '+82-10-1234-5678'
-                },
-                {
-                    icon: '📍',
-                    title: 'Address',
-                    value: '서울특별시 강남구'
-                },
-                {
-                    icon: '🌐',
-                    title: 'Website',
-                    value: 'www.example.com'
-                }
-            ],
             form: {
                 name: '',
                 email: '',
                 subject: '',
                 message: ''
-            }
-        }
+            },
+            isLoading: false,
+            contactInfo: [
+                { icon: '📧', title: 'Email', value: 'contact@viewlogic.com' },
+                { icon: '📞', title: 'Phone', value: '02-1234-5678' },
+                { icon: '📍', title: 'Address', value: '서울특별시 강남구' }
+            ]
+        };
     },
-    mounted() {
-        this.$nextTick(() => {
-            const formElement = document.getElementById('contactForm')
-            if (formElement) {
-                formElement.addEventListener('submit', this.handleFormSubmit)
-            }
-        })
-    },
-    beforeUnmount() {
-        const formElement = document.getElementById('contactForm')
-        if (formElement) {
-            formElement.removeEventListener('submit', this.handleFormSubmit)
-        }
-    },
+    
     methods: {
-        handleFormSubmit(event) {
-            event.preventDefault()
+        async sendMessage() {
+            if (!this.form.name || !this.form.email || !this.form.message) {
+                alert('필수 항목을 입력해주세요.');
+                return;
+            }
             
-            const formData = new FormData(event.target)
-            console.log('폼 전송:', Object.fromEntries(formData))
+            this.isLoading = true;
             
-            alert('메시지가 전송되었습니다!')
-            event.target.reset()
+            // 메시지 전송 시뮬레이션
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            alert('메시지가 전송되었습니다!');
+            
+            // 폼 초기화
+            this.form = {
+                name: '',
+                email: '',
+                subject: '',
+                message: ''
+            };
+            
+            this.isLoading = false;
         }
     }
-}
+};

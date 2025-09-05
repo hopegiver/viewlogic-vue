@@ -37,6 +37,7 @@
                     <a href="javascript:void(0)" class="dropdown-toggle">서비스</a>
                     <ul class="dropdown-menu">
                         <li><a @click="navigateTo('products')" :class="{ active: currentRoute === 'products' }">상품</a></li>
+                        <li><a @click="navigateTo('synovus')" :class="{ active: currentRoute === 'synovus' }">시나버스</a></li>
                         <li><a @click="navigateTo('blog')" :class="{ active: currentRoute === 'blog' }">블로그</a></li>
                         <li><a @click="navigateTo('videos')" :class="{ active: currentRoute === 'videos' }">동영상</a></li>
                         <li><a @click="navigateTo('manual')" :class="{ active: currentRoute === 'manual' }">매뉴얼</a></li>

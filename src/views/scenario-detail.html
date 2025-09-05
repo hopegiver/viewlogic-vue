@@ -1,0 +1,335 @@
+<div class="scenario-detail-page">
+    <!-- 시나리오 헤더 -->
+    <div class="scenario-hero">
+        <div class="hero-background">
+            <img :src="scenario.coverImage" :alt="scenario.title" class="hero-bg-image" />
+            <div class="hero-overlay"></div>
+        </div>
+        
+        <div class="hero-content">
+            <div class="hero-info">
+                <!-- 뒤로가기 버튼 -->
+                <button @click="goBack" class="back-button">
+                    ← 시나버스로 돌아가기
+                </button>
+                
+                <!-- 시나리오 기본 정보 -->
+                <div class="scenario-header">
+                    <div class="scenario-cover">
+                        <img :src="scenario.coverImage" :alt="scenario.title" />
+                        <div class="cover-badges">
+                            <span v-if="scenario.isNew" class="badge new">NEW</span>
+                            <span v-if="scenario.isHot" class="badge hot">HOT</span>
+                            <span v-if="scenario.isCompleted" class="badge completed">완결</span>
+                        </div>
+                    </div>
+                    
+                    <div class="scenario-info">
+                        <h1 class="scenario-title">{{ scenario.title }}</h1>
+                        <p class="scenario-author">작가: {{ scenario.author }}</p>
+                        <p class="scenario-genre">장르: {{ scenario.genre }}</p>
+                        
+                        <div class="scenario-stats">
+                            <div class="stat-item">
+                                <span class="stat-icon">⭐</span>
+                                <span class="stat-value">{{ scenario.rating }}</span>
+                                <span class="stat-label">({{ formatNumber(scenario.reviewCount) }})</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-icon">👥</span>
+                                <span class="stat-value">{{ formatNumber(scenario.subscribers) }}</span>
+                                <span class="stat-label">구독자</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-icon">📚</span>
+                                <span class="stat-value">{{ scenario.episodeCount }}</span>
+                                <span class="stat-label">화</span>
+                            </div>
+                        </div>
+                        
+                        <div class="scenario-tags">
+                            <span 
+                                v-for="tag in scenario.tags" 
+                                :key="tag"
+                                class="tag"
+                            >#{{ tag }}</span>
+                        </div>
+                        
+                        <!-- 가격 정보 -->
+                        <div class="scenario-pricing">
+                            <div class="pricing-options">
+                                <div class="pricing-option main" v-if="!scenario.isPurchased">
+                                    <div class="price-info">
+                                        <span class="price-label">전체 구매</span>
+                                        <div class="price-display">
+                                            <span class="original-price">{{ formatPrice(scenario.originalPrice) }}</span>
+                                            <span class="sale-price">{{ formatPrice(scenario.salePrice) }}</span>
+                                            <span class="discount-badge">{{ scenario.discount }}% 할인</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="pricing-option monthly" v-if="!scenario.isPurchased">
+                                    <div class="price-info">
+                                        <span class="price-label">월간 이용권</span>
+                                        <div class="price-display">
+                                            <span class="monthly-price">{{ formatPrice(scenario.monthlyPrice) }}/월</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="pricing-option purchased" v-if="scenario.isPurchased">
+                                    <div class="price-info">
+                                        <span class="price-label">구매 완료</span>
+                                        <div class="price-display">
+                                            <span class="purchased-text">✓ 무제한 이용 가능</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 액션 버튼들 -->
+                        <div class="action-buttons">
+                            <button 
+                                v-if="!scenario.isPurchased"
+                                @click="purchaseOption('full')"
+                                class="purchase-btn"
+                            >
+                                <span class="btn-icon">💎</span>
+                                전체 구매
+                            </button>
+                            
+                            <button 
+                                v-if="!scenario.isPurchased"
+                                @click="purchaseOption('monthly')"
+                                class="monthly-btn"
+                            >
+                                <span class="btn-icon">📅</span>
+                                월간 이용권
+                            </button>
+                            
+                            <button 
+                                @click="toggleSubscription"
+                                class="subscribe-btn"
+                                :class="{ subscribed: scenario.isSubscribed }"
+                            >
+                                <span class="btn-icon">{{ scenario.isSubscribed ? '💖' : '🤍' }}</span>
+                                {{ scenario.isSubscribed ? '구독중' : '구독하기' }}
+                            </button>
+                            
+                            <button @click="shareScenario" class="share-btn">
+                                <span class="btn-icon">📤</span>
+                                공유하기
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 시나리오 설명 -->
+    <div class="scenario-description-section">
+        <div class="container">
+            <h2 class="section-title">📖 작품 소개</h2>
+            <div class="description-content">
+                <p class="scenario-description">{{ scenario.description }}</p>
+                <div class="description-meta">
+                    <span class="update-info">마지막 업데이트: {{ formatDate(scenario.lastUpdate) }}</span>
+                    <span class="status-info" :class="scenario.status">{{ getStatusText(scenario.status) }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 에피소드 목록 -->
+    <div class="episodes-section">
+        <div class="container">
+            <div class="episodes-header">
+                <h2 class="section-title">📚 에피소드 목록</h2>
+                <div class="episodes-info">
+                    <span class="free-info">🎁 {{ freeEpisodeCount }}화까지 무료</span>
+                    <span class="total-info">전체 {{ scenario.episodeCount }}화</span>
+                </div>
+            </div>
+            
+            <!-- 에피소드 리스트 -->
+            <div class="episodes-list">
+                <div 
+                    v-for="(episode, index) in episodes" 
+                    :key="episode.id"
+                    class="episode-item"
+                    :class="{
+                        'free': episode.isFree,
+                        'premium': !episode.isFree,
+                        'locked': !episode.isFree && !scenario.isPurchased,
+                        'current': currentEpisode === episode.id
+                    }"
+                    @click="selectEpisode(episode, index)"
+                >
+                    <div class="episode-number">{{ episode.number }}화</div>
+                    <div class="episode-info">
+                        <h3 class="episode-title">{{ episode.title }}</h3>
+                        <p class="episode-preview">{{ episode.preview }}</p>
+                        <div class="episode-meta">
+                            <span class="episode-date">{{ formatDate(episode.publishDate) }}</span>
+                            <span class="episode-length">{{ episode.readTime }}분</span>
+                            <span v-if="episode.isNew" class="episode-badge new">NEW</span>
+                        </div>
+                    </div>
+                    <div class="episode-status">
+                        <span v-if="episode.isFree" class="status-badge free">무료</span>
+                        <span v-else-if="scenario.isPurchased" class="status-badge purchased">구매완료</span>
+                        <span v-else class="status-badge premium">
+                            <span class="premium-icon">💎</span>
+                            {{ formatPrice(episode.price) }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 에피소드 뷰어 -->
+    <div v-if="selectedEpisode" class="episode-viewer">
+        <div class="viewer-header">
+            <h2>{{ selectedEpisode.number }}화: {{ selectedEpisode.title }}</h2>
+            <button @click="closeViewer" class="close-viewer">✕</button>
+        </div>
+        
+        <div class="viewer-content">
+            <!-- 무료 미리보기 콘텐츠 -->
+            <div v-if="selectedEpisode.isFree || scenario.isPurchased" class="episode-content">
+                <div v-html="selectedEpisode.content" class="content-text"></div>
+            </div>
+            
+            <!-- 유료 콘텐츠 잠금 화면 -->
+            <div v-else class="premium-lock">
+                <!-- 무료 미리보기 (10%) -->
+                <div class="preview-content">
+                    <div class="preview-header">
+                        <h3>🎁 무료 미리보기</h3>
+                        <p>이 에피소드의 {{ previewPercentage }}%를 무료로 제공합니다.</p>
+                    </div>
+                    <div v-html="selectedEpisode.previewContent" class="content-text preview"></div>
+                </div>
+                
+                <!-- 결제 유도 섹션 -->
+                <div class="payment-prompt">
+                    <div class="lock-overlay">
+                        <div class="lock-icon">🔒</div>
+                        <h3>프리미엄 콘텐츠</h3>
+                        <p>이 에피소드의 전체 내용을 보려면 구매가 필요합니다.</p>
+                        
+                        <div class="payment-options">
+                            <button @click="purchaseEpisode(selectedEpisode)" class="purchase-episode-btn">
+                                <span class="btn-icon">💎</span>
+                                이 에피소드만 구매 ({{ formatPrice(selectedEpisode.price) }})
+                            </button>
+                            
+                            <button @click="purchaseOption('full')" class="purchase-full-btn">
+                                <span class="btn-icon">🎯</span>
+                                전체 구매하고 {{ scenario.discount }}% 할인받기
+                            </button>
+                        </div>
+                        
+                        <div class="payment-benefits">
+                            <h4>구매 혜택</h4>
+                            <ul>
+                                <li>✓ 평생 무제한 이용</li>
+                                <li>✓ 오프라인 다운로드</li>
+                                <li>✓ 광고 없는 깔끔한 읽기</li>
+                                <li>✓ 새 에피소드 우선 알림</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 뷰어 네비게이션 -->
+        <div class="viewer-navigation">
+            <button 
+                @click="navigateEpisode('prev')" 
+                :disabled="selectedEpisodeIndex === 0"
+                class="nav-btn prev-btn"
+            >
+                ← 이전 화
+            </button>
+            
+            <div class="episode-progress">
+                <span>{{ selectedEpisodeIndex + 1 }} / {{ episodes.length }}</span>
+                <div class="progress-bar">
+                    <div 
+                        class="progress-fill" 
+                        :style="{ width: ((selectedEpisodeIndex + 1) / episodes.length * 100) + '%' }"
+                    ></div>
+                </div>
+            </div>
+            
+            <button 
+                @click="navigateEpisode('next')" 
+                :disabled="selectedEpisodeIndex === episodes.length - 1"
+                class="nav-btn next-btn"
+            >
+                다음 화 →
+            </button>
+        </div>
+    </div>
+    
+    <!-- 리뷰 섹션 -->
+    <div class="reviews-section">
+        <div class="container">
+            <h2 class="section-title">⭐ 독자 리뷰</h2>
+            
+            <!-- 리뷰 작성 -->
+            <div class="review-form">
+                <h3>리뷰 작성하기</h3>
+                <div class="rating-input">
+                    <span>평점:</span>
+                    <div class="stars-input">
+                        <span 
+                            v-for="star in 5" 
+                            :key="star"
+                            class="star"
+                            :class="{ active: star <= newReview.rating }"
+                            @click="newReview.rating = star"
+                        >★</span>
+                    </div>
+                </div>
+                <textarea 
+                    v-model="newReview.content"
+                    class="review-textarea"
+                    placeholder="이 시나리오에 대한 솔직한 후기를 남겨주세요..."
+                ></textarea>
+                <button @click="submitReview" class="submit-review-btn" :disabled="!newReview.content.trim()">
+                    리뷰 등록
+                </button>
+            </div>
+            
+            <!-- 리뷰 목록 -->
+            <div class="reviews-list">
+                <div 
+                    v-for="review in reviews" 
+                    :key="review.id"
+                    class="review-item"
+                >
+                    <div class="review-header">
+                        <div class="reviewer-info">
+                            <span class="reviewer-name">{{ review.username }}</span>
+                            <div class="review-rating">
+                                <span v-for="star in 5" :key="star" class="star" :class="{ filled: star <= review.rating }">★</span>
+                            </div>
+                        </div>
+                        <span class="review-date">{{ formatDate(review.date) }}</span>
+                    </div>
+                    <p class="review-content">{{ review.content }}</p>
+                    <div class="review-actions">
+                        <button class="review-like" :class="{ liked: review.isLiked }" @click="toggleReviewLike(review)">
+                            👍 {{ review.likes }}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

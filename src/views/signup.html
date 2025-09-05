@@ -1,185 +1,111 @@
 <div class="signup-page">
-    <div class="signup-container">
+    <!-- Card 컴포넌트 스타일 회원가입 컨테이너 -->
+    <div class="signup-card">
         <!-- 회원가입 헤더 -->
-        <div class="signup-header">
-            <div class="signup-logo">
-                <span class="logo-icon">🚀</span>
-                <h1 class="logo-text">ViewLogic</h1>
-            </div>
-            <p class="signup-subtitle">{{ $t ? $t('signup.welcome') : '새 계정을 만들어보세요' }}</p>
-        </div>
-
-        <!-- 회원가입 폼 -->
-        <form @submit.prevent="handleSignup" class="signup-form">
-            <!-- 이름 입력 -->
-            <div class="form-row">
-                <div class="form-group">
-                    <Input 
-                        v-model="form.firstName"
-                        :label="$t ? $t('signup.first_name') : '이름'"
-                        type="text"
-                        name="firstName"
-                        :placeholder="$t ? $t('signup.first_name_placeholder') : '이름을 입력하세요'"
-                        :required="true"
-                        :error="errors.firstName"
-                        prefix-icon="👤"
-                        size="large"
-                    />
-                </div>
-                <div class="form-group">
-                    <Input 
-                        v-model="form.lastName"
-                        :label="$t ? $t('signup.last_name') : '성'"
-                        type="text"
-                        name="lastName"
-                        :placeholder="$t ? $t('signup.last_name_placeholder') : '성을 입력하세요'"
-                        :required="true"
-                        :error="errors.lastName"
-                        prefix-icon="👤"
-                        size="large"
-                    />
-                </div>
-            </div>
-
-            <!-- 이메일 입력 -->
-            <div class="form-group full-width">
-                <Input 
-                    v-model="form.email"
-                    :label="$t ? $t('signup.email') : '이메일'"
-                    type="email"
-                    name="email"
-                    :placeholder="$t ? $t('signup.email_placeholder') : 'your@email.com'"
-                    :required="true"
-                    :error="errors.email"
-                    prefix-icon="✉️"
-                    size="large"
-                    autocomplete="email"
-                />
-            </div>
-
-            <!-- 비밀번호 입력 -->
-            <div class="form-group full-width">
-                <Input 
-                    v-model="form.password"
-                    :label="$t ? $t('signup.password') : '비밀번호'"
-                    type="password"
-                    name="password"
-                    :placeholder="$t ? $t('signup.password_placeholder') : '8자 이상 입력하세요'"
-                    :required="true"
-                    :error="errors.password"
-                    prefix-icon="🔒"
-                    size="large"
-                    show-password-toggle
-                    autocomplete="new-password"
-                />
-            </div>
-
-            <!-- 비밀번호 확인 입력 -->
-            <div class="form-group full-width">
-                <Input 
-                    v-model="form.confirmPassword"
-                    :label="$t ? $t('signup.confirm_password') : '비밀번호 확인'"
-                    type="password"
-                    name="confirmPassword"
-                    :placeholder="$t ? $t('signup.confirm_password_placeholder') : '비밀번호를 다시 입력하세요'"
-                    :required="true"
-                    :error="errors.confirmPassword"
-                    prefix-icon="🔒"
-                    size="large"
-                    show-password-toggle
-                    autocomplete="new-password"
-                />
-            </div>
-
-            <!-- 약관 동의 -->
-            <div class="terms-agreement">
-                <Checkbox 
-                    v-model="form.agreeTerms"
-                    :error="errors.agreeTerms"
-                />
-                <div class="terms-text">
-                    {{ $t ? $t('signup.agree_to') : '다음에 동의합니다' }}
-                    <a @click="navigateTo('terms')" class="terms-link">
-                        {{ $t ? $t('signup.terms_of_service') : '이용약관' }}
-                    </a>
-                    {{ $t ? $t('signup.and') : '및' }}
-                    <a @click="navigateTo('privacy')" class="terms-link">
-                        {{ $t ? $t('signup.privacy_policy') : '개인정보처리방침' }}
-                    </a>
-                </div>
-            </div>
-
-            <!-- 에러 메시지 -->
-            <Alert 
-                v-if="signupError"
-                type="danger"
-                :title="$t ? $t('signup.error_title') : '회원가입 실패'"
-                :message="signupError"
-                :closable="true"
-                @close="clearError"
-            />
-
-            <!-- 회원가입 버튼 -->
-            <Button 
-                type="submit"
-                variant="primary"
-                size="large"
-                :loading="isLoading"
-                :disabled="!isFormValid"
-                block
-                class="signup-button"
-            >
-                <template v-if="isLoading">
-                    {{ $t ? $t('signup.creating_account') : '계정 생성 중...' }}
-                </template>
-                <template v-else>
-                    {{ $t ? $t('signup.create_account') : '계정 만들기' }}
-                </template>
-            </Button>
-        </form>
-
-        <!-- 소셜 회원가입 -->
-        <div class="social-signup" v-if="socialSignupEnabled">
-            <div class="social-divider">
-                <span>{{ $t ? $t('signup.or') : '또는' }}</span>
-            </div>
-            
-            <div class="social-buttons">
-                <Button 
-                    @click="handleSocialSignup('google')"
-                    variant="outline"
-                    size="large"
-                    :loading="socialLoading.google"
-                    class="social-button google-signup"
-                >
-                    <span class="social-icon">🌐</span>
-                    {{ $t ? $t('signup.google_signup') : 'Google로 가입' }}
-                </Button>
-                
-                <Button 
-                    @click="handleSocialSignup('kakao')"
-                    variant="outline"
-                    size="large"
-                    :loading="socialLoading.kakao"
-                    class="social-button kakao-signup"
-                >
-                    <span class="social-icon">💬</span>
-                    {{ $t ? $t('signup.kakao_signup') : '카카오로 가입' }}
-                </Button>
+        <div class="card-header">
+            <div class="brand-logo">
+                <h1>🚀 ViewLogic</h1>
+                <h2>회원가입</h2>
+                <p>새 계정을 만들어 시작하세요</p>
             </div>
         </div>
 
-        <!-- 로그인 링크 -->
-        <div class="login-link">
-            <p>
-                {{ $t ? $t('signup.have_account') : '이미 계정이 있으신가요?' }}
-                <a @click="navigateTo('login')" class="login-text">
-                    {{ $t ? $t('signup.sign_in') : '로그인' }}
-                </a>
-            </p>
+        <!-- Card Body -->
+        <div class="card-body">
+            <!-- 회원가입 폼 -->
+            <form @submit.prevent="handleSignup" class="signup-form">
+                <!-- 이름 입력 -->
+                <div class="input-group">
+                    <label class="input-label">이름</label>
+                    <div class="input-wrapper">
+                        <input 
+                            v-model="form.name"
+                            type="text"
+                            class="form-input"
+                            placeholder="홍길동"
+                            required
+                        />
+                        <span class="input-icon">👤</span>
+                    </div>
+                </div>
+
+                <!-- 이메일 입력 -->
+                <div class="input-group">
+                    <label class="input-label">이메일</label>
+                    <div class="input-wrapper">
+                        <input 
+                            v-model="form.email"
+                            type="email"
+                            class="form-input"
+                            placeholder="your@email.com"
+                            required
+                        />
+                        <span class="input-icon">📧</span>
+                    </div>
+                </div>
+
+                <!-- 비밀번호 입력 -->
+                <div class="input-group">
+                    <label class="input-label">비밀번호 (6자 이상)</label>
+                    <div class="input-wrapper">
+                        <input 
+                            v-model="form.password"
+                            type="password"
+                            class="form-input"
+                            placeholder="비밀번호"
+                            minlength="6"
+                            required
+                        />
+                        <span class="input-icon">🔒</span>
+                    </div>
+                </div>
+
+                <!-- 비밀번호 확인 -->
+                <div class="input-group">
+                    <label class="input-label">비밀번호 확인</label>
+                    <div class="input-wrapper">
+                        <input 
+                            v-model="form.confirmPassword"
+                            type="password"
+                            class="form-input"
+                            placeholder="비밀번호 확인"
+                            required
+                        />
+                        <span class="input-icon">🔐</span>
+                    </div>
+                </div>
+
+                <!-- 약관 동의 -->
+                <div class="form-options">
+                    <label class="checkbox-wrapper">
+                        <input type="checkbox" v-model="form.agree" required />
+                        <span class="checkbox-custom"></span>
+                        <span class="checkbox-text">이용약관에 동의합니다</span>
+                    </label>
+                </div>
+
+                <!-- 회원가입 버튼 -->
+                <button type="submit" class="submit-btn" :disabled="!isFormValid || isLoading">
+                    <span v-if="isLoading" class="loading-spinner">⟳</span>
+                    {{ isLoading ? '가입 중...' : '회원가입' }}
+                </button>
+            </form>
+        </div>
+
+        <!-- Card Footer -->
+        <div class="card-footer">
+            <!-- 로그인 링크 -->
+            <div class="auth-links">
+                <p class="link-text">
+                    이미 계정이 있으신가요?
+                    <a @click="goToLogin()" class="auth-link">로그인</a>
+                </p>
+            </div>
+
+            <!-- 홈으로 -->
+            <div class="home-link">
+                <a @click="goToHome()" class="back-link">← 홈으로 돌아가기</a>
+            </div>
         </div>
     </div>
-
-    <!-- Toast 알림 -->
-    <Toast ref="toast" position="top-right" />
 </div>

@@ -1,323 +1,269 @@
-/* ====================================
-   Signup Page Styles
-   ==================================== */
-
+/* Card 컴포넌트 스타일 회원가입 페이지 */
 .signup-page {
-    min-height: 100vh;
     display: flex;
-    align-items: center;
     justify-content: center;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    padding: 1.5rem;
-    padding-top: calc(var(--nav-height) + 1rem);
-    overflow-y: auto;
+    align-items: center;
+    min-height: 100vh;
+    background: white;
+    padding: 2rem;
+    margin: 0;
 }
 
-.signup-container {
-    background: var(--color-white);
-    border-radius: var(--border-radius-lg);
-    box-shadow: var(--shadow-xl);
-    padding: var(--space-xxl);
+/* Card 컨테이너 */
+.signup-page .signup-card {
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
     width: 100%;
     max-width: 480px;
-    position: relative;
-    z-index: 1;
-    backdrop-filter: blur(10px);
+    overflow: hidden;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
-/* 회원가입 헤더 */
-.signup-header {
+.signup-page .signup-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+}
+
+/* Card 헤더 */
+.signup-page .card-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 2rem;
     text-align: center;
-    margin-bottom: var(--space-xxl);
+    color: white;
 }
 
-.signup-logo {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: var(--space-md);
-    margin-bottom: var(--space-lg);
+.signup-page .brand-logo {
+    text-align: center;
 }
 
-.logo-icon {
-    font-size: 3rem;
-    filter: drop-shadow(0 4px 8px rgba(0, 123, 255, 0.3));
-    animation: float 3s ease-in-out infinite;
-}
-
-@keyframes float {
-    0%, 100% {
-        transform: translateY(0px);
-    }
-    50% {
-        transform: translateY(-10px);
-    }
-}
-
-.logo-text {
-    font-size: var(--font-size-3xl);
+.signup-page .brand-logo h1 {
+    font-size: 2rem;
+    margin: 0 0 0.75rem 0;
     font-weight: 700;
-    margin: 0;
-    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
 }
 
-.signup-subtitle {
-    font-size: var(--font-size-lg);
-    color: var(--color-text-muted);
-    margin: 0;
-    font-weight: 400;
-}
-
-/* 회원가입 폼 */
-.signup-form {
-    margin-bottom: var(--space-xl);
-}
-
-.form-row {
-    display: flex;
-    gap: var(--space-md);
-}
-
-.form-group {
-    margin-bottom: var(--space-lg);
-    flex: 1;
-}
-
-.form-group.full-width {
-    flex: none;
-}
-
-.form-options {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: var(--space-xl);
-    font-size: var(--font-size-sm);
-}
-
-.terms-agreement {
-    display: flex;
-    align-items: flex-start;
-    gap: var(--space-sm);
-    margin-bottom: var(--space-xl);
-    font-size: var(--font-size-sm);
-}
-
-.terms-text {
-    line-height: 1.5;
-    color: var(--color-text-muted);
-}
-
-.terms-link {
-    color: var(--color-primary);
-    text-decoration: none;
-    font-weight: 500;
-    cursor: pointer;
-    transition: color var(--transition-base);
-}
-
-.terms-link:hover {
-    color: var(--color-primary-hover);
-    text-decoration: underline;
-}
-
-.signup-button {
-    margin-bottom: var(--space-lg);
+.signup-page .brand-logo h2 {
+    font-size: 1.5rem;
+    margin: 0 0 0.5rem 0;
     font-weight: 600;
-    font-size: var(--font-size-base);
-    padding: var(--space-md) var(--space-lg);
-    height: 50px;
-    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover));
-    border: none;
-    transition: all var(--transition-base);
 }
 
-.signup-button:hover:not(:disabled) {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(0, 123, 255, 0.3);
+.signup-page .brand-logo p {
+    font-size: 0.95rem;
+    margin: 0;
+    opacity: 0.9;
 }
 
-.signup-button:active {
-    transform: translateY(0);
+/* Card Body */
+.signup-page .card-body {
+    padding: 2rem;
 }
 
-/* 소셜 회원가입 */
-.social-signup {
-    margin-bottom: var(--space-xl);
+/* 입력 그룹 */
+.signup-page .input-group {
+    margin-bottom: 1.25rem;
 }
 
-.social-divider {
+.signup-page .input-label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: #333;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.signup-page .input-wrapper {
     position: relative;
-    text-align: center;
-    margin-bottom: var(--space-lg);
 }
 
-.social-divider::before {
-    content: '';
+.signup-page .form-input {
+    width: 100%;
+    padding: 1rem 3rem 1rem 1rem;
+    border: 2px solid #e1e5e9;
+    border-radius: 12px;
+    font-size: 1rem;
+    box-sizing: border-box;
+    transition: all 0.3s ease;
+    background: #f8f9fa;
+}
+
+.signup-page .form-input:focus {
+    outline: none;
+    border-color: #667eea;
+    background: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+}
+
+.signup-page .input-icon {
     position: absolute;
+    right: 1rem;
     top: 50%;
-    left: 0;
-    right: 0;
-    height: 1px;
-    background: var(--color-border);
+    transform: translateY(-50%);
+    font-size: 1.2rem;
+    pointer-events: none;
 }
 
-.social-divider span {
-    background: var(--color-white);
-    padding: 0 var(--space-md);
-    color: var(--color-text-muted);
-    font-size: var(--font-size-sm);
+/* 체크박스 스타일 */
+.signup-page .form-options {
+    margin-bottom: 1.5rem;
 }
 
-.social-buttons {
+.signup-page .checkbox-wrapper {
     display: flex;
-    flex-direction: column;
-    gap: var(--space-md);
+    align-items: center;
+    cursor: pointer;
+    font-size: 0.9rem;
+    color: #666;
 }
 
-.social-button {
+.signup-page .checkbox-wrapper input[type="checkbox"] {
+    display: none;
+}
+
+.signup-page .checkbox-custom {
+    width: 20px;
+    height: 20px;
+    border: 2px solid #ddd;
+    border-radius: 6px;
+    margin-right: 0.75rem;
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+.signup-page .checkbox-wrapper input:checked + .checkbox-custom {
+    background: #667eea;
+    border-color: #667eea;
+}
+
+.signup-page .checkbox-wrapper input:checked + .checkbox-custom::after {
+    content: '✓';
+    position: absolute;
+    color: white;
+    font-size: 14px;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+/* 제출 버튼 */
+.signup-page .submit-btn {
+    width: 100%;
+    padding: 1rem;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: var(--space-md);
-    padding: var(--space-md) var(--space-lg);
-    height: 48px;
-    font-weight: 500;
-    border: 2px solid var(--color-border);
-    transition: all var(--transition-base);
+    gap: 0.5rem;
 }
 
-.social-icon {
-    font-size: var(--font-size-lg);
+.signup-page .submit-btn:hover:not(:disabled) {
+    background: linear-gradient(135deg, #5a67d8 0%, #6a4c93 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 16px rgba(102, 126, 234, 0.3);
 }
 
-.google-signup {
-    color: #4285f4;
-    border-color: #4285f4;
+.signup-page .submit-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
 }
 
-.google-signup:hover {
-    background: #4285f4;
-    color: var(--color-white);
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(66, 133, 244, 0.3);
+.signup-page .loading-spinner {
+    animation: spin 1s linear infinite;
+    font-size: 1.2rem;
 }
 
-.kakao-signup {
-    color: #fee500;
-    background: #fee500;
-    border-color: #fee500;
-    color: #3c1e1e;
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
 }
 
-.kakao-signup:hover {
-    background: #fdd800;
-    border-color: #fdd800;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(254, 229, 0, 0.4);
-}
-
-/* 로그인 링크 */
-.login-link {
+/* Card Footer */
+.signup-page .card-footer {
+    padding: 1.5rem 2rem 2rem;
     text-align: center;
-    padding-top: var(--space-lg);
-    border-top: 1px solid var(--color-border);
+    background: #f8f9fa;
 }
 
-.login-link p {
+.signup-page .auth-links {
+    margin-bottom: 1rem;
+}
+
+.signup-page .link-text {
+    color: #666;
+    font-size: 0.9rem;
     margin: 0;
-    color: var(--color-text-muted);
-    font-size: var(--font-size-sm);
 }
 
-.login-text {
-    color: var(--color-primary);
-    font-weight: 600;
+.signup-page .auth-link {
+    color: #667eea;
     text-decoration: none;
     cursor: pointer;
-    margin-left: var(--space-xs);
-    transition: color var(--transition-base);
+    font-weight: 600;
+    transition: color 0.3s ease;
 }
 
-.login-text:hover {
-    color: var(--color-primary-hover);
+.signup-page .auth-link:hover {
+    color: #5a67d8;
     text-decoration: underline;
 }
 
-/* 반응형 디자인 */
-@media (max-width: 768px) {
+.signup-page .back-link {
+    color: #999;
+    text-decoration: none;
+    font-size: 0.85rem;
+    transition: color 0.3s ease;
+}
+
+.signup-page .back-link:hover {
+    color: #667eea;
+}
+
+/* 반응형 - Card 회원가입 페이지 */
+@media (max-width: 480px) {
     .signup-page {
-        padding: var(--space-md);
-        align-items: flex-start;
-        padding-top: calc(var(--nav-height) + 12rem);
-        padding-bottom: var(--space-lg);
+        padding: 1rem;
     }
     
-    .signup-container {
-        padding: var(--space-xl) var(--space-lg);
-        max-width: 100%;
-        margin: 0 auto;
+    .signup-page .signup-card {
+        margin: 0;
+        max-width: none;
     }
     
-    .form-row {
-        flex-direction: column;
-        gap: 0;
+    .signup-page .card-header {
+        padding: 1.5rem;
     }
     
-    .logo-text {
-        font-size: var(--font-size-xxl);
+    .signup-page .brand-logo h1 {
+        font-size: 1.75rem;
     }
     
-    .logo-icon {
-        font-size: 2.5rem;
+    .signup-page .card-title h2 {
+        font-size: 1.25rem;
     }
     
-    .terms-agreement {
-        flex-direction: column;
-        gap: var(--space-sm);
-        align-items: flex-start;
+    .signup-page .card-body {
+        padding: 1.5rem;
     }
     
-    .social-buttons {
-        gap: var(--space-sm);
+    .signup-page .card-footer {
+        padding: 1rem 1.5rem 1.5rem;
     }
     
-    .social-button {
-        height: 44px;
-        padding: var(--space-sm) var(--space-md);
-        font-size: var(--font-size-sm);
+    .signup-page .form-input {
+        padding: 0.875rem 2.5rem 0.875rem 0.875rem;
     }
     
-    .signup-button {
-        height: 48px;
-        font-size: var(--font-size-sm);
-    }
-}
-
-/* 폼 애니메이션 */
-.form-group {
-    animation: slideInUp 0.4s ease-out;
-    animation-fill-mode: both;
-}
-
-.form-group:nth-child(1) { animation-delay: 0.1s; }
-.form-group:nth-child(2) { animation-delay: 0.2s; }
-.form-group:nth-child(3) { animation-delay: 0.3s; }
-.form-group:nth-child(4) { animation-delay: 0.4s; }
-.form-row { animation: slideInUp 0.4s ease-out 0.2s both; }
-.terms-agreement { animation: slideInUp 0.4s ease-out 0.5s both; }
-.signup-button { animation: slideInUp 0.4s ease-out 0.6s both; }
-
-@keyframes slideInUp {
-    from {
-        opacity: 0;
-        transform: translateY(20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
+    .signup-page .input-group {
+        margin-bottom: 1rem;
     }
 }

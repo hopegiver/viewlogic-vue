@@ -1,0 +1,194 @@
+<div class="synovus-page">
+    <!-- 헤더 섹션 -->
+    <div class="synovus-header">
+        <h1>📚 시나버스</h1>
+        <p class="header-subtitle">다양한 시나리오를 웹소설처럼 즐기세요</p>
+        
+        <!-- 검색 및 필터 -->
+        <div class="search-filter-section">
+            <div class="search-wrapper">
+                <input 
+                    type="text" 
+                    v-model="searchQuery" 
+                    class="search-input"
+                    placeholder="시나리오 제목이나 작가명으로 검색..."
+                />
+                <span class="search-icon">🔍</span>
+            </div>
+            
+            <div class="filter-controls">
+                <select v-model="selectedGenre" class="genre-filter">
+                    <option value="all">전체 장르</option>
+                    <option value="romance">로맨스</option>
+                    <option value="fantasy">판타지</option>
+                    <option value="thriller">스릴러</option>
+                    <option value="drama">드라마</option>
+                    <option value="comedy">코미디</option>
+                    <option value="mystery">미스터리</option>
+                </select>
+                
+                <select v-model="sortBy" class="sort-filter">
+                    <option value="latest">최신순</option>
+                    <option value="popular">인기순</option>
+                    <option value="rating">평점순</option>
+                    <option value="subscribers">구독자순</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- 인기 시나리오 섹션 -->
+    <div class="featured-section">
+        <h2 class="section-title">🔥 인기 시나리오</h2>
+        <div class="featured-slider">
+            <div 
+                v-for="scenario in featuredScenarios" 
+                :key="scenario.id"
+                class="featured-card"
+                @click="viewScenario(scenario)"
+            >
+                <div class="featured-image">
+                    <img :src="scenario.coverImage" :alt="scenario.title" />
+                    <div class="featured-overlay">
+                        <span class="episode-count">{{ scenario.episodeCount }}화</span>
+                        <span class="rating">⭐ {{ scenario.rating }}</span>
+                    </div>
+                </div>
+                <div class="featured-info">
+                    <h3>{{ scenario.title }}</h3>
+                    <p class="author">{{ scenario.author }}</p>
+                    <p class="description">{{ scenario.description }}</p>
+                    <div class="featured-tags">
+                        <span 
+                            v-for="tag in scenario.tags.slice(0, 3)" 
+                            :key="tag"
+                            class="tag"
+                        >{{ tag }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 시나리오 목록 -->
+    <div class="scenarios-section">
+        <h2 class="section-title">📖 전체 시나리오</h2>
+        
+        <!-- 시나리오 그리드 -->
+        <div class="scenarios-grid">
+            <div 
+                v-for="scenario in filteredScenarios" 
+                :key="scenario.id"
+                class="scenario-card"
+                @click="viewScenario(scenario)"
+            >
+                <!-- 시나리오 표지 -->
+                <div class="scenario-cover">
+                    <img :src="scenario.coverImage" :alt="scenario.title" />
+                    <div class="scenario-overlay">
+                        <div class="play-button">▶</div>
+                    </div>
+                    <div class="scenario-badges">
+                        <span v-if="scenario.isNew" class="badge new">NEW</span>
+                        <span v-if="scenario.isHot" class="badge hot">HOT</span>
+                        <span v-if="scenario.isCompleted" class="badge completed">완결</span>
+                    </div>
+                </div>
+                
+                <!-- 시나리오 정보 -->
+                <div class="scenario-info">
+                    <div class="scenario-header">
+                        <h3 class="scenario-title">{{ scenario.title }}</h3>
+                        <div class="scenario-meta">
+                            <span class="author">{{ scenario.author }}</span>
+                            <span class="genre">{{ scenario.genre }}</span>
+                        </div>
+                    </div>
+                    
+                    <p class="scenario-description">{{ scenario.description }}</p>
+                    
+                    <div class="scenario-stats">
+                        <div class="stat-item">
+                            <span class="stat-icon">⭐</span>
+                            <span class="stat-value">{{ scenario.rating }}</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-icon">👥</span>
+                            <span class="stat-value">{{ formatNumber(scenario.subscribers) }}</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-icon">📚</span>
+                            <span class="stat-value">{{ scenario.episodeCount }}화</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-icon">📅</span>
+                            <span class="stat-value">{{ formatDate(scenario.lastUpdate) }}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="scenario-tags">
+                        <span 
+                            v-for="tag in scenario.tags" 
+                            :key="tag"
+                            class="tag"
+                        >#{{ tag }}</span>
+                    </div>
+                </div>
+                
+                <!-- 구독 버튼 -->
+                <div class="scenario-actions">
+                    <button 
+                        @click.stop="toggleSubscription(scenario)"
+                        class="subscribe-btn"
+                        :class="{ subscribed: scenario.isSubscribed }"
+                    >
+                        <span class="btn-icon">{{ scenario.isSubscribed ? '💖' : '🤍' }}</span>
+                        {{ scenario.isSubscribed ? '구독중' : '구독하기' }}
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 더보기 버튼 -->
+        <div v-if="hasMoreScenarios" class="load-more-section">
+            <button @click="loadMoreScenarios" class="load-more-btn">
+                더 많은 시나리오 보기
+            </button>
+        </div>
+    </div>
+
+    <!-- 내 구독 목록 (구독한 시나리오가 있을 때만 표시) -->
+    <div v-if="subscribedScenarios.length > 0" class="subscribed-section">
+        <h2 class="section-title">💖 내 구독 시나리오</h2>
+        <div class="subscribed-list">
+            <div 
+                v-for="scenario in subscribedScenarios" 
+                :key="scenario.id"
+                class="subscribed-item"
+                @click="viewScenario(scenario)"
+            >
+                <div class="subscribed-cover">
+                    <img :src="scenario.coverImage" :alt="scenario.title" />
+                    <div v-if="scenario.hasUpdate" class="update-indicator">NEW</div>
+                </div>
+                <div class="subscribed-info">
+                    <h4>{{ scenario.title }}</h4>
+                    <p class="last-episode">{{ scenario.lastEpisodeTitle }}</p>
+                    <span class="update-date">{{ formatDate(scenario.lastUpdate) }}</span>
+                </div>
+                <div class="subscribed-actions">
+                    <button @click.stop="continueReading(scenario)" class="continue-btn">
+                        이어보기
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 검색 결과 없음 -->
+    <div v-if="filteredScenarios.length === 0" class="no-results">
+        <div class="no-results-icon">📭</div>
+        <h3>검색 결과가 없습니다</h3>
+        <p>다른 키워드로 검색해보거나 필터를 변경해보세요.</p>
+    </div>
+</div>

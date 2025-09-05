@@ -1,0 +1,1096 @@
+/* 시나리오 상세 페이지 스타일 */
+.scenario-detail-page {
+    min-height: 100vh;
+    background: #f8f9fa;
+}
+
+/* 시나리오 히어로 섹션 */
+.scenario-hero {
+    position: relative;
+    min-height: 60vh;
+    overflow: hidden;
+}
+
+.hero-background {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+}
+
+.hero-bg-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: blur(8px) brightness(0.6);
+}
+
+.hero-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.8) 0%, rgba(118, 75, 162, 0.8) 100%);
+}
+
+.hero-content {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    min-height: 60vh;
+    padding: 2rem;
+}
+
+.hero-info {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+/* 뒤로가기 버튼 */
+.back-button {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    padding: 0.75rem 1.5rem;
+    border-radius: 25px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    margin-bottom: 2rem;
+    backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+}
+
+.back-button:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: translateY(-2px);
+}
+
+/* 시나리오 헤더 */
+.scenario-header {
+    display: flex;
+    gap: 2rem;
+    align-items: flex-start;
+}
+
+.scenario-cover {
+    position: relative;
+    width: 250px;
+    height: 350px;
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    flex-shrink: 0;
+}
+
+.scenario-cover img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.cover-badges {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    backdrop-filter: blur(10px);
+}
+
+.badge.new {
+    background: rgba(231, 76, 60, 0.9);
+    color: white;
+}
+
+.badge.hot {
+    background: rgba(243, 156, 18, 0.9);
+    color: white;
+}
+
+.badge.completed {
+    background: rgba(39, 174, 96, 0.9);
+    color: white;
+}
+
+/* 시나리오 정보 */
+.scenario-info {
+    flex: 1;
+    color: white;
+}
+
+.scenario-title {
+    font-size: 3rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.scenario-author,
+.scenario-genre {
+    font-size: 1.2rem;
+    margin-bottom: 0.5rem;
+    opacity: 0.9;
+}
+
+.scenario-stats {
+    display: flex;
+    gap: 2rem;
+    margin: 1.5rem 0;
+}
+
+.stat-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.stat-icon {
+    font-size: 1.2rem;
+}
+
+.stat-value {
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.stat-label {
+    font-size: 0.9rem;
+    opacity: 0.8;
+}
+
+.scenario-tags {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin: 1.5rem 0;
+}
+
+.tag {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    backdrop-filter: blur(10px);
+}
+
+/* 가격 정보 */
+.scenario-pricing {
+    margin: 2rem 0 1.5rem 0;
+    padding: 1.5rem;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 15px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.pricing-options {
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.pricing-option {
+    flex: 1;
+    min-width: 200px;
+}
+
+.pricing-option.main {
+    border-left: 3px solid #f39c12;
+}
+
+.pricing-option.monthly {
+    border-left: 3px solid #3498db;
+}
+
+.pricing-option.purchased {
+    border-left: 3px solid #27ae60;
+}
+
+.price-label {
+    display: block;
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.8);
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+}
+
+.price-display {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.original-price {
+    color: rgba(255, 255, 255, 0.6);
+    text-decoration: line-through;
+    font-size: 0.95rem;
+}
+
+.sale-price {
+    color: white;
+    font-size: 1.3rem;
+    font-weight: 700;
+}
+
+.monthly-price {
+    color: white;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.discount-badge {
+    background: #e74c3c;
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 10px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.purchased-text {
+    color: #27ae60;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+/* 액션 버튼들 */
+.action-buttons {
+    display: flex;
+    gap: 1rem;
+    margin-top: 2rem;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+}
+
+.action-buttons button {
+    padding: 1rem 1.5rem;
+    border: none;
+    border-radius: 25px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    backdrop-filter: blur(10px);
+    white-space: nowrap;
+    flex: 1;
+    justify-content: center;
+    min-width: 0;
+}
+
+.purchase-btn {
+    background: rgba(243, 156, 18, 0.9);
+    color: white;
+}
+
+.purchase-btn:hover {
+    background: rgba(230, 126, 34, 0.9);
+}
+
+.monthly-btn {
+    background: rgba(52, 152, 219, 0.9);
+    color: white;
+}
+
+.monthly-btn:hover {
+    background: rgba(41, 128, 185, 0.9);
+}
+
+.subscribe-btn {
+    background: rgba(231, 76, 60, 0.9);
+    color: white;
+}
+
+.subscribe-btn.subscribed {
+    background: rgba(39, 174, 96, 0.9);
+}
+
+.share-btn {
+    background: rgba(155, 89, 182, 0.9);
+    color: white;
+}
+
+.action-buttons button:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+}
+
+/* 시나리오 설명 섹션 */
+.scenario-description-section {
+    background: white;
+    padding: 3rem 2rem;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.section-title {
+    font-size: 2rem;
+    color: #2c3e50;
+    margin-bottom: 1.5rem;
+    font-weight: 600;
+}
+
+.description-content {
+    background: #f8f9fa;
+    padding: 2rem;
+    border-radius: 15px;
+    border-left: 4px solid #667eea;
+}
+
+.scenario-description {
+    font-size: 1.1rem;
+    line-height: 1.8;
+    color: #34495e;
+    margin-bottom: 1.5rem;
+}
+
+.description-meta {
+    display: flex;
+    gap: 2rem;
+    font-size: 0.9rem;
+    color: #7f8c8d;
+}
+
+.status-info.ongoing {
+    color: #27ae60;
+    font-weight: 600;
+}
+
+.status-info.completed {
+    color: #3498db;
+    font-weight: 600;
+}
+
+/* 에피소드 섹션 */
+.episodes-section {
+    background: white;
+    padding: 3rem 2rem;
+}
+
+.episodes-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.episodes-info {
+    display: flex;
+    gap: 1rem;
+    font-size: 0.9rem;
+}
+
+.free-info {
+    color: #27ae60;
+    font-weight: 600;
+}
+
+.total-info {
+    color: #7f8c8d;
+}
+
+/* 에피소드 리스트 */
+.episodes-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-bottom: 3rem;
+}
+
+.episode-item {
+    background: #f8f9fa;
+    border-radius: 12px;
+    padding: 1.5rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    border: 2px solid transparent;
+}
+
+.episode-item:hover {
+    background: white;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+}
+
+.episode-item.current {
+    border-color: #667eea;
+    background: #f0f3ff;
+}
+
+.episode-item.locked {
+    opacity: 0.8;
+}
+
+.episode-item.locked:hover {
+    background: #fff3cd;
+}
+
+.episode-number {
+    background: #667eea;
+    color: white;
+    padding: 0.75rem 1rem;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 1rem;
+    min-width: 60px;
+    text-align: center;
+}
+
+.episode-item.free .episode-number {
+    background: #27ae60;
+}
+
+.episode-item.locked .episode-number {
+    background: #f39c12;
+}
+
+.episode-info {
+    flex: 1;
+}
+
+.episode-title {
+    font-size: 1.2rem;
+    color: #2c3e50;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+}
+
+.episode-preview {
+    color: #7f8c8d;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    margin-bottom: 0.75rem;
+}
+
+.episode-meta {
+    display: flex;
+    gap: 1rem;
+    font-size: 0.85rem;
+    color: #95a5a6;
+    align-items: center;
+}
+
+.episode-badge.new {
+    background: #e74c3c;
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 8px;
+    font-weight: 600;
+}
+
+.episode-status {
+    flex-shrink: 0;
+}
+
+.status-badge {
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.status-badge.free {
+    background: #d4edda;
+    color: #155724;
+}
+
+.status-badge.purchased {
+    background: #d1ecf1;
+    color: #0c5460;
+}
+
+.status-badge.premium {
+    background: #fff3cd;
+    color: #856404;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+
+/* 에피소드 뷰어 */
+.episode-viewer {
+    background: white;
+    margin: 2rem 0;
+    border-radius: 15px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+.viewer-header {
+    background: #667eea;
+    color: white;
+    padding: 1.5rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.viewer-header h2 {
+    font-size: 1.3rem;
+    margin: 0;
+}
+
+.close-viewer {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 50%;
+    transition: background 0.3s ease;
+}
+
+.close-viewer:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.viewer-content {
+    padding: 2rem;
+}
+
+.episode-content .content-text {
+    font-size: 1.1rem;
+    line-height: 1.8;
+    color: #2c3e50;
+}
+
+.episode-content .content-text p {
+    margin-bottom: 1.5rem;
+}
+
+/* 프리미엄 잠금 화면 */
+.premium-lock {
+    position: relative;
+}
+
+.preview-content {
+    margin-bottom: 2rem;
+}
+
+.preview-header {
+    background: #d4edda;
+    color: #155724;
+    padding: 1rem 1.5rem;
+    border-radius: 10px;
+    margin-bottom: 1.5rem;
+    border-left: 4px solid #27ae60;
+}
+
+.preview-header h3 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.2rem;
+}
+
+.preview-header p {
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+.content-text.preview {
+    font-size: 1.1rem;
+    line-height: 1.8;
+    color: #2c3e50;
+    position: relative;
+}
+
+.content-text.preview::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 50px;
+    background: linear-gradient(transparent, white);
+}
+
+.payment-prompt {
+    margin-top: 2rem;
+}
+
+.lock-overlay {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    padding: 3rem 2rem;
+    border-radius: 15px;
+    text-align: center;
+    border: 2px dashed #dee2e6;
+}
+
+.lock-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+}
+
+.lock-overlay h3 {
+    font-size: 1.5rem;
+    color: #2c3e50;
+    margin-bottom: 0.5rem;
+}
+
+.lock-overlay > p {
+    color: #7f8c8d;
+    margin-bottom: 2rem;
+}
+
+.payment-options {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: 2rem;
+}
+
+.purchase-episode-btn,
+.purchase-full-btn {
+    padding: 1rem 2rem;
+    border: none;
+    border-radius: 25px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.purchase-episode-btn {
+    background: #f39c12;
+    color: white;
+}
+
+.purchase-episode-btn:hover {
+    background: #e67e22;
+    transform: translateY(-2px);
+}
+
+.purchase-full-btn {
+    background: #667eea;
+    color: white;
+}
+
+.purchase-full-btn:hover {
+    background: #5a67d8;
+    transform: translateY(-2px);
+}
+
+.payment-benefits {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 10px;
+    text-align: left;
+    max-width: 300px;
+    margin: 0 auto;
+}
+
+.payment-benefits h4 {
+    color: #2c3e50;
+    margin-bottom: 1rem;
+    font-size: 1.1rem;
+}
+
+.payment-benefits ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.payment-benefits li {
+    color: #27ae60;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+}
+
+/* 뷰어 네비게이션 */
+.viewer-navigation {
+    background: #f8f9fa;
+    padding: 1.5rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+}
+
+.nav-btn {
+    background: #667eea;
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.nav-btn:hover:not(:disabled) {
+    background: #5a67d8;
+    transform: translateY(-2px);
+}
+
+.nav-btn:disabled {
+    background: #dee2e6;
+    color: #6c757d;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.episode-progress {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex: 1;
+    justify-content: center;
+}
+
+.progress-bar {
+    width: 200px;
+    height: 6px;
+    background: #dee2e6;
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background: #667eea;
+    transition: width 0.3s ease;
+}
+
+/* 리뷰 섹션 */
+.reviews-section {
+    background: white;
+    padding: 3rem 2rem;
+}
+
+.review-form {
+    background: #f8f9fa;
+    padding: 2rem;
+    border-radius: 15px;
+    margin-bottom: 3rem;
+}
+
+.review-form h3 {
+    color: #2c3e50;
+    margin-bottom: 1.5rem;
+}
+
+.rating-input {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.stars-input {
+    display: flex;
+    gap: 0.25rem;
+}
+
+.stars-input .star {
+    font-size: 1.5rem;
+    color: #dee2e6;
+    cursor: pointer;
+    transition: color 0.2s ease;
+}
+
+.stars-input .star.active,
+.stars-input .star:hover {
+    color: #ffc107;
+}
+
+.review-textarea {
+    width: 100%;
+    min-height: 100px;
+    padding: 1rem;
+    border: 1px solid #dee2e6;
+    border-radius: 10px;
+    font-size: 1rem;
+    resize: vertical;
+    margin-bottom: 1rem;
+    box-sizing: border-box;
+}
+
+.review-textarea:focus {
+    outline: none;
+    border-color: #667eea;
+}
+
+.submit-review-btn {
+    background: #667eea;
+    color: white;
+    border: none;
+    padding: 0.75rem 2rem;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.submit-review-btn:hover:not(:disabled) {
+    background: #5a67d8;
+    transform: translateY(-2px);
+}
+
+.submit-review-btn:disabled {
+    background: #dee2e6;
+    color: #6c757d;
+    cursor: not-allowed;
+}
+
+/* 리뷰 목록 */
+.reviews-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.review-item {
+    background: #f8f9fa;
+    padding: 1.5rem;
+    border-radius: 12px;
+    transition: background 0.3s ease;
+}
+
+.review-item:hover {
+    background: #e9ecef;
+}
+
+.review-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.reviewer-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.reviewer-name {
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.review-rating {
+    display: flex;
+    gap: 0.125rem;
+}
+
+.review-rating .star {
+    font-size: 0.9rem;
+    color: #dee2e6;
+}
+
+.review-rating .star.filled {
+    color: #ffc107;
+}
+
+.review-date {
+    color: #7f8c8d;
+    font-size: 0.85rem;
+}
+
+.review-content {
+    color: #34495e;
+    line-height: 1.6;
+    margin-bottom: 1rem;
+}
+
+.review-actions {
+    display: flex;
+    gap: 1rem;
+}
+
+.review-like {
+    background: none;
+    border: 1px solid #dee2e6;
+    color: #7f8c8d;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: all 0.3s ease;
+}
+
+.review-like:hover {
+    background: #f8f9fa;
+}
+
+.review-like.liked {
+    background: #e3f2fd;
+    border-color: #2196f3;
+    color: #1976d2;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+    .scenario-hero {
+        min-height: 50vh;
+    }
+    
+    .hero-content {
+        min-height: 50vh;
+        padding: 1rem;
+    }
+    
+    .scenario-header {
+        flex-direction: column;
+        text-align: center;
+        gap: 1.5rem;
+    }
+    
+    .scenario-cover {
+        width: 200px;
+        height: 280px;
+        margin: 0 auto;
+    }
+    
+    .scenario-title {
+        font-size: 2rem;
+    }
+    
+    .scenario-stats {
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+    
+    .scenario-pricing {
+        margin: 1.5rem 0 1rem 0;
+        padding: 1rem;
+    }
+    
+    .pricing-options {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .pricing-option {
+        min-width: auto;
+    }
+    
+    .action-buttons {
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+    }
+    
+    .action-buttons button {
+        padding: 0.75rem 1.25rem;
+        font-size: 0.85rem;
+        flex: 1;
+        min-width: 120px;
+    }
+    
+    .episodes-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+    
+    .episode-item {
+        flex-direction: column;
+        text-align: center;
+        gap: 1rem;
+    }
+    
+    .episode-number {
+        align-self: center;
+    }
+    
+    .purchase-options {
+        grid-template-columns: 1fr;
+    }
+    
+    .viewer-navigation {
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+    
+    .episode-progress {
+        order: 3;
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .payment-options {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .nav-btn {
+        padding: 0.5rem 1rem;
+        font-size: 0.8rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .scenario-detail-page {
+        padding: 0;
+    }
+    
+    .hero-content,
+    .scenario-description-section,
+    .episodes-section,
+    .reviews-section {
+        padding: 1rem;
+    }
+    
+    .scenario-title {
+        font-size: 1.75rem;
+    }
+    
+    .section-title {
+        font-size: 1.5rem;
+    }
+    
+    .scenario-cover {
+        width: 150px;
+        height: 200px;
+    }
+    
+    .episode-item {
+        padding: 1rem;
+    }
+    
+    .viewer-content {
+        padding: 1rem;
+    }
+    
+    .purchase-card {
+        padding: 1.5rem;
+    }
+    
+    .purchase-option {
+        padding: 1.5rem;
+    }
+    
+    .lock-overlay {
+        padding: 2rem 1rem;
+    }
+}
