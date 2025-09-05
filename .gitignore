@@ -1,4 +1,5 @@
 node_modules
 routes
+.build-cache
 .build-cache.json
 bundle-report.html
