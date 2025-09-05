@@ -10,24 +10,12 @@
     <div id="app"></div>
 
     <!-- Vue 3 Runtime + Compiler -->
-    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
     <script src="js/viewlogic-router.umd.js"></script>
     <script>
-        const routerConfig = {
-            basePath: '/src',
-            routesPath: '/routes',
-            mode: 'hash',
-            environment: 'development',
-            useLayout: true,
-            defaultLayout: 'default',
-            authEnabled: true,
-            loginRoute: 'login',
-            publicRoutes: ['login', 'home', 'about', 'contact'],
-            useI18n: true,
-            defaultLanguage: 'ko'
-        };
-
-        ViewLogicRouter(routerConfig).mount('#app');
+        ViewLogicRouter({
+            environment: 'development',            
+        }).mount('#app');
     </script>
 </body>
 </html>

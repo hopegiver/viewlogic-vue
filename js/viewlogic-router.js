@@ -44,7 +44,7 @@ export class ViewLogicRouter {
             cacheMode: 'memory',
             cacheTTL: 300000,
             maxCacheSize: 50,
-            useLayout: false,
+            useLayout: true,
             defaultLayout: 'default',
             environment: 'development',
             routesPath: '/routes',

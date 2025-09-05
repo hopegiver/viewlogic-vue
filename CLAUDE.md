@@ -30,7 +30,6 @@
 
 ## 빌드시 주의사항
   - 오직 routes 폴더에 빌드된 js 파일들을 생성할 것.
-  - css, js 폴더의 파일들은 번들링 하지 않음. base.prod.css, i18n.prod.js, router.prod.js 파일 절대 생성 금지.
 
 ## routes/*.js 에서 오류 발생시
   - routes/*.js파일을 직접 수정하지 말고 반드시 build.cjs 를 수정해서 다시 빌드할 것
