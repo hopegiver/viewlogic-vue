@@ -1,6 +1,5 @@
 <nav class="main-nav" x-data="{ 
     cartItemCount: (typeof getCookie !== 'undefined' ? getCookie('cartItemCount') : null) || 0,
-    mobileMenuOpen: false,
     currentRoute: window.location.hash.slice(2) || 'home'
 }" x-init="
     // 쿠키 변경 감지를 위한 이벤트 리스너
@@ -23,43 +22,43 @@
         </div>
 
         <!-- 모바일 햄버거 메뉴 버튼 -->
-        <button class="nav-toggle" @click="toggleMobileMenu" :class="{ active: mobileMenuOpen }">
+        <button class="nav-toggle">
             <span class="nav-toggle-bar"></span>
             <span class="nav-toggle-bar"></span>
             <span class="nav-toggle-bar"></span>
         </button>
 
         <!-- 중앙 네비게이션 메뉴 -->
-        <div class="nav-menu" :class="{ active: mobileMenuOpen }">
+        <div class="nav-menu">
             <ul class="nav-links">
-                <li><a @click="navigateTo('home'); closeMobileMenu()" :class="{ active: currentRoute === 'home' }">Home</a></li>
-                <li><a @click="navigateTo('about'); closeMobileMenu()" :class="{ active: currentRoute === 'about' }">About</a></li>
+                <li><a @click="navigateTo('home')" :class="{ active: currentRoute === 'home' }">Home</a></li>
+                <li><a @click="navigateTo('about')" :class="{ active: currentRoute === 'about' }">About</a></li>
                 <li class="has-dropdown">
                     <a href="javascript:void(0)" class="dropdown-toggle">서비스</a>
                     <ul class="dropdown-menu">
-                        <li><a @click="navigateTo('products'); closeMobileMenu()" :class="{ active: currentRoute === 'products' }">상품</a></li>
-                        <li><a @click="navigateTo('blog'); closeMobileMenu()" :class="{ active: currentRoute === 'blog' }">블로그</a></li>
-                        <li><a @click="navigateTo('videos'); closeMobileMenu()" :class="{ active: currentRoute === 'videos' }">동영상</a></li>
-                        <li><a @click="navigateTo('manual'); closeMobileMenu()" :class="{ active: currentRoute === 'manual' }">매뉴얼</a></li>
+                        <li><a @click="navigateTo('products')" :class="{ active: currentRoute === 'products' }">상품</a></li>
+                        <li><a @click="navigateTo('blog')" :class="{ active: currentRoute === 'blog' }">블로그</a></li>
+                        <li><a @click="navigateTo('videos')" :class="{ active: currentRoute === 'videos' }">동영상</a></li>
+                        <li><a @click="navigateTo('manual')" :class="{ active: currentRoute === 'manual' }">매뉴얼</a></li>
                     </ul>
                 </li>
-                <li><a @click="navigateTo('components'); closeMobileMenu()" :class="{ active: currentRoute === 'components' }">컴포넌트</a></li>
-                <li><a @click="navigateTo('contact'); closeMobileMenu()" :class="{ active: currentRoute === 'contact' }">Contact</a></li>
+                <li><a @click="navigateTo('components')" :class="{ active: currentRoute === 'components' }">컴포넌트</a></li>
+                <li><a @click="navigateTo('contact')" :class="{ active: currentRoute === 'contact' }">Contact</a></li>
             </ul>
         </div>
 
         <!-- 오른쪽 유틸리티 메뉴 -->
-        <div class="nav-utils" :class="{ active: mobileMenuOpen }">
+        <div class="nav-utils">
             <!-- 장바구니 -->
-            <div class="cart-widget" @click="navigateTo('cart'); closeMobileMenu()">
+            <div class="cart-widget" @click="navigateTo('cart')">
                 <span class="cart-icon">🛒</span>
                 <span class="cart-count" x-show="cartItemCount > 0" x-text="cartItemCount"></span>
             </div>
             
             <!-- 로그인/회원가입 -->
             <div class="nav-auth">
-                <a @click="navigateTo('login'); closeMobileMenu()" class="auth-link login-link">로그인</a>
-                <a @click="navigateTo('signup'); closeMobileMenu()" class="auth-link signup-link">회원가입</a>
+                <a @click="navigateTo('login')" class="auth-link login-link">로그인</a>
+                <a @click="navigateTo('signup')" class="auth-link signup-link">회원가입</a>
             </div>
         </div>
     </div>

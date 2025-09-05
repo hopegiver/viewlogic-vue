@@ -1,11 +1,8 @@
 // ViewLogic Router - ES6 Module
 import { I18nManager } from './plugins/I18nManager.js';
-import { LoadingManager } from './plugins/LoadingManager.js';
-import { PreloadManager } from './plugins/PreloadManager.js';
 import { AuthManager } from './plugins/AuthManager.js';
 import { CacheManager } from './plugins/CacheManager.js';
 import { QueryManager } from './plugins/QueryManager.js';
-import { MobileManager } from './plugins/MobileManager.js';
 import { RouteLoader } from './core/RouteLoader.js';
 import { ErrorHandler } from './core/ErrorHandler.js';
 import { ComponentLoader } from './core/ComponentLoader.js';
@@ -51,11 +48,6 @@ export class ViewLogicRouter {
             defaultLayout: 'default',
             environment: 'development',
             routesPath: '/routes',
-            preloadRoutes: [],
-            preloadDelay: 1000,
-            preloadInterval: 500,
-            showLoadingProgress: false,
-            loadingMinDuration: 300,
             enableErrorReporting: true,
             useComponents: true,
             componentNames: ['Button', 'Modal', 'Card', 'Toast', 'Input', 'Tabs', 'Checkbox', 'Alert', 'DynamicInclude', 'HtmlInclude'],
@@ -106,7 +98,6 @@ export class ViewLogicRouter {
             this.routeLoader = new RouteLoader(this, this.config);
             this.queryManager = new QueryManager(this, this.config);
             this.errorHandler = new ErrorHandler(this, this.config);
-            this.mobileManager = new MobileManager(this, this.config);
             
             // 조건부 매니저들
             if (this.config.useI18n) {
@@ -114,10 +105,6 @@ export class ViewLogicRouter {
                 if (this.i18nManager.initPromise) {
                     await this.i18nManager.initPromise;
                 }
-            }
-            
-            if (this.config.showLoadingProgress) {
-                this.loadingManager = new LoadingManager(this, this.config);
             }
             
             if (this.config.authEnabled) {
@@ -132,16 +119,6 @@ export class ViewLogicRouter {
                     componentNames: this.config.componentNames
                 });
                 await this.componentLoader.loadAllComponents();
-            }
-            
-            if (this.config.preloadRoutes && this.config.preloadRoutes.length > 0) {
-                this.preloadManager = new PreloadManager(this, this.config);
-                // 프리로딩을 지연 시작
-                setTimeout(() => {
-                    if (this.preloadManager) {
-                        this.preloadManager.startDelayedPreloading(this.currentHash);
-                    }
-                }, this.config.preloadDelay);
             }
             
             // 2. 라우터 시작
@@ -237,20 +214,14 @@ export class ViewLogicRouter {
 
     async loadRoute(routeName) {
         // 전환이 진행 중이면 무시
-        const inProgress = this.loadingManager ? 
-            this.loadingManager.isTransitionInProgress() : 
-            this.transitionInProgress;
+        const inProgress = this.transitionInProgress;
         
         if (inProgress) {
             return;
         }
 
         try {
-            if (this.loadingManager) {
-                this.loadingManager.showLoading();
-            } else {
-                this.transitionInProgress = true;
-            }
+            this.transitionInProgress = true;
             
             // 인증 체크
             const authResult = this.authManager ? 
@@ -258,9 +229,6 @@ export class ViewLogicRouter {
                 { allowed: true, reason: 'auth_disabled' };
             if (!authResult.allowed) {
                 // 인증 실패 시 로그인 페이지로 리다이렉트
-                if (this.loadingManager) {
-                    await this.loadingManager.hideLoading();
-                }
                 if (this.authManager) {
                     this.authManager.emitAuthEvent('auth_required', { 
                         originalRoute: routeName,
@@ -286,16 +254,10 @@ export class ViewLogicRouter {
             await this.renderComponentWithTransition(component, routeName);
             
             // 로딩 완료
-            if (this.loadingManager) {
-                await this.loadingManager.hideLoading();
-            }
             
         } catch (error) {
             this.log('error', `Route loading failed [${routeName}]:`, error.message);
             
-            if (this.loadingManager) {
-                await this.loadingManager.hideLoading();
-            }
             
             // 에러 타입에 따른 처리
             if (this.errorHandler) {
@@ -305,11 +267,7 @@ export class ViewLogicRouter {
             }
         } finally {
             // 모든 처리가 완료된 후 전환 상태 리셋
-            if (this.loadingManager) {
-                this.loadingManager.setTransitionInProgress(false);
-            } else {
-                this.transitionInProgress = false;
-            }
+            this.transitionInProgress = false;
         }
     }
 
@@ -354,20 +312,13 @@ export class ViewLogicRouter {
         };
 
         // 모바일 메뉴 전역 함수 추가
-        if (this.mobileManager) {
-            this.mobileManager.registerGlobalProperties(newVueApp);
-        }
 
         newVueApp.mount(`#${newPageContainer.id}`);
 
         // requestAnimationFrame으로 성능 개선
         requestAnimationFrame(() => {
             this.cleanupPreviousPages();
-            if (this.loadingManager) {
-                this.loadingManager.setTransitionInProgress(false);
-            } else {
-                this.transitionInProgress = false;
-            }
+            this.transitionInProgress = false;
         });
 
         // 이전 앱 정리 준비
@@ -400,7 +351,7 @@ export class ViewLogicRouter {
         }
 
         // 로딩 엘리먼트 제거
-        this.loadingManager?.removeLoadingElement(appElement) || 
+ 
             appElement.querySelector('.loading')?.remove();
     }
 
